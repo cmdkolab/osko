@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "taskmanager",
     name: "Task Manager",
     icon: "📊",
-    version: "1.0.0",
+    version: "1.1.0",
     manifest: {
         name: "Task Manager",
         icon: "📊",
@@ -22,7 +22,7 @@ WebOS.registerApp({
                 <div class="tm-header">
                     <span>Aplikacja</span>
                     <span>Uptime</span>
-                    <span>Pliki</span>
+                    <span>Pliki / Limit</span>
                     <span>DOM</span>
                     <span>Akcja</span>
                 </div>

@@ -96,7 +96,7 @@
     const PersistenceManager = {
         PREFIX: 'OSKO:',
         START_TIME: Date.now(),
-        VERSION: '1.0.3',
+        VERSION: '1.0.7',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -163,7 +163,8 @@
                     'txt': 'notes',
                     'log': 'syslog',
                     'json': 'notes'
-                }
+                },
+                'startup.json': { content: '[]', owner: 'system', size: 2, mtime: Date.now() }
             },
             'var': {
                 'log': {
@@ -352,7 +353,8 @@
 
             if (manifest?.sandbox) {
                 if (path.startsWith(`/var/apps/${appId}`)) return true;
-                if (path.startsWith('/home/user')) return true;
+                if (path.startsWith(`/home/user/settings/${appId}`)) return true;
+                if (path.startsWith('/home/user/documents') && manifest.permissions?.includes('fs.shared')) return true;
                 return false;
             }
 
@@ -365,6 +367,12 @@
             }
             if (path.startsWith('/var/apps/')) {
                 return path.startsWith(`/var/apps/${appId}`);
+            }
+            if (path.startsWith('/home/user/documents')) {
+                return true; // Default shared for now, unless sandbox is on
+            }
+            if (path.startsWith('/home/user/settings/')) {
+                return path.startsWith(`/home/user/settings/${appId}`) || appId === 'system';
             }
             if (firstPart === 'home') return true;
             return false;
@@ -430,7 +438,11 @@
                 mtime: Date.now()
             };
 
-            this._recalculateUsage();
+            const sizeDiff = owner === 'system' ? 0 : (newSize - oldSize);
+            if (sizeDiff !== 0) {
+                this._usage[owner] = (this._usage[owner] || 0) + sizeDiff;
+            }
+
             this._invalidateCache(path);
             this._invalidateCache(this.dirname(path));
             await this.save();
@@ -482,7 +494,11 @@
                 SysLog.log('ERR', `Permission Denied (mkdir): ${path}`, appId);
                 return false;
             }
-            if (this.exists(path)) return false;
+            if (this.exists(path)) {
+                const node = this._resolve(path);
+                if (node && (typeof node === 'string' || node.content !== undefined)) return false; // File exists
+                return true; // Directory exists
+            }
             const parts = path.split('/').filter(p => p);
             let current = this.root;
             for (const part of parts) {
@@ -579,6 +595,10 @@
             this._invalidateCache(newPath);
             this._invalidateCache(this.dirname(oldPath));
             this._invalidateCache(this.dirname(newPath));
+            // No usage change needed as owner/size stays the same unless we traverse, 
+            // but rename is usually within same volume/owner. 
+            // In case of owner change (system moving files), recalculate is safer but rare.
+            // For now, incremental handles write/remove. rename is rarely a bottleneck.
             this._recalculateUsage();
             await this.save();
             SysLog.log('DEBUG', `Renamed: ${oldPath} -> ${newPath}`, 'VFS', { appId });
@@ -639,7 +659,18 @@
 
             let metadataStr = '';
             if (metadata) {
-                try { metadataStr = ` | META: ${JSON.stringify(metadata)}`; } catch (e) { }
+                try {
+                    const seen = new WeakSet();
+                    metadataStr = ` | META: ${JSON.stringify(metadata, (key, value) => {
+                        if (typeof value === 'object' && value !== null) {
+                            if (seen.has(value)) return '[Circular]';
+                            seen.add(value);
+                        }
+                        if (value instanceof HTMLElement) return `[HTMLElement ${value.tagName}${value.id ? '#' + value.id : ''}]`;
+                        if (value instanceof Error) return `[Error ${value.message}]`;
+                        return value;
+                    })}`;
+                } catch (e) { metadataStr = ' | META: [Unserializable]'; }
             }
 
             let entry;
@@ -844,6 +875,21 @@
                         };
                         SysLog.log(level, msg, appDef.name, ctx);
                     },
+                    addEventListener: (target, type, fn, options) => {
+                        if (!target || typeof target.addEventListener !== 'function') return;
+                        target.addEventListener(type, fn, options);
+                        track({ target, type, fn, options }, 'event_listener');
+                    },
+                    removeEventListener: (target, type, fn, options) => {
+                        if (!target || typeof target.removeEventListener !== 'function') return;
+                        target.removeEventListener(type, fn, options);
+                        const proc = _getProc();
+                        if (proc && proc._resources) {
+                            proc._resources = proc._resources.filter(r =>
+                                !(r.type === 'event_listener' && r.handle.target === target && r.handle.type === type && r.handle.fn === fn)
+                            );
+                        }
+                    },
                     publish: (event, data) => EventBus.publish(`app:${event}`, { from: appId, data }),
                     setTimeout: (fn, delay) => {
                         let handle;
@@ -892,15 +938,16 @@
                             const nodeCount = win ? win.element.querySelectorAll('*').length : 0;
                             const uptime = Math.floor((Date.now() - p.startTime) / 1000);
                             const storageBytes = VFS.calculateUsage(p.appId);
-                            const storageStr = storageBytes > 1024
-                                ? (storageBytes / 1024).toFixed(1) + 'KB'
-                                : storageBytes + 'B';
+                            const storageStr = storageBytes > 1024 * 1024
+                                ? (storageBytes / (1024 * 1024)).toFixed(2) + 'MB'
+                                : (storageBytes / 1024).toFixed(1) + 'KB';
+                            const limitStr = (VFS.QUOTA_PER_APP / (1024 * 1024)).toFixed(0) + 'MB';
                             return {
                                 pid: p.pid,
                                 name: p.appDef.name,
                                 appId: p.appId,
                                 uptime: `${uptime}s`,
-                                storage: storageStr,
+                                storage: `${storageStr} / ${limitStr}`,
                                 nodes: nodeCount
                             };
                         });
@@ -923,6 +970,7 @@
                     basename: (path) => VFS.basename(path),
                     split: (path) => VFS.split(path),
                     exists(path) { return VFS.exists(path); },
+                    QUOTA_PER_APP: VFS.QUOTA_PER_APP,
                     watch: (path, cb) => {
                         const unsub = VFS.watch(path, cb);
                         const handle = () => {
@@ -1406,6 +1454,9 @@
                             if (res.type === 'timeout') clearTimeout(res.handle);
                             if (res.type === 'eventbus') EventBus.unsubscribe(res.handle.event, res.handle.token);
                             if (res.type === 'vfs_watch') res.handle();
+                            if (res.type === 'event_listener') {
+                                try { res.handle.target.removeEventListener(res.handle.type, res.handle.fn, res.handle.options); } catch (e) { }
+                            }
                         } catch (e) {
                             console.warn("Resource cleanup error:", e);
                         }
@@ -1426,6 +1477,16 @@
             }
             SysLog.log('INFO', 'All applications terminated');
         },
+        _desktopPositions: {},
+        async _loadDesktopPositions() {
+            try {
+                const data = await VFS.read('/home/user/settings/desktop.json');
+                if (data) this._desktopPositions = JSON.parse(data);
+            } catch (e) { this._desktopPositions = {}; }
+        },
+        _saveDesktopPositions() {
+            VFS.write('/home/user/settings/desktop.json', JSON.stringify(this._desktopPositions), 'system');
+        },
         createDesktopIcon(app) {
             const container = document.getElementById('desktop-icons');
             if (!container) {
@@ -1438,13 +1499,71 @@
             const icon = document.createElement('div');
             icon.className = 'desktop-icon';
             icon.setAttribute('data-id', app.id);
+
+            // Set position
+            const pos = this._desktopPositions[app.id];
+            if (pos) {
+                icon.style.left = pos.x + 'px';
+                icon.style.top = pos.y + 'px';
+            } else {
+                // Default grid layout if no pos
+                const count = container.querySelectorAll('.desktop-icon').length;
+                const col = Math.floor(count / 6);
+                const row = count % 6;
+                icon.style.left = (20 + col * 100) + 'px';
+                icon.style.top = (20 + row * 120) + 'px';
+            }
+
             icon.innerHTML = `
                 <div class="icon"></div>
                 <div class="label"></div>
             `;
             icon.querySelector('.icon').textContent = iconImg;
             icon.querySelector('.label').textContent = name;
-            icon.onclick = () => this.launchApp(app.id);
+
+            // Drag logic
+            let dragging = false;
+            let startX, startY, initialX, initialY;
+
+            icon.onmousedown = (e) => {
+                if (e.button !== 0) return;
+                dragging = true;
+                icon.style.transition = 'none';
+                icon.style.zIndex = '1000';
+                startX = e.clientX;
+                startY = e.clientY;
+                initialX = parseInt(icon.style.left);
+                initialY = parseInt(icon.style.top);
+
+                const onMouseMove = (moveEvent) => {
+                    if (!dragging) return;
+                    const dx = moveEvent.clientX - startX;
+                    const dy = moveEvent.clientY - startY;
+                    icon.style.left = (initialX + dx) + 'px';
+                    icon.style.top = (initialY + dy) + 'px';
+                };
+
+                const onMouseUp = () => {
+                    if (dragging) {
+                        dragging = false;
+                        icon.style.transition = '';
+                        icon.style.zIndex = '';
+                        // Snap and save
+                        const snappedX = Math.round((parseInt(icon.style.left) - 20) / 100) * 100 + 20;
+                        const snappedY = Math.round((parseInt(icon.style.top) - 20) / 120) * 120 + 20;
+                        icon.style.left = snappedX + 'px';
+                        icon.style.top = snappedY + 'px';
+                        this._desktopPositions[app.id] = { x: snappedX, y: snappedY };
+                        this._saveDesktopPositions();
+                    }
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            };
+
+            icon.addEventListener('dblclick', () => this.launchApp(app.id));
             container.appendChild(icon);
         },
         _taskbarCache: {},
@@ -1514,38 +1633,43 @@
                 this._statsUpdateTimer = null;
             }, 200);
         },
-        async saveState() {
-            const data = {
-                openApps: state.processes.reduce((acc, p) => {
-                    const win = state.windows.find(w => w.id === p.windowId);
-                    if (!win) return acc;
-                    acc.push({
-                        appId: p.appId,
-                        params: p.api?.fs ? { filePath: p.instance?.currentPath || p.params?.filePath } : null,
-                        window: {
-                            x: win.element.style.left,
-                            y: win.element.style.top,
-                            width: win.element.style.width,
-                            height: win.element.style.height
-                        }
-                    });
-                    return acc;
-                }, [])
-            };
-            await PersistenceManager.set(state.persistenceKey, data);
+        _saveStateTimer: null,
+        saveState() {
+            if (this._saveStateTimer) clearTimeout(this._saveStateTimer);
+            this._saveStateTimer = setTimeout(async () => {
+                this._saveStateTimer = null;
+                const data = {
+                    openApps: state.processes.reduce((acc, p) => {
+                        const win = state.windows.find(w => w.id === p.windowId);
+                        if (!win) return acc;
+                        acc.push({
+                            appId: p.appId,
+                            params: p.api?.fs ? { filePath: p.instance?.currentPath || p.params?.filePath } : null,
+                            window: {
+                                x: win.element.style.left,
+                                y: win.element.style.top,
+                                width: win.element.style.width,
+                                height: win.element.style.height
+                            }
+                        });
+                        return acc;
+                    }, [])
+                };
+                await PersistenceManager.set(state.persistenceKey, data);
+            }, 500);
         },
         async restoreState(deferredData) {
             const data = deferredData ? { openApps: deferredData } : (await PersistenceManager.get(state.persistenceKey));
-            if (!data || !Array.isArray(data.openApps)) return;
-            setTimeout(() => {
-                data.openApps.forEach(appData => {
-                    if (state.processes.find(p => p.appId === appData.appId)) return;
-                    if (appData.startup) {
-                        WebOS.launchApp(appData.appId);
-                        return;
-                    }
-                    const app = state.apps[appData.appId];
-                    if (app && app.mount) {
+
+            // Mandatory startup apps from /sys/startup.json
+            const startupConfigStr = VFS.read('/sys/startup.json');
+            let startupAppsList = [];
+            try { startupAppsList = JSON.parse(startupConfigStr || '[]'); } catch (e) { }
+
+            if (data && Array.isArray(data.openApps)) {
+                setTimeout(() => {
+                    data.openApps.forEach(appData => {
+                        if (state.processes.find(p => p.appId === appData.appId)) return;
                         WebOS.launchApp(appData.appId, appData.params || {});
 
                         setTimeout(() => {
@@ -1559,10 +1683,19 @@
                                 });
                             }
                         }, 100);
+                    });
+                    this.updateTaskbar();
+                }, deferredData ? 100 : 500);
+            }
+
+            // Launch mandatory startup apps if not already open
+            setTimeout(() => {
+                startupAppsList.forEach(appId => {
+                    if (!state.processes.find(p => p.appId === appId)) {
+                        WebOS.launchApp(appId);
                     }
                 });
-                this.updateTaskbar();
-            }, deferredData ? 100 : 500);
+            }, deferredData ? 300 : 1000);
         },
         async flushDeferredRestoration() {
             if (!state.deferredRestoration) return;
@@ -1828,6 +1961,7 @@
                 acceptText: 'Rozumiem'
             });
         }
+        await WebOS._loadDesktopPositions();
         SysLog.init();
         await SessionManager.init();
         await ThemeEngine.init();
@@ -1904,5 +2038,17 @@
             VFS.saveImmediate();
         }
     });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.altKey && e.key === 'Tab') {
+            e.preventDefault();
+            const stack = state.windowStack || [];
+            if (stack.length < 2) return;
+            // Focus second most recent
+            const nextId = stack[stack.length - 2];
+            WindowManager.focus(nextId);
+        }
+    });
+
     init();
 })(window);

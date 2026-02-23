@@ -55,12 +55,11 @@ body {
 }
 
 #desktop-icons {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, 80px);
-    grid-template-rows: repeat(auto-fill, 100px);
-    gap: 20px;
-    height: 100%;
+    position: absolute;
+    inset: 0;
     pointer-events: none;
+    padding: 20px;
+    margin-top: 40px;
 }
 
 .desktop-icon {
@@ -71,10 +70,13 @@ body {
     text-align: center;
     cursor: pointer;
     pointer-events: auto;
-    transition: var(--transition);
+    transition: background 0.2s, transform 0.2s;
     border-radius: var(--radius-md);
     padding: 10px;
     width: 80px;
+    height: 100px;
+    position: absolute;
+    user-select: none;
 }
 
 .desktop-icon:hover {
