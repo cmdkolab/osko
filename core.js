@@ -288,21 +288,23 @@
         async save() {
             if (this._isTransaction) return;
             if (this._saveTimer) clearTimeout(this._saveTimer);
-            return new Promise((resolve) => {
-                this._pendingSaveResolves.push(resolve);
-                this._saveTimer = setTimeout(async () => {
-                    try {
-                        await PersistenceManager.set(this.persistenceKey, this.root);
-                        if (this.syncChannel) this.syncChannel.postMessage('sync');
-                    } catch (e) {
-                        console.error('[Kernel] VFS save error:', e);
-                    } finally {
-                        this._saveTimer = null;
-                        const resolves = this._pendingSaveResolves.splice(0);
-                        resolves.forEach(r => r());
-                    }
-                }, 500);
-            });
+
+            // Background timer
+            this._saveTimer = setTimeout(async () => {
+                try {
+                    await PersistenceManager.set(this.persistenceKey, this.root);
+                    if (this.syncChannel) this.syncChannel.postMessage('sync');
+                } catch (e) {
+                    console.error('[Kernel] VFS save error:', e);
+                } finally {
+                    this._saveTimer = null;
+                    const resolves = this._pendingSaveResolves.splice(0);
+                    resolves.forEach(r => r());
+                }
+            }, 500);
+
+            // Return immediately, don't block the UI
+            return Promise.resolve();
         },
 
         async sync() {
@@ -419,7 +421,6 @@
                 return false;
             }
 
-            const name = path.split('/').filter(p => p).pop();
             const dataStr = typeof data === 'string' ? data : JSON.stringify(data);
             const newSize = dataStr.length;
             const oldSize = (this._resolve(path) || {}).size || 0;
@@ -1368,10 +1369,16 @@
                 const onMouseMove = (moveEvent) => {
                     if (!dragging) return;
                     const win = state.windows.find(w => w.element === el);
-                    if (win && win.state === 'maximized') {
-                        const ratio = moveEvent.clientX / state.viewport.w;
-                        WindowManager.toggleMaximize(win.id);
-                        const newWidth = parseInt(el.style.width);
+                    if (win && (win.state === 'maximized' || el.classList.contains('window-snapped'))) {
+                        const ratio = (moveEvent.clientX - el.offsetLeft) / el.offsetWidth;
+                        if (win.state === 'maximized') {
+                            WindowManager.toggleMaximize(win.id);
+                        } else {
+                            el.classList.remove('window-snapped');
+                            if (win.oldWidth) el.style.width = win.oldWidth;
+                            if (win.oldHeight) el.style.height = win.oldHeight;
+                        }
+                        const newWidth = parseInt(el.style.width) || el.offsetWidth;
                         initialX = moveEvent.clientX;
                         el.style.left = (moveEvent.clientX - (newWidth * ratio)) + 'px';
                     }
@@ -1438,7 +1445,7 @@
             };
             const closeDragElement = () => {
                 const preview = document.getElementById('snap-preview');
-                if (preview && preview.style.display === 'block') {
+                if (preview && preview.classList.contains('visible')) {
                     const snap = preview.dataset.snap;
                     const win = state.windows.find(w => w.element === el);
                     if (win && win.state !== 'maximized' && snap !== 'top') {
@@ -2348,9 +2355,9 @@
             };
         }
 
-        const desktopIcons = document.getElementById('desktop-icons');
-        if (desktopIcons) {
-            desktopIcons.addEventListener('mousedown', (e) => {
+        const desktopMain = document.getElementById('desktop');
+        if (desktopMain) {
+            desktopMain.addEventListener('mousedown', (e) => {
                 if (e.target.id === 'desktop' || e.target.id === 'desktop-icons') {
                     document.querySelectorAll('.desktop-icon.selected').forEach(el => el.classList.remove('selected'));
                 }

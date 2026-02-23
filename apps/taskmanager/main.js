@@ -77,6 +77,7 @@ WebOS.registerApp({
                 const uptimeEl = item.querySelector('.tm-uptime');
                 const storageEl = item.querySelector('.tm-storage');
                 const nodesEl = item.querySelector('.tm-nodes');
+                if (nameEl.innerText !== p.name) nameEl.innerText = p.name;
                 if (uptimeEl.innerText !== p.uptime) {
                     const secs = parseInt(p.uptime);
                     if (secs < 60) uptimeEl.innerText = `${secs}s`;
