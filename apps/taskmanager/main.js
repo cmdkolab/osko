@@ -2,14 +2,14 @@ WebOS.registerApp({
     id: "taskmanager",
     name: "Task Manager",
     icon: "📊",
-    version: "1.1.0",
+    version: "1.2.0",
     manifest: {
         name: "Task Manager",
         icon: "📊",
         permissions: ["notifications"]
     },
     width: "400px",
-    height: "450px",
+    height: "500px",
     mount(container, api) {
         this.container = container;
         this.api = api;
@@ -17,12 +17,12 @@ WebOS.registerApp({
             <div class="task-manager">
                 <div class="tm-sysinfo">
                     <span>OS(KO) v${api.system.VERSION}</span>
-                    <span class="tm-sys-uptime">${api.system.getUptime()}</span>
+                    <span class="tm-sys-uptime"></span>
                 </div>
                 <div class="tm-header">
                     <span>Aplikacja</span>
                     <span>Uptime</span>
-                    <span>Pliki / Limit</span>
+                    <span>Pamięć</span>
                     <span>DOM</span>
                     <span>Akcja</span>
                 </div>
@@ -68,11 +68,15 @@ WebOS.registerApp({
                 const nodesEl = item.querySelector('.tm-nodes');
                 if (nameEl.innerText !== p.name) nameEl.innerText = p.name;
                 if (uptimeEl.innerText !== p.uptime) uptimeEl.innerText = p.uptime;
-                if (storageEl.innerText !== p.storage) storageEl.innerText = p.storage;
+                if (storageEl.innerText !== p.storage.split(' / ')[0]) storageEl.innerText = p.storage.split(' / ')[0];
                 if (nodesEl.innerText !== String(p.nodes)) nodesEl.innerText = p.nodes;
             });
+
             const sysUptime = container.querySelector('.tm-sys-uptime');
-            if (sysUptime) sysUptime.innerText = api.system.getUptime();
+            if (sysUptime) {
+                const totalUptime = Math.floor((Date.now() - (api.system.START_TIME || Date.now())) / 1000);
+                sysUptime.innerText = `Uptime: ${totalUptime}s`;
+            }
         };
         this._refreshInterval = api.system.setInterval(refresh, 2000);
         refresh();

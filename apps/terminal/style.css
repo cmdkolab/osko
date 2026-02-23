@@ -1,0 +1,55 @@
+.terminal-container {
+    background: rgba(15, 23, 42, 0.95);
+    color: #10b981;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    padding: 15px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 0 0 12px 12px;
+}
+
+.terminal-output {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 5px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.terminal-input-line {
+    display: flex;
+    align-items: center;
+}
+
+.terminal-prompt {
+    margin-right: 8px;
+    white-space: nowrap;
+    color: #3b82f6;
+    font-weight: 700;
+}
+
+.terminal-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #10b981;
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+}
+
+.terminal-echo {
+    color: #94a3b8;
+    margin-top: 10px;
+}
+
+.terminal-error {
+    color: #ef4444;
+}
+
+.terminal-info {
+    color: #10b981;
+}

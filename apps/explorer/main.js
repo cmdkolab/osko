@@ -7,7 +7,7 @@ WebOS.registerApp({
         icon: "📂",
         permissions: ["fs.read", "fs.write", "notifications"]
     },
-    version: "1.2.0",
+    version: "1.3.0",
     width: "500px",
     height: "400px",
     mount(container, api) {
@@ -81,10 +81,30 @@ WebOS.registerApp({
             el.tabIndex = 0;
             el.dataset.index = index;
             el.innerHTML = `
-                <div class="item-icon">${item.type === 'dir' ? '📁' : '📄'}</div>
+                <div class="item-icon"></div>
                 <div class="item-name"></div>
             `;
             el.querySelector('.item-name').textContent = item.name;
+
+            const getIcon = (item) => {
+                if (item.type === 'dir') return '📁';
+                const ext = item.name.split('.').pop()?.toLowerCase();
+                const icons = {
+                    'js': '📜',
+                    'css': '🎨',
+                    'html': '🌐',
+                    'json': '⚙️',
+                    'png': '🖼️',
+                    'jpg': '🖼️',
+                    'jpeg': '🖼️',
+                    'svg': '📐',
+                    'txt': '📄',
+                    'md': '📝'
+                };
+                return icons[ext] || '📄';
+            };
+            el.querySelector('.item-icon').textContent = getIcon(item);
+
             el.onclick = () => {
                 const nextPath = this.api.fs.join(this.currentPath, item.name);
                 if (item.type === 'dir') {
@@ -95,7 +115,7 @@ WebOS.registerApp({
                     const ext = item.name.split('.').pop()?.toLowerCase();
                     const app = this.api.system.getAssociation(ext);
                     if (app) WebOS.launchApp(app, { filePath: nextPath });
-                    else this.api.notifications.show({ title: 'Explorer', message: `Nieznany typ pliku: ${item.name}` });
+                    else this.api.notifications.show({ title: 'Explorer', message: `Nieznany typ pliku: ${item.name} ` });
                 }
             };
             el.oncontextmenu = async (e) => {
@@ -118,13 +138,13 @@ WebOS.registerApp({
                                             this.render(container);
                                         } else if (choice === 'copy') {
                                             let finalName = newName;
-                                            const ext = newName.includes('.') ? `.${newName.split('.').pop()}` : '';
+                                            const ext = newName.includes('.') ? `.${newName.split('.').pop()} ` : '';
                                             const base = newName.replace(ext, '');
                                             let counter = 1;
-                                            while (await this.api.fs.exists(this.api.fs.join(this.currentPath, `${base} (kopia${counter > 1 ? ' ' + counter : ''})${ext}`))) {
+                                            while (await this.api.fs.exists(this.api.fs.join(this.currentPath, `${base} (kopia${counter > 1 ? ' ' + counter : ''})${ext} `))) {
                                                 counter++;
                                             }
-                                            finalName = `${base} (kopia${counter > 1 ? ' ' + counter : ''})${ext}`;
+                                            finalName = `${base} (kopia${counter > 1 ? ' ' + counter : ''})${ext} `;
                                             await this.api.fs.rename(fullPath, this.api.fs.join(this.currentPath, finalName));
                                             this.render(container);
                                         }

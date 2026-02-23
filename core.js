@@ -96,7 +96,7 @@
     const PersistenceManager = {
         PREFIX: 'OSKO:',
         START_TIME: Date.now(),
-        VERSION: '1.0.7',
+        VERSION: '1.2.0',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -122,7 +122,8 @@
         persistenceKey: 'SYSTEM_STATE',
         deferredRestoration: null,
         windowStack: [],
-        viewport: { w: window.innerWidth, h: window.innerHeight }
+        viewport: { w: window.innerWidth, h: window.innerHeight },
+        positionsLoaded: false
     };
     const deepMerge = (target, source) => {
         for (const key in source) {
@@ -151,7 +152,11 @@
         root: {
             'home': {
                 'user': {
-                    'documents': {},
+                    'Desktop': {},
+                    'Documents': {},
+                    'Pictures': {},
+                    'Music': {},
+                    'Videos': {},
                     'settings': {
                         'wallpaper.txt': { content: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)', owner: 'system', size: 48, mtime: Date.now() },
                         'theme.txt': { content: 'default', owner: 'system', size: 7, mtime: Date.now() }
@@ -330,9 +335,10 @@
             return node;
         },
 
-        _resolve(path) {
+        _resolve(path, noClone = false) {
             const node = this._resolveInternal(path);
             if (node === null) return null;
+            if (noClone) return node;
             try {
                 if (typeof structuredClone === 'function') {
                     return structuredClone(node);
@@ -365,6 +371,14 @@
                 }
                 return true;
             }
+
+            const node = this._resolve(path, true);
+            if (node && node.mode !== undefined) {
+                const m = node.mode;
+                if (mode === 'r' && !(m & 0o444)) return false;
+                if (mode === 'w' && !(m & 0o222) && appId !== 'system') return false;
+            }
+
             if (path.startsWith('/var/apps/')) {
                 return path.startsWith(`/var/apps/${appId}`);
             }
@@ -417,7 +431,7 @@
             for (let i = 0; i < parts.length - 1; i++) {
                 const part = parts[i];
                 if (!current[part]) {
-                    current[part] = { owner: appId || 'system', mtime: Date.now() };
+                    current[part] = { owner: appId || 'system', mtime: Date.now(), mode: 0o755 };
                 } else if (current[part].content !== undefined || typeof current[part] === 'string') {
                     SysLog.log('ERR', `Structural Integrity Violation: ${part} is a file`, appId);
                     return false;
@@ -435,7 +449,8 @@
                 content: dataStr,
                 owner,
                 size: newSize,
-                mtime: Date.now()
+                mtime: Date.now(),
+                mode: (current[nameInDir] && current[nameInDir].mode !== undefined) ? current[nameInDir].mode : 0o644
             };
 
             const sizeDiff = owner === 'system' ? 0 : (newSize - oldSize);
@@ -488,6 +503,16 @@
             }
         },
 
+        chmod(path, mode, appId) {
+            path = this.join(path);
+            const node = this._resolve(path, true);
+            if (!node) return false;
+            if (appId !== 'system' && appId !== 'kernel' && node.owner !== appId) return false;
+            node.mode = parseInt(mode);
+            this.save();
+            return true;
+        },
+
         async mkdir(path, appId, manifest) {
             path = this.join(path);
             if (!this.checkAccess(path, appId, 'w', manifest)) {
@@ -495,7 +520,7 @@
                 return false;
             }
             if (this.exists(path)) {
-                const node = this._resolve(path);
+                const node = this._resolve(path, true);
                 if (node && (typeof node === 'string' || node.content !== undefined)) return false; // File exists
                 return true; // Directory exists
             }
@@ -503,7 +528,7 @@
             let current = this.root;
             for (const part of parts) {
                 if (!current[part]) {
-                    current[part] = { owner: appId || 'system', mtime: Date.now() };
+                    current[part] = { owner: appId || 'system', mtime: Date.now(), mode: 0o755 };
                 } else if (current[part].content !== undefined || typeof current[part] === 'string') {
                     SysLog.log('ERR', `Structural Integrity Violation: ${part} is a file`, appId);
                     return false;
@@ -517,6 +542,29 @@
             EventBus.publish('vfs:changed', { from: appId || 'system', data: { path, type: 'mkdir' } });
             this._notifyWatchers(path);
             return true;
+        },
+
+        find(query, appId, manifest) {
+            const results = [];
+            const q = (query || '').toLowerCase();
+            if (!q) return [];
+            const scan = (node, currentPath) => {
+                if (!node || typeof node !== 'object') return;
+                for (const name in node) {
+                    if (['owner', 'mtime', 'size', 'content'].includes(name)) continue;
+                    const path = this.join(currentPath, name);
+                    if (!this.checkAccess(path, appId, 'r', manifest)) continue;
+                    if (name.toLowerCase().includes(q)) {
+                        const isFile = typeof node[name] === 'string' || (node[name] && node[name].content !== undefined);
+                        results.push({ name, path, type: isFile ? 'file' : 'dir' });
+                    }
+                    if (typeof node[name] === 'object' && node[name].content === undefined) {
+                        scan(node[name], path);
+                    }
+                }
+            };
+            scan(this.root, '/');
+            return results;
         },
 
         async remove(path, appId, manifest) {
@@ -696,7 +744,7 @@
             if (this._buffer === null) {
                 this._buffer = '';
                 try {
-                    const savedLog = VFS.read('/var/log/syslog');
+                    const savedLog = VFS.read('/var/log/syslog', 'system');
                     if (savedLog) this._buffer = savedLog + this._buffer;
                 } catch (e) { }
             }
@@ -710,7 +758,7 @@
                 if (this._buffer !== null && !this._isWriting && !this._failedOnce) {
                     this._isWriting = true;
                     try {
-                        await VFS.write('/var/log/syslog', this._buffer);
+                        await VFS.write('/var/log/syslog', this._buffer, 'system');
                     } catch (e) {
                         console.error("[Kernel] SysLog Persistence Failed.", e);
                         this._failedOnce = true;
@@ -744,6 +792,14 @@
             if (state.deferredRestoration) {
                 WebOS.flushDeferredRestoration();
             }
+        },
+        async logout() {
+            SysLog.log('INFO', 'User logout initiated');
+            await WebOS.killAll();
+            await VFS.saveImmediate();
+            state.isLocked = true;
+            document.body.classList.add('system-locked');
+            location.reload();
         },
         showLockScreen() {
             if (document.getElementById('lock-screen')) return;
@@ -818,6 +874,59 @@
             }, 3000);
         }
     };
+    const AudioEngine = {
+        ctx: null,
+        enabled: true,
+        init() {
+            try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { }
+        },
+        async play(type) {
+            if (!this.enabled || !this.ctx) return;
+            if (this.ctx.state === 'suspended') {
+                try { await this.ctx.resume(); } catch (e) { return; }
+            }
+
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            const now = this.ctx.currentTime;
+
+            if (type === 'startup') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.5);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            } else if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'notify') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.setValueAtTime(1100, now + 0.1);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        }
+    };
     const Permissions = {
         check(manifest, permission) {
             if (!manifest.permissions) return false;
@@ -859,6 +968,7 @@
             return {
                 system: {
                     VERSION: PersistenceManager.VERSION,
+                    START_TIME: PersistenceManager.START_TIME,
                     getUptime: () => {
                         const seconds = Math.floor((Date.now() - PersistenceManager.START_TIME) / 1000);
                         if (seconds < 60) return `${seconds}s`;
@@ -954,7 +1064,7 @@
                     },
                     showContextMenu: (e, items) => ContextMenu.show(e, items),
                     lock: () => SessionManager.lock(),
-                    getAssociation: (ext) => VFS.read(`/sys/associations/${ext}`),
+                    getAssociation: (ext) => VFS.read(`/sys/associations/${ext}`, 'system'),
                     setTheme: (name) => ThemeEngine.setTheme(name),
                     setWallpaper: (val) => ThemeEngine.setWallpaper(val)
                 },
@@ -965,11 +1075,12 @@
                     async mkdir(path) { return check('fs.write') ? await VFS.mkdir(path, appId, manifest) : null; },
                     async remove(path) { return check('fs.write') ? await VFS.remove(path, appId, manifest) : null; },
                     async rename(oldPath, newPath) { return check('fs.write') ? await VFS.rename(oldPath, newPath, appId, manifest) : null; },
+                    find(query) { return VFS.find(query, appId, manifest); },
                     join: (...args) => VFS.join(...args),
                     dirname: (path) => VFS.dirname(path),
                     basename: (path) => VFS.basename(path),
                     split: (path) => VFS.split(path),
-                    exists(path) { return VFS.exists(path); },
+                    exists(path) { return VFS.exists(path, appId, manifest); },
                     QUOTA_PER_APP: VFS.QUOTA_PER_APP,
                     watch: (path, cb) => {
                         const unsub = VFS.watch(path, cb);
@@ -983,6 +1094,9 @@
                 },
                 notifications: {
                     show: (options) => check('notifications') ? Notifications.show(options) : null
+                },
+                audio: {
+                    play: (type) => AudioEngine.play(type)
                 },
                 ui: WebOS.ui,
                 window: {
@@ -1012,6 +1126,12 @@
             const menu = document.createElement('div');
             menu.className = 'context-menu';
             items.forEach(item => {
+                if (item.type === 'separator') {
+                    const sep = document.createElement('div');
+                    sep.className = 'context-menu-separator';
+                    menu.appendChild(sep);
+                    return;
+                }
                 const el = document.createElement('div');
                 el.className = 'context-menu-item';
                 el.innerText = item.label;
@@ -1343,6 +1463,7 @@
         }
     };
     global.WebOS = {
+        state,
         installApp(folderPath) {
             console.log(`System: Installing app from ${folderPath}...`);
             const link = document.createElement('link');
@@ -1471,6 +1592,22 @@
                 this.saveState();
             }
         },
+        shutdown() {
+            SysLog.log('WARN', 'System shutdown initiated', 'WebOS');
+            const overlay = document.createElement('div');
+            overlay.id = 'shutdown-overlay';
+            overlay.innerHTML = `
+                <div class="shutdown-content">
+                    <div class="shutdown-icon">⏻</div>
+                    <h1>System wyłączony</h1>
+                    <p>Wszystkie procesy zostały zakończone bezpiecznie.</p>
+                    <button onclick="window.location.reload()" class="restart-btn">Uruchom ponownie</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            this.killAll();
+            VFS.saveImmediate();
+        },
         async killAll() {
             for (const p of [...state.processes]) {
                 await this.killApp(p.appId);
@@ -1480,14 +1617,37 @@
         _desktopPositions: {},
         async _loadDesktopPositions() {
             try {
-                const data = await VFS.read('/home/user/settings/desktop.json');
-                if (data) this._desktopPositions = JSON.parse(data);
-            } catch (e) { this._desktopPositions = {}; }
+                const data = await VFS.read('/home/user/settings/desktop.json', 'system');
+                if (data) {
+                    this._desktopPositions = JSON.parse(data);
+                    SysLog.log('DEBUG', `Loaded ${Object.keys(this._desktopPositions).length} icon positions`, 'Desktop');
+                }
+            } catch (e) {
+                SysLog.log('ERR', `Failed to load desktop positions: ${e.message}`, 'Desktop');
+                this._desktopPositions = {};
+            } finally {
+                state.positionsLoaded = true;
+                EventBus.publish('system:positions-ready');
+            }
         },
-        _saveDesktopPositions() {
-            VFS.write('/home/user/settings/desktop.json', JSON.stringify(this._desktopPositions), 'system');
+        async _saveDesktopPositions() {
+            try {
+                const data = JSON.stringify(this._desktopPositions);
+                await VFS.write('/home/user/settings/desktop.json', data, 'system');
+                await VFS.saveImmediate();
+                SysLog.log('DEBUG', `Saved ${Object.keys(this._desktopPositions).length} icon positions`, 'Desktop');
+            } catch (e) {
+                SysLog.log('ERR', `Failed to save desktop positions: ${e.message}`, 'Desktop');
+            }
         },
         createDesktopIcon(app) {
+            if (!state.positionsLoaded) {
+                const token = EventBus.subscribe('system:positions-ready', () => {
+                    EventBus.unsubscribe('system:positions-ready', token);
+                    this.createDesktopIcon(app);
+                });
+                return;
+            }
             const container = document.getElementById('desktop-icons');
             if (!container) {
                 setTimeout(() => this.createDesktopIcon(app), 50);
@@ -1506,10 +1666,11 @@
                 icon.style.left = pos.x + 'px';
                 icon.style.top = pos.y + 'px';
             } else {
-                // Default grid layout if no pos
+                // Default grid layout if no pos (horizontal rows)
                 const count = container.querySelectorAll('.desktop-icon').length;
-                const col = Math.floor(count / 6);
-                const row = count % 6;
+                const columns = Math.floor(container.clientWidth / 100) || 1;
+                const col = count % columns;
+                const row = Math.floor(count / columns);
                 icon.style.left = (20 + col * 100) + 'px';
                 icon.style.top = (20 + row * 120) + 'px';
             }
@@ -1563,7 +1724,10 @@
                 document.addEventListener('mouseup', onMouseUp);
             };
 
-            icon.addEventListener('dblclick', () => this.launchApp(app.id));
+            icon.ondblclick = () => {
+                AudioEngine.play('click');
+                this.launchApp(app.id);
+            };
             container.appendChild(icon);
         },
         _taskbarCache: {},
@@ -1662,7 +1826,7 @@
             const data = deferredData ? { openApps: deferredData } : (await PersistenceManager.get(state.persistenceKey));
 
             // Mandatory startup apps from /sys/startup.json
-            const startupConfigStr = VFS.read('/sys/startup.json');
+            const startupConfigStr = await VFS.read('/sys/startup.json', 'system');
             let startupAppsList = [];
             try { startupAppsList = JSON.parse(startupConfigStr || '[]'); } catch (e) { }
 
@@ -1778,6 +1942,132 @@
                         };
                     });
                     overlay.style.display = 'flex';
+                    setTimeout(() => overlay.classList.add('active'), 10);
+                } else {
+                    overlay.classList.remove('active');
+                    setTimeout(() => overlay.style.display = 'none', 300);
+                }
+            },
+            toggleSearch(force) {
+                let overlay = document.getElementById('search-overlay');
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.id = 'search-overlay';
+                    overlay.innerHTML = `
+                        <div class="search-container glass-panel">
+                            <div class="search-input-wrapper">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" class="search-input" placeholder="Szukaj aplikacji i plików...">
+                            </div>
+                            <div class="search-results"></div>
+                        </div>
+                    `;
+                    document.body.appendChild(overlay);
+
+                    const input = overlay.querySelector('.search-input');
+                    input.oninput = (e) => {
+                        const query = e.target.value;
+                        const results = overlay.querySelector('.search-results');
+                        if (!query) {
+                            results.innerHTML = '';
+                            return;
+                        }
+
+                        const appResults = Object.entries(state.apps)
+                            .filter(([id, app]) => app.name.toLowerCase().includes(query.toLowerCase()))
+                            .map(([id, app]) => ({ type: 'app', id, name: app.name, icon: app.icon }));
+
+                        const fileResults = VFS.find(query, 'system'); // System can search all for spotlight
+
+                        let allResults = [];
+                        if (/^[0-9+\-*/().\s]+$/.test(query) && /[0-9]/.test(query)) {
+                            try {
+                                const res = Function('"use strict";return (' + query + ')')();
+                                if (typeof res === 'number') {
+                                    allResults.push({ type: 'math', name: `= ${res}`, id: res, icon: '🧮', path: 'Wynik obliczenia' });
+                                }
+                            } catch (e) { }
+                        }
+                        allResults = [...allResults, ...appResults, ...fileResults.slice(0, 10)];
+                        results.innerHTML = allResults.map(res => `
+                            <div class="search-item" data-type="${res.type}" data-id="${res.id || res.path}">
+                                <span class="res-icon">${res.icon || (res.type === 'dir' ? '📁' : '📄')}</span>
+                                <span class="res-name">${res.name}</span>
+                                <span class="res-path">${res.path || 'Aplikacja'}</span>
+                            </div>
+                        `).join('');
+
+                        results.querySelectorAll('.search-item').forEach(item => {
+                            item.onclick = () => {
+                                const type = item.dataset.type;
+                                const id = item.dataset.id;
+                                if (type === 'app') {
+                                    WebOS.launchApp(id);
+                                } else if (type === 'file') {
+                                    const ext = id.split('.').pop().toLowerCase();
+                                    const app = WebOS.getAssociation(ext);
+                                    if (app) WebOS.launchApp(app, { filePath: id });
+                                    else WebOS.launchApp('explorer', { filePath: VFS.dirname(id) });
+                                } else if (type === 'math') {
+                                    input.value = id;
+                                    input.dispatchEvent(new Event('input'));
+                                }
+                                if (type !== 'math') this.toggleSearch(false);
+                            };
+                        });
+                    };
+
+                    overlay.onclick = (e) => {
+                        if (e.target === overlay) this.toggleSearch(false);
+                    };
+                }
+
+                const isActive = force !== undefined ? force : !overlay.classList.contains('active');
+                if (isActive) {
+                    overlay.style.display = 'flex';
+                    const input = overlay.querySelector('.search-input');
+                    input.value = '';
+                    overlay.querySelector('.search-results').innerHTML = '';
+                    setTimeout(() => {
+                        overlay.classList.add('active');
+                        input.focus();
+                    }, 10);
+                } else {
+                    overlay.classList.remove('active');
+                    setTimeout(() => overlay.style.display = 'none', 300);
+                }
+            },
+            toggleCalendar(force) {
+                let overlay = document.getElementById('calendar-overlay');
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.id = 'calendar-overlay';
+                    overlay.className = 'glass-panel';
+                    document.body.appendChild(overlay);
+                }
+                const isActive = force !== undefined ? force : !overlay.classList.contains('active');
+                if (isActive) {
+                    const now = new Date();
+                    const month = now.toLocaleString('pl-PL', { month: 'long' });
+                    const year = now.getFullYear();
+                    const daysInMonth = new Date(year, now.getMonth() + 1, 0).getDate();
+                    const firstDay = (new Date(year, now.getMonth(), 1).getDay() + 6) % 7;
+
+                    let daysHtml = '';
+                    for (let i = 0; i < firstDay; i++) daysHtml += '<div class="cal-day empty"></div>';
+                    for (let i = 1; i <= daysInMonth; i++) {
+                        const isToday = i === now.getDate() ? 'today' : '';
+                        daysHtml += `<div class="cal-day ${isToday}">${i}</div>`;
+                    }
+
+                    overlay.innerHTML = `
+                        <div class="cal-header">${month} ${year}</div>
+                        <div class="cal-grid">
+                            <div class="cal-weekday">Pn</div><div class="cal-weekday">Wt</div><div class="cal-weekday">Śr</div><div class="cal-weekday">Cz</div><div class="cal-weekday">Pt</div><div class="cal-weekday">So</div><div class="cal-weekday">Nd</div>
+                            ${daysHtml}
+                        </div>
+                    `;
+                    overlay.style.display = 'block';
                     setTimeout(() => overlay.classList.add('active'), 10);
                 } else {
                     overlay.classList.remove('active');
@@ -1914,10 +2204,23 @@
             await VFS.write('/home/user/settings/wallpaper.txt', sanitized, 'system');
         },
         async init() {
-            const savedTheme = await VFS.read('/home/user/settings/theme.txt');
-            if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
-            const savedWall = await VFS.read('/home/user/settings/wallpaper.txt');
+            const savedTheme = await VFS.read('/home/user/settings/theme.txt', 'system');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                this._manualTheme = true;
+            } else {
+                this.applyAutoTheme();
+            }
+            const savedWall = await VFS.read('/home/user/settings/wallpaper.txt', 'system');
             if (savedWall) await this.setWallpaper(savedWall);
+
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (!this._manualTheme) this.applyAutoTheme();
+            });
+        },
+        applyAutoTheme() {
+            const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
         }
     };
     window.ThemeEngine = ThemeEngine;
@@ -1954,6 +2257,8 @@
             }
         };
         await VFS.init();
+        AudioEngine.init();
+        AudioEngine.play('startup');
         if (DBWrapper._isFallback) {
             WebOS.ui.showDialog({
                 message: 'Twoja przeglądarka nie obsługuje IndexedDB lub dostęp został zablokowany. System będzie działać w trybie "tylko do odczytu" (zmiany nie zostaną zapisane po odświeżeniu strony).',
@@ -1990,8 +2295,24 @@
         setInterval(() => {
             const now = new Date();
             const clockEl = document.getElementById('clock');
-            if (clockEl) clockEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            if (clockEl) {
+                clockEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                clockEl.title = now.toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                if (!clockEl.onclick) {
+                    clockEl.onclick = (e) => {
+                        e.stopPropagation();
+                        WebOS.ui.toggleCalendar();
+                    };
+                }
+            }
         }, 1000);
+
+        document.addEventListener('mousedown', (e) => {
+            const cal = document.getElementById('calendar-overlay');
+            if (cal && cal.classList.contains('active') && !e.target.closest('#calendar-overlay') && !e.target.closest('#clock')) {
+                WebOS.ui.toggleCalendar(false);
+            }
+        });
         const desktopEl = document.getElementById('desktop');
         if (desktopEl) {
             desktopEl.oncontextmenu = (e) => {
@@ -2002,7 +2323,8 @@
                     { label: 'Zablokuj system', action: () => SessionManager.lock() },
                     { label: 'Ustawienia', action: () => WebOS.launchApp('settings') },
                     { label: 'Nowa notatka', action: () => WebOS.launchApp('notes') },
-                    { label: 'Zamknij wszystkie', action: () => WebOS.killAll() }
+                    { label: 'Zamknij wszystkie', action: () => WebOS.killAll() },
+                    { label: 'Wyłącz', action: () => WebOS.shutdown() }
                 ]);
             };
         }
@@ -2044,9 +2366,34 @@
             e.preventDefault();
             const stack = state.windowStack || [];
             if (stack.length < 2) return;
-            // Focus second most recent
             const nextId = stack[stack.length - 2];
             WindowManager.focus(nextId);
+        }
+        if ((e.ctrlKey && e.code === 'Space') || (e.metaKey && e.key === 'k')) {
+            e.preventDefault();
+            WebOS.ui.toggleSearch();
+        }
+        if (e.altKey && (e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'ArrowUp' || e.code === 'ArrowDown')) {
+            if (state.focusedWindow) {
+                e.preventDefault();
+                const win = state.windows.find(w => w.id === state.focusedWindow);
+                if (!win) return;
+                const el = win.element;
+                if (e.code === 'ArrowUp') {
+                    if (win.state !== 'maximized') WindowManager.toggleMaximize(win.id);
+                } else if (e.code === 'ArrowDown') {
+                    if (win.state === 'maximized') WindowManager.toggleMaximize(win.id);
+                    else WindowManager.minimize(win.id);
+                } else if (e.code === 'ArrowLeft') {
+                    if (win.state === 'maximized') WindowManager.toggleMaximize(win.id);
+                    Object.assign(el.style, { top: '0', left: '0', width: '50%', height: 'calc(100vh - 40px)' });
+                    win.element.classList.add('window-snapped');
+                } else if (e.code === 'ArrowRight') {
+                    if (win.state === 'maximized') WindowManager.toggleMaximize(win.id);
+                    Object.assign(el.style, { top: '0', left: '50%', width: '50%', height: 'calc(100vh - 40px)' });
+                    win.element.classList.add('window-snapped');
+                }
+            }
         }
     });
 

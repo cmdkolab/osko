@@ -18,6 +18,7 @@ WebOS.registerApp({
             <div class="notes-toolbar">
                 <button class="notes-btn new-btn">Nowy</button>
                 <button class="notes-btn save-btn">Zapisz</button>
+                <button class="notes-btn export-btn">Eksportuj</button>
                 <span class="notes-status">Niezapisany</span>
             </div>
             <textarea class="notes-editor" placeholder="Zacznij pisać..."></textarea>
@@ -26,6 +27,7 @@ WebOS.registerApp({
         const status = container.querySelector('.notes-status');
         const newBtn = container.querySelector('.new-btn');
         const saveBtn = container.querySelector('.save-btn');
+        const exportBtn = container.querySelector('.export-btn');
         this._autoSaveTimer = null;
         textarea.oninput = () => {
             status.innerText = 'Zapisuję...';
@@ -88,6 +90,15 @@ WebOS.registerApp({
             } else {
                 await this.saveContent();
             }
+        };
+        exportBtn.onclick = () => {
+            const blob = new Blob([textarea.value], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = this.currentPath ? this.api.fs.basename(this.currentPath) : 'notatka.txt';
+            a.click();
+            URL.revokeObjectURL(url);
         };
         if (params && params.filePath) {
             this.openFile(params.filePath, textarea, status);
