@@ -1,0 +1,11 @@
+{
+    "id": "syslog",
+    "name": "System Log",
+    "icon": "📜",
+    "version": "1.0.0",
+    "permissions": [
+        "fs.read",
+        "notifications"
+    ],
+    "main": "main.js"
+}

@@ -1,0 +1,97 @@
+.calc-app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(20px);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    padding: 16px;
+    gap: 12px;
+}
+
+.calc-display {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 80px;
+}
+
+.calc-history {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+    min-height: 20px;
+    margin-bottom: 4px;
+}
+
+.calc-current {
+    font-size: 2rem;
+    font-weight: 300;
+    color: white;
+    word-break: break-all;
+}
+
+.calc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    flex-grow: 1;
+}
+
+.calc-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.calc-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+.calc-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(1px);
+}
+
+.calc-btn.op {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.calc-btn.op:hover {
+    background: rgba(59, 130, 246, 0.3);
+}
+
+.calc-btn.eq {
+    background: rgba(59, 130, 246, 0.3);
+    color: white;
+    border-color: var(--accent-color);
+    grid-row: span 2;
+    font-weight: bold;
+}
+
+.calc-btn.eq:hover {
+    background: var(--accent-color);
+}
+
+.calc-btn.clear {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.calc-btn.clear:hover {
+    background: rgba(239, 68, 68, 0.2);
+}

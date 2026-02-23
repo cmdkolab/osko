@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OS(KO) - Browser OS</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <main id="desktop" role="main">
+        <div id="desktop-icons" role="list"></div>
+        <div id="window-layer"></div>
+    </main>
+    <nav id="taskbar" role="navigation">
+        <div class="taskbar-blur"></div>
+        <div id="switcher-btn" class="switcher-btn" title="Widok zadań (Multitasking)">+</div>
+        <div id="running-apps" role="list"></div>
+        <div id="system-tray">
+            <span id="hdd-usage" class="tray-item" title="Zajętość dysku">0 B</span>
+            <span id="clock" role="timer">00:00:00</span>
+        </div>
+    </nav>
+    <div id="notification-center" role="log" aria-live="polite"></div>
+    <script src="core.js"></script>
+    <script>
+        WebOS.installApp('apps/about');
+        WebOS.installApp('apps/notes');
+        WebOS.installApp('apps/explorer');
+        WebOS.installApp('apps/settings');
+        WebOS.installApp('apps/taskmanager');
+        WebOS.installApp('apps/syslog');
+        WebOS.installApp('apps/calculator');
+    </script>
+</body>
+
+</html>

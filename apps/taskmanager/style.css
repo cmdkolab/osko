@@ -1,0 +1,62 @@
+.task-manager {
+    padding: 10px;
+    font-size: 11px;
+}
+
+.tm-sysinfo {
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.tm-name {
+    font-weight: 500;
+}
+
+.tm-uptime,
+.tm-storage,
+.tm-nodes {
+    opacity: 0.7;
+}
+
+.tm-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+    font-weight: bold;
+    padding: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    text-transform: uppercase;
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+.tm-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+    padding: 10px;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tm-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tm-kill-btn {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    transition: all 0.2s;
+}
+
+.tm-kill-btn:hover {
+    background: #ef4444;
+    color: white;
+}

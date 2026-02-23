@@ -1,0 +1,9 @@
+{
+    "id": "explorer",
+    "name": "Explorer",
+    "icon": "📂",
+    "permissions": [
+        "fs.read",
+        "notifications"
+    ]
+}

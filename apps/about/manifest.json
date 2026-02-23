@@ -1,0 +1,8 @@
+{
+    "id": "about",
+    "name": "About",
+    "icon": "ℹ️",
+    "permissions": [
+        "notifications"
+    ]
+}
