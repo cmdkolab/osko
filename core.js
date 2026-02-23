@@ -96,7 +96,7 @@
     const PersistenceManager = {
         PREFIX: 'OSKO:',
         START_TIME: Date.now(),
-        VERSION: '1.4.0',
+        VERSION: '1.6.0',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -1043,6 +1043,14 @@
                             );
                         }
                     },
+                    window: {
+                        focus: () => {
+                            const proc = _getProc();
+                            if (proc && proc.windowId) {
+                                WindowManager.focus(proc.windowId);
+                            }
+                        }
+                    },
                     getStats: () => {
                         const win = state.windows.find(w => w.appId === appId);
                         const proc = _getProc();
@@ -1612,10 +1620,22 @@
                 this.saveState();
             }
         },
-        shutdown() {
+        async shutdown() {
             SysLog.log('WARN', 'System shutdown initiated', 'WebOS');
             const overlay = document.createElement('div');
             overlay.id = 'shutdown-overlay';
+            overlay.innerHTML = `
+                <div class="shutdown-content">
+                    <div class="shutdown-icon">⏻</div>
+                    <h1>Trwa wyłączanie...</h1>
+                    <p>Wszystkie procesy są bezpiecznie kończone.</p>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            await this.killAll();
+            await VFS.saveImmediate();
+
             overlay.innerHTML = `
                 <div class="shutdown-content">
                     <div class="shutdown-icon">⏻</div>
@@ -1624,9 +1644,6 @@
                     <button onclick="window.location.reload()" class="restart-btn">Uruchom ponownie</button>
                 </div>
             `;
-            document.body.appendChild(overlay);
-            this.killAll();
-            VFS.saveImmediate();
         },
         async killAll() {
             for (const p of [...state.processes]) {
@@ -1798,6 +1815,16 @@
                         } else {
                             WindowManager.focus(proc.windowId);
                         }
+                    };
+                    item.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        WebOS.ui.showContextMenu(e, [
+                            {
+                                label: 'Zakończ',
+                                action: () => WebOS.killApp(proc.appId)
+                            }
+                        ]);
                     };
                     container.appendChild(item);
                     this._taskbarCache[proc.pid] = item;
@@ -2040,6 +2067,40 @@
                                 if (type !== 'math') this.toggleSearch(false);
                             };
                         });
+
+                        // Select first item by default
+                        const firstItem = results.querySelector('.search-item');
+                        if (firstItem) Object.assign(firstItem.style, { background: 'rgba(255,255,255,0.1)', outline: '1px solid rgba(255,255,255,0.2)' });
+                    };
+
+                    input.onkeydown = (e) => {
+                        const items = Array.from(overlay.querySelectorAll('.search-item'));
+                        if (!items.length) return;
+                        let currentIndex = items.findIndex(item => item.style.background !== '');
+
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            if (currentIndex < items.length - 1) currentIndex++;
+                            else currentIndex = 0;
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            if (currentIndex > 0) currentIndex--;
+                            else currentIndex = items.length - 1;
+                        } else if (e.key === 'Enter' && currentIndex !== -1) {
+                            items[currentIndex].click();
+                            return;
+                        } else {
+                            return; // Not an arrow/enter key
+                        }
+
+                        items.forEach(item => {
+                            item.style.background = '';
+                            item.style.outline = '';
+                        });
+                        if (currentIndex !== -1) {
+                            Object.assign(items[currentIndex].style, { background: 'rgba(255,255,255,0.1)', outline: '1px solid rgba(255,255,255,0.2)' });
+                            items[currentIndex].scrollIntoView({ block: 'nearest' });
+                        }
                     };
 
                     overlay.onclick = (e) => {
@@ -2303,6 +2364,11 @@
         } else {
             await WebOS.restoreState();
         }
+        const searchBtn = document.getElementById('search-btn');
+        if (searchBtn) {
+            searchBtn.onclick = () => WebOS.ui.toggleSearch();
+        }
+
         const switcherBtn = document.getElementById('switcher-btn');
         if (switcherBtn) {
             switcherBtn.onclick = () => WebOS.ui.toggleSwitcher();

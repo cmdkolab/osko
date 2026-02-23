@@ -7,7 +7,7 @@ WebOS.registerApp({
         icon: "📂",
         permissions: ["fs.read", "fs.write", "notifications"]
     },
-    version: "1.4.0",
+    version: "1.6.0",
     width: "500px",
     height: "400px",
     mount(container, api) {

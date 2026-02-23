@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "terminal",
     name: "Terminal",
     icon: "🐚",
-    version: "1.4.0",
+    version: "1.6.0",
     manifest: {
         name: "Terminal",
         icon: "🐚",
@@ -32,7 +32,7 @@ WebOS.registerApp({
         this.prompt = container.querySelector('.terminal-prompt');
 
         this.updatePrompt();
-        this.print("OS(KO) Terminal v1.4.0");
+        this.print("OS(KO) Terminal v1.6.0");
         this.print("Wpisz 'help', aby uzyskać listę komend.");
 
         this.input.onkeydown = (e) => {
@@ -85,7 +85,16 @@ WebOS.registerApp({
 
         switch (cmd) {
             case 'help':
-                this.print("Dostępne komendy: ls, cd, cat, edit, mkdir, rm, clear, help, version, play");
+                this.print("Dostępne komendy: ls, cd, cat, edit, mkdir, rm, clear, echo, date, pwd, help, version, play");
+                break;
+            case 'echo':
+                this.print(args.join(' '));
+                break;
+            case 'date':
+                this.print(new Date().toString());
+                break;
+            case 'pwd':
+                this.print(this.cwd);
                 break;
             case 'ls':
                 try {

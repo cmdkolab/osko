@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "notes",
     name: "Notes",
     icon: "📝",
-    version: "1.1.0",
+    version: "1.6.0",
     manifest: {
         name: "Notes",
         icon: "📝",
@@ -42,13 +42,16 @@ WebOS.registerApp({
                 this._autoSaveTimer = null;
             }, 800);
         };
-        textarea.onkeydown = (e) => {
+        textarea.onkeydown = async (e) => {
             if (e.key === 'Tab') {
                 e.preventDefault();
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
                 textarea.value = textarea.value.substring(0, start) + "\t" + textarea.value.substring(end);
                 textarea.selectionStart = textarea.selectionEnd = start + 1;
+            } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                await saveBtn.onclick();
             }
         };
         newBtn.onclick = async () => {

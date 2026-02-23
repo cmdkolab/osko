@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "syslog",
     name: "System Log",
     icon: "📜",
-    version: "1.0.0",
+    version: "1.6.0",
     manifest: {
         name: "System Log",
         icon: "📜",

@@ -248,7 +248,8 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
-.switcher-btn {
+.switcher-btn,
+.search-btn {
     width: 24px;
     height: 24px;
     background: rgba(255, 255, 255, 0.2);
@@ -267,7 +268,13 @@ body {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
-.switcher-btn:hover {
+.search-btn {
+    font-size: 14px;
+    font-weight: normal;
+}
+
+.switcher-btn:hover,
+.search-btn:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
 }
