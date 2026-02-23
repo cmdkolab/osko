@@ -7,7 +7,7 @@ WebOS.registerApp({
         icon: "🧮",
         permissions: []
     },
-    version: "1.0.0",
+    version: "1.0.1",
     width: "320px",
     height: "460px",
     mount(container, api) {
@@ -91,6 +91,7 @@ WebOS.registerApp({
                     expr += ')';
                     openParens--;
                 }
+                expr = expr.replace(/(^|\()\-(\d+\.\d+|\d+)/g, '$1(0-$2)');
                 const result = safeEval(expr);
                 if (!isFinite(result) || isNaN(result)) throw new Error('Math Error');
                 history = current + ' =';

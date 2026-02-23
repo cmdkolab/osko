@@ -96,7 +96,7 @@
     const PersistenceManager = {
         PREFIX: 'OSKO:',
         START_TIME: Date.now(),
-        VERSION: '1.0.0',
+        VERSION: '1.0.3',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -137,10 +137,16 @@
     const deepMergeSync = (target, source) => {
         deepMerge(target, source);
         for (const key in target) {
-            if (!(key in source)) delete target[key];
+            if (!(key in source)) {
+                delete target[key];
+            } else if (target[key] && typeof target[key] === 'object' && target[key].content === undefined
+                && source[key] && typeof source[key] === 'object' && source[key].content === undefined) {
+                deepMergeSync(target[key], source[key]);
+            }
         }
     };
     const VFS = {
+        QUOTA_PER_APP: 10 * 1024 * 1024, // 10MB
         persistenceKey: 'VFS:ROOT',
         root: {
             'home': {
@@ -270,6 +276,7 @@
             if (this._isTransaction) return;
             if (this._saveTimer) clearTimeout(this._saveTimer);
             return new Promise((resolve) => {
+                this._pendingSaveResolves.push(resolve);
                 this._saveTimer = setTimeout(async () => {
                     try {
                         await PersistenceManager.set(this.persistenceKey, this.root);
@@ -280,7 +287,6 @@
                         this._saveTimer = null;
                         const resolves = this._pendingSaveResolves.splice(0);
                         resolves.forEach(r => r());
-                        resolve();
                     }
                 }, 500);
             });
@@ -378,11 +384,26 @@
         },
 
         async write(path, data, appId, manifest) {
-            path = this.join(path);
             if (!this.checkAccess(path, appId, 'w', manifest)) {
                 SysLog.log('ERR', `Permission Denied (write): ${path}`, appId);
                 return false;
             }
+
+            const name = path.split('/').filter(p => p).pop();
+            const dataStr = typeof data === 'string' ? data : JSON.stringify(data);
+            const newSize = dataStr.length;
+            const oldSize = (this._resolve(path) || {}).size || 0;
+            const owner = appId || 'system';
+
+            if (owner !== 'system') {
+                const currentUsage = this.calculateUsage(owner);
+                if (currentUsage - oldSize + newSize > this.QUOTA_PER_APP) {
+                    SysLog.log('ERR', `Quota Exceeded: ${owner} tried to write ${newSize} bytes`, owner);
+                    Notifications.show({ title: 'System', message: `Limit miejsca dla aplikacji ${owner} został wyczerpany.` });
+                    return false;
+                }
+            }
+
             const parts = path.split('/').filter(p => p);
             let current = this.root;
             for (let i = 0; i < parts.length - 1; i++) {
@@ -396,31 +417,20 @@
                 current = current[part];
             }
 
-            const name = parts[parts.length - 1];
-            if (current[name] && current[name].content === undefined && typeof current[name] === 'object') {
-                SysLog.log('ERR', `Structural Integrity Violation: ${name} is a directory`, appId);
+            const nameInDir = parts[parts.length - 1];
+            if (current[nameInDir] && current[nameInDir].content === undefined && typeof current[nameInDir] === 'object') {
+                SysLog.log('ERR', `Structural Integrity Violation: ${nameInDir} is a directory`, appId);
                 return false;
             }
 
-            const oldSize = current[name] ? (current[name].size || 0) : 0;
-            const oldOwner = current[name] ? (current[name].owner || 'system') : (appId || 'system');
-            const newSize = (data ? (typeof data === 'string' ? data.length : JSON.stringify(data).length) : 0);
-            const newOwner = appId || 'system';
-
-            current[name] = {
-                content: typeof data === 'string' ? data : JSON.stringify(data),
-                owner: newOwner,
+            current[nameInDir] = {
+                content: dataStr,
+                owner,
                 size: newSize,
                 mtime: Date.now()
             };
 
-            if (oldOwner === newOwner) {
-                this._usage[newOwner] = (this._usage[newOwner] || 0) + (newSize - oldSize);
-            } else {
-                this._usage[oldOwner] = Math.max(0, (this._usage[oldOwner] || 0) - oldSize);
-                this._usage[newOwner] = (this._usage[newOwner] || 0) + newSize;
-            }
-
+            this._recalculateUsage();
             this._invalidateCache(path);
             this._invalidateCache(this.dirname(path));
             await this.save();
@@ -438,7 +448,7 @@
             const node = this._resolve(path);
             if (node && typeof node === 'object' && node.content === undefined) {
                 return Object.keys(node)
-                    .filter(name => name !== 'owner' && name !== 'mtime')
+                    .filter(name => name !== 'owner' && name !== 'mtime' && name !== 'size')
                     .map(name => {
                         const child = node[name];
                         const isFile = typeof child === 'string' || (child && child.content !== undefined);
@@ -565,13 +575,12 @@
             newParent[newName] = oldParent[oldName];
             delete oldParent[oldName];
 
-            await this.save();
             this._invalidateCache(oldPath);
             this._invalidateCache(newPath);
-
             this._invalidateCache(this.dirname(oldPath));
             this._invalidateCache(this.dirname(newPath));
             this._recalculateUsage();
+            await this.save();
             SysLog.log('DEBUG', `Renamed: ${oldPath} -> ${newPath}`, 'VFS', { appId });
             EventBus.publish('vfs:changed', { from: appId || 'system', data: { path: oldPath, type: 'rename', newPath } });
             this._notifyWatchers(oldPath);
@@ -750,9 +759,10 @@
             }
         }
     };
+    let _toastCounter = 0;
     const Notifications = {
         show(options) {
-            const id = 'toast_' + Date.now();
+            const id = 'toast_' + Date.now() + '_' + (++_toastCounter);
             const container = document.getElementById('notification-center');
             if (!container) return;
             const toast = document.createElement('div');
@@ -1076,6 +1086,7 @@
                 win.element.style.height = win.oldHeight || '300px';
                 win.element.style.top = win.oldTop || '100px';
                 win.element.style.left = win.oldLeft || '100px';
+                win.element.classList.remove('window-snapped');
                 win.state = 'normal';
             } else {
                 if (!win.element.classList.contains('window-snapped')) {
@@ -1371,7 +1382,11 @@
                 SysLog.log('INFO', `Terminating process: ${proc.appDef.name}`, 'WebOS', { appId, pid: proc.pid });
                 if (proc.appDef.onBeforeClose) {
                     try {
-                        await proc.appDef.onBeforeClose();
+                        const proceed = await proc.appDef.onBeforeClose();
+                        if (proceed === false) {
+                            proc._terminated = false;
+                            return; // App aborted close
+                        }
                     } catch (e) {
                         SysLog.log('ERR', `onBeforeClose error in ${proc.appDef.name}`, 'WebOS', { error: e.message });
                     }
@@ -1792,6 +1807,7 @@
                 const errText = String(logMsg).slice(0, 50);
                 Notifications.show({ title: 'System Error', message: `Wystąpił nieoczekiwany błąd: ${errText}...` });
                 _lastErr = logMsg;
+                setTimeout(() => { if (_lastErr === logMsg) _lastErr = null; }, 5000);
             }
         };
         window.onunhandledrejection = (event) => {
@@ -1801,6 +1817,7 @@
                 const reasonText = String(reason).slice(0, 50);
                 Notifications.show({ title: 'Critical Error', message: `Unhandled Promise: ${reasonText}...` });
                 _lastErr = reason;
+                setTimeout(() => { if (_lastErr === reason) _lastErr = null; }, 5000);
             }
         };
         await VFS.init();
@@ -1845,7 +1862,7 @@
         if (desktopEl) {
             desktopEl.oncontextmenu = (e) => {
                 e.preventDefault();
-                if (e.target.id !== 'desktop' && !e.target.closest('#desktop-icons')) return;
+                if (e.target.closest('#window-layer') || (e.target.id !== 'desktop' && !e.target.closest('#desktop-icons'))) return;
                 ContextMenu.show(e, [
                     { label: 'Odśwież', action: () => window.location.reload() },
                     { label: 'Zablokuj system', action: () => SessionManager.lock() },

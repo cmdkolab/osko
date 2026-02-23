@@ -7,12 +7,13 @@ WebOS.registerApp({
         icon: "📂",
         permissions: ["fs.read", "fs.write", "notifications"]
     },
-    version: "1.0.0",
+    version: "1.2.0",
     width: "500px",
     height: "400px",
     mount(container, api) {
         this.api = api;
         this.currentPath = '/home/user';
+        this.searchQuery = '';
         this.watcherUnsub = null;
         this._pendingFocus = null;
         this._renderId = 0;
@@ -38,6 +39,7 @@ WebOS.registerApp({
                 <div class="explorer-toolbar">
                     <button class="explorer-back" title="Wstecz">⬅</button>
                     <div class="explorer-breadcrumbs"></div>
+                    <input type="text" class="explorer-search" placeholder="Szukaj...">
                 </div>
                 <div class="explorer-grid"></div>
             `;
@@ -49,11 +51,21 @@ WebOS.registerApp({
                 this._subscribeWatcher(container);
                 this.render(container);
             };
+            const searchInput = container.querySelector('.explorer-search');
+            searchInput.value = this.searchQuery;
+            searchInput.oninput = (e) => {
+                this.searchQuery = e.target.value.toLowerCase();
+                this.render(container);
+            };
         }
         const grid = container.querySelector('.explorer-grid');
         const breadcrumbs = container.querySelector('.explorer-breadcrumbs');
-        const items = (await this.api.fs.list(this.currentPath)) || [];
+        let items = (await this.api.fs.list(this.currentPath)) || [];
         if (rid !== this._renderId) return;
+
+        if (this.searchQuery) {
+            items = items.filter(item => item.name.toLowerCase().includes(this.searchQuery));
+        }
 
         items.sort((a, b) => {
             if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
@@ -260,6 +272,16 @@ WebOS.registerApp({
             const index = parseInt(active.dataset.index);
             if (e.key === 'ArrowRight') items[index + 1] && grid.children[index + 1].focus();
             if (e.key === 'ArrowLeft') items[index - 1] && grid.children[index - 1].focus();
+            if (e.key === 'Delete') {
+                const item = items[index];
+                const fullPath = this.api.fs.join(this.currentPath, item.name);
+                this.api.ui.confirm(`Czy na pewno usunąć ${item.name}?`, async (confirmed) => {
+                    if (confirmed) {
+                        await this.api.fs.remove(fullPath);
+                        this.render(container);
+                    }
+                });
+            }
             if (e.key === 'Enter') active.click();
         };
     }

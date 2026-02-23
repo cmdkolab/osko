@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "notes",
     name: "Notes",
     icon: "📝",
-    version: "1.0.0",
+    version: "1.1.0",
     manifest: {
         name: "Notes",
         icon: "📝",
@@ -122,14 +122,22 @@ WebOS.registerApp({
             this._autoSaveTimer = null;
         }
         if (!this.container || !this.api) return;
-        if ((await this.hasUnsavedChanges()) && this.currentPath) {
-            const editor = this.container.querySelector('.notes-editor');
-            if (!editor) return;
-            await this.api.fs.write(this.currentPath, editor.value);
-            this.api.notifications.show({
-                title: 'Notatki',
-                message: 'Zmiany zostały automatycznie zapisane.'
-            });
+        if (await this.hasUnsavedChanges()) {
+            if (this.currentPath) {
+                const editor = this.container.querySelector('.notes-editor');
+                if (!editor) return;
+                await this.api.fs.write(this.currentPath, editor.value);
+                this.api.notifications.show({
+                    title: 'Notatki',
+                    message: 'Zmiany zostały automatycznie zapisane.'
+                });
+            } else {
+                return new Promise(resolve => {
+                    this.api.ui.confirm('Masz niezapisane zmiany. Zamknąć bez zapisywania?', confirmed => {
+                        resolve(confirmed ? true : false);
+                    });
+                });
+            }
         }
     },
     unmount() {

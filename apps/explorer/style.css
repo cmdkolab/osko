@@ -103,3 +103,21 @@
     word-break: break-all;
     max-width: 100%;
 }
+
+.explorer-search {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    color: white;
+    font-size: 12px;
+    width: 120px;
+    transition: width 0.3s ease;
+}
+
+.explorer-search:focus {
+    width: 180px;
+    background: rgba(255, 255, 255, 0.1);
+    outline: none;
+    border-color: var(--accent-color);
+}
