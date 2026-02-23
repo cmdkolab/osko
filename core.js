@@ -96,7 +96,7 @@
     const PersistenceManager = {
         PREFIX: 'OSKO:',
         START_TIME: Date.now(),
-        VERSION: '1.2.0',
+        VERSION: '1.4.0',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -136,18 +136,25 @@
         }
     };
     const deepMergeSync = (target, source) => {
-        deepMerge(target, source);
         for (const key in target) {
             if (!(key in source)) {
                 delete target[key];
-            } else if (target[key] && typeof target[key] === 'object' && target[key].content === undefined
-                && source[key] && typeof source[key] === 'object' && source[key].content === undefined) {
-                deepMergeSync(target[key], source[key]);
+            }
+        }
+        for (const key in source) {
+            const sourceVal = source[key];
+            if (sourceVal && typeof sourceVal === 'object' && sourceVal.content === undefined) {
+                if (!target[key] || typeof target[key] !== 'object' || target[key].content !== undefined) {
+                    target[key] = {};
+                }
+                deepMergeSync(target[key], sourceVal);
+            } else {
+                target[key] = sourceVal;
             }
         }
     };
     const VFS = {
-        QUOTA_PER_APP: 10 * 1024 * 1024, // 10MB
+        QUOTA_PER_APP: 10 * 1024 * 1024,
         persistenceKey: 'VFS:ROOT',
         root: {
             'home': {
@@ -266,7 +273,7 @@
                     await fn();
                 } finally {
                     this._isTransaction = false;
-                    await this.save();
+                    await this.saveImmediate();
                     SysLog.log('DEBUG', 'VFS Transaction Completed', 'VFS', { duration: Date.now() - startTime });
                 }
             });
@@ -383,7 +390,7 @@
                 return path.startsWith(`/var/apps/${appId}`);
             }
             if (path.startsWith('/home/user/documents')) {
-                return true; // Default shared for now, unless sandbox is on
+                return true;
             }
             if (path.startsWith('/home/user/settings/')) {
                 return path.startsWith(`/home/user/settings/${appId}`) || appId === 'system';
@@ -406,6 +413,7 @@
         },
 
         async write(path, data, appId, manifest) {
+            path = this.join(path);
             if (!this.checkAccess(path, appId, 'w', manifest)) {
                 SysLog.log('ERR', `Permission Denied (write): ${path}`, appId);
                 return false;
@@ -521,8 +529,8 @@
             }
             if (this.exists(path)) {
                 const node = this._resolve(path, true);
-                if (node && (typeof node === 'string' || node.content !== undefined)) return false; // File exists
-                return true; // Directory exists
+                if (node && (typeof node === 'string' || node.content !== undefined)) return false;
+                return true;
             }
             const parts = path.split('/').filter(p => p);
             let current = this.root;
@@ -636,6 +644,10 @@
             }
             const newName = newParts[newParts.length - 1];
 
+            if (newParent[newName] && typeof newParent[newName] === 'object' && newParent[newName].content === undefined) {
+                SysLog.log('ERR', `Rename failed: Target ${newPath} is a directory`, appId);
+                return false;
+            }
             newParent[newName] = oldParent[oldName];
             delete oldParent[oldName];
 
@@ -643,11 +655,8 @@
             this._invalidateCache(newPath);
             this._invalidateCache(this.dirname(oldPath));
             this._invalidateCache(this.dirname(newPath));
-            // No usage change needed as owner/size stays the same unless we traverse, 
-            // but rename is usually within same volume/owner. 
-            // In case of owner change (system moving files), recalculate is safer but rare.
-            // For now, incremental handles write/remove. rename is rarely a bottleneck.
-            this._recalculateUsage();
+
+
             await this.save();
             SysLog.log('DEBUG', `Renamed: ${oldPath} -> ${newPath}`, 'VFS', { appId });
             EventBus.publish('vfs:changed', { from: appId || 'system', data: { path: oldPath, type: 'rename', newPath } });
@@ -1420,8 +1429,12 @@
                     snapPreview.dataset.snap = 'right';
                     Object.assign(snapPreview.style, { top: '0', left: '50%', width: '50%', height: 'calc(100% - 40px)' });
                 } else {
-                    snapPreview.style.display = 'none';
+                    snapPreview.classList.remove('visible');
+                    setTimeout(() => { if (!snapPreview.classList.contains('visible')) snapPreview.style.display = 'none'; }, 200);
+                    return;
                 }
+                snapPreview.style.display = 'block';
+                requestAnimationFrame(() => snapPreview.classList.add('visible'));
             };
             const closeDragElement = () => {
                 const preview = document.getElementById('snap-preview');
@@ -1554,7 +1567,7 @@
                         const proceed = await proc.appDef.onBeforeClose();
                         if (proceed === false) {
                             proc._terminated = false;
-                            return; // App aborted close
+                            return;
                         }
                     } catch (e) {
                         SysLog.log('ERR', `onBeforeClose error in ${proc.appDef.name}`, 'WebOS', { error: e.message });
@@ -1660,13 +1673,13 @@
             icon.className = 'desktop-icon';
             icon.setAttribute('data-id', app.id);
 
-            // Set position
+
             const pos = this._desktopPositions[app.id];
             if (pos) {
                 icon.style.left = pos.x + 'px';
                 icon.style.top = pos.y + 'px';
             } else {
-                // Default grid layout if no pos (horizontal rows)
+
                 const count = container.querySelectorAll('.desktop-icon').length;
                 const columns = Math.floor(container.clientWidth / 100) || 1;
                 const col = count % columns;
@@ -1682,12 +1695,17 @@
             icon.querySelector('.icon').textContent = iconImg;
             icon.querySelector('.label').textContent = name;
 
-            // Drag logic
+
             let dragging = false;
             let startX, startY, initialX, initialY;
 
             icon.onmousedown = (e) => {
                 if (e.button !== 0) return;
+
+
+                document.querySelectorAll('.desktop-icon.selected').forEach(el => el.classList.remove('selected'));
+                icon.classList.add('selected');
+
                 dragging = true;
                 icon.style.transition = 'none';
                 icon.style.zIndex = '1000';
@@ -1709,7 +1727,7 @@
                         dragging = false;
                         icon.style.transition = '';
                         icon.style.zIndex = '';
-                        // Snap and save
+
                         const snappedX = Math.round((parseInt(icon.style.left) - 20) / 100) * 100 + 20;
                         const snappedY = Math.round((parseInt(icon.style.top) - 20) / 120) * 120 + 20;
                         icon.style.left = snappedX + 'px';
@@ -1825,7 +1843,7 @@
         async restoreState(deferredData) {
             const data = deferredData ? { openApps: deferredData } : (await PersistenceManager.get(state.persistenceKey));
 
-            // Mandatory startup apps from /sys/startup.json
+
             const startupConfigStr = await VFS.read('/sys/startup.json', 'system');
             let startupAppsList = [];
             try { startupAppsList = JSON.parse(startupConfigStr || '[]'); } catch (e) { }
@@ -1852,7 +1870,7 @@
                 }, deferredData ? 100 : 500);
             }
 
-            // Launch mandatory startup apps if not already open
+
             setTimeout(() => {
                 startupAppsList.forEach(appId => {
                     if (!state.processes.find(p => p.appId === appId)) {
@@ -1977,7 +1995,7 @@
                             .filter(([id, app]) => app.name.toLowerCase().includes(query.toLowerCase()))
                             .map(([id, app]) => ({ type: 'app', id, name: app.name, icon: app.icon }));
 
-                        const fileResults = VFS.find(query, 'system'); // System can search all for spotlight
+                        const fileResults = VFS.find(query, 'system');
 
                         let allResults = [];
                         if (/^[0-9+\-*/().\s]+$/.test(query) && /[0-9]/.test(query)) {
@@ -2313,6 +2331,7 @@
                 WebOS.ui.toggleCalendar(false);
             }
         });
+
         const desktopEl = document.getElementById('desktop');
         if (desktopEl) {
             desktopEl.oncontextmenu = (e) => {
@@ -2327,6 +2346,15 @@
                     { label: 'Wyłącz', action: () => WebOS.shutdown() }
                 ]);
             };
+        }
+
+        const desktopIcons = document.getElementById('desktop-icons');
+        if (desktopIcons) {
+            desktopIcons.addEventListener('mousedown', (e) => {
+                if (e.target.id === 'desktop' || e.target.id === 'desktop-icons') {
+                    document.querySelectorAll('.desktop-icon.selected').forEach(el => el.classList.remove('selected'));
+                }
+            });
         }
 
         const startApps = () => {

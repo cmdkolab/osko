@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "terminal",
     name: "Terminal",
     icon: "🐚",
-    version: "1.2.0",
+    version: "1.4.0",
     manifest: {
         name: "Terminal",
         icon: "🐚",
@@ -32,7 +32,7 @@ WebOS.registerApp({
         this.prompt = container.querySelector('.terminal-prompt');
 
         this.updatePrompt();
-        this.print("OS(KO) Terminal v1.2.0");
+        this.print("OS(KO) Terminal v1.4.0");
         this.print("Wpisz 'help', aby uzyskać listę komend.");
 
         this.input.onkeydown = (e) => {
@@ -85,7 +85,7 @@ WebOS.registerApp({
 
         switch (cmd) {
             case 'help':
-                this.print("Dostępne komendy: ls, cd, cat, mkdir, rm, clear, help, version, play");
+                this.print("Dostępne komendy: ls, cd, cat, edit, mkdir, rm, clear, help, version, play");
                 break;
             case 'ls':
                 try {
@@ -130,6 +130,21 @@ WebOS.registerApp({
             case 'play':
                 if (!args[0]) { this.print("Dostępne dźwięki: startup, click, error, notify"); break; }
                 this.api.audio.play(args[0]);
+                break;
+            case 'edit':
+                if (!args[0]) { this.print("Użycie: edit <plik>"); break; }
+                try {
+                    const path = this.api.fs.join(this.cwd, args[0]);
+                    let content = '';
+                    if (await this.api.fs.exists(path)) {
+                        content = await this.api.fs.read(path);
+                    }
+                    const newContent = prompt(`Edytuj: ${args[0]}`, content);
+                    if (newContent !== null) {
+                        await this.api.fs.write(path, newContent);
+                        this.print(`Zapisano ${args[0]}`);
+                    }
+                } catch (e) { this.print(`edit: ${args[0]}: Błąd`, 'error'); }
                 break;
             default:
                 this.print(`Komenda nieodnaleziona: ${cmd}`, 'error');

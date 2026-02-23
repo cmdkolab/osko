@@ -86,6 +86,13 @@ body {
     transform: translateY(-5px) scale(1.05);
 }
 
+.desktop-icon.selected {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+    z-index: 5;
+}
+
 .desktop-icon .icon {
     font-size: 42px;
     margin-bottom: 8px;
@@ -622,14 +629,20 @@ body.system-locked #desktop {
 #snap-preview {
     position: fixed;
     height: calc(100vh - 40px);
-    background: rgba(59, 130, 246, 0.2);
-    border: 2px dashed var(--accent-color);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.2));
+    border: 2px solid var(--accent);
     z-index: 15000;
     pointer-events: none;
     display: none;
     border-radius: var(--radius-md);
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+}
+
+#snap-preview.visible {
+    opacity: 1;
 }
 
 .system-dialog-overlay {

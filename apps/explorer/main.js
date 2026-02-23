@@ -7,7 +7,7 @@ WebOS.registerApp({
         icon: "📂",
         permissions: ["fs.read", "fs.write", "notifications"]
     },
-    version: "1.3.0",
+    version: "1.4.0",
     width: "500px",
     height: "400px",
     mount(container, api) {
@@ -18,7 +18,19 @@ WebOS.registerApp({
         this._pendingFocus = null;
         this._renderId = 0;
         this._subscribeWatcher(container);
-        this.render(container);
+        this._loadSettings().then(() => this.render(container));
+    },
+    async _loadSettings() {
+        try {
+            const data = await this.api.fs.read('/home/user/settings/explorer.json');
+            if (data) this.settings = JSON.parse(data);
+        } catch (e) { }
+        this.settings = this.settings || { sortBy: 'name' };
+    },
+    async _saveSettings() {
+        try {
+            await this.api.fs.write('/home/user/settings/explorer.json', JSON.stringify(this.settings));
+        } catch (e) { }
     },
     _subscribeWatcher(container) {
         if (this.watcherUnsub) this.watcherUnsub();
@@ -39,6 +51,7 @@ WebOS.registerApp({
                 <div class="explorer-toolbar">
                     <button class="explorer-back" title="Wstecz">⬅</button>
                     <div class="explorer-breadcrumbs"></div>
+                    <button class="explorer-sort" title="Sortuj">↕️</button>
                     <input type="text" class="explorer-search" placeholder="Szukaj...">
                 </div>
                 <div class="explorer-grid"></div>
@@ -50,6 +63,14 @@ WebOS.registerApp({
                 this.currentPath = parent;
                 this._subscribeWatcher(container);
                 this.render(container);
+            };
+            const sortBtn = container.querySelector('.explorer-sort');
+            sortBtn.onclick = (e) => {
+                this.api.system.showContextMenu(e, [
+                    { label: 'Nazwa', action: () => { this.settings.sortBy = 'name'; this._saveSettings(); this.render(container); } },
+                    { label: 'Rozmiar', action: () => { this.settings.sortBy = 'size'; this._saveSettings(); this.render(container); } },
+                    { label: 'Data', action: () => { this.settings.sortBy = 'date'; this._saveSettings(); this.render(container); } }
+                ]);
             };
             const searchInput = container.querySelector('.explorer-search');
             searchInput.value = this.searchQuery;
@@ -68,8 +89,16 @@ WebOS.registerApp({
         }
 
         items.sort((a, b) => {
-            if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-            return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+            const sortBy = this.settings.sortBy || 'name';
+            if (sortBy === 'name') {
+                if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+                return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+            } else if (sortBy === 'size') {
+                return (b.size || 0) - (a.size || 0);
+            } else if (sortBy === 'date') {
+                return (b.mtime || 0) - (a.mtime || 0);
+            }
+            return 0;
         });
 
         grid.innerHTML = items.length === 0 ? '<div class="explorer-empty">Ten folder jest pusty</div>' : '';

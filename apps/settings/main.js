@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "settings",
     name: "Settings",
     icon: "⚙️",
-    version: "1.0.1",
+    version: "1.4.0",
     manifest: {
         name: "Settings",
         icon: "⚙️",

@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "taskmanager",
     name: "Task Manager",
     icon: "📊",
-    version: "1.2.0",
+    version: "1.4.0",
     manifest: {
         name: "Task Manager",
         icon: "📊",
@@ -18,10 +18,11 @@ WebOS.registerApp({
                 <div class="tm-sysinfo">
                     <span>OS(KO) v${api.system.VERSION}</span>
                     <span class="tm-sys-uptime"></span>
+                    <button class="tm-kill-all-btn">Kill All</button>
                 </div>
                 <div class="tm-header">
                     <span>Aplikacja</span>
-                    <span>Uptime</span>
+                    <span>Status</span>
                     <span>Pamięć</span>
                     <span>DOM</span>
                     <span>Akcja</span>
@@ -30,6 +31,16 @@ WebOS.registerApp({
             </div>
         `;
         const list = container.querySelector('.tm-list');
+        const killAllBtn = container.querySelector('.tm-kill-all-btn');
+        killAllBtn.onclick = async () => {
+            if (confirm('Czy na pewno chcesz zakończyć wszystkie aplikacje?')) {
+                const processes = await api.system.getProcesses();
+                processes.forEach(p => {
+                    if (p.appId !== 'taskmanager') WebOS.killApp(p.appId);
+                });
+                refresh();
+            }
+        };
         const refresh = async () => {
             const processes = await api.system.getProcesses();
             const existingAppIds = new Set(processes.map(p => p.appId));
@@ -66,8 +77,11 @@ WebOS.registerApp({
                 const uptimeEl = item.querySelector('.tm-uptime');
                 const storageEl = item.querySelector('.tm-storage');
                 const nodesEl = item.querySelector('.tm-nodes');
-                if (nameEl.innerText !== p.name) nameEl.innerText = p.name;
-                if (uptimeEl.innerText !== p.uptime) uptimeEl.innerText = p.uptime;
+                if (uptimeEl.innerText !== p.uptime) {
+                    const secs = parseInt(p.uptime);
+                    if (secs < 60) uptimeEl.innerText = `${secs}s`;
+                    else uptimeEl.innerText = `${Math.floor(secs / 60)}m ${secs % 60}s`;
+                }
                 if (storageEl.innerText !== p.storage.split(' / ')[0]) storageEl.innerText = p.storage.split(' / ')[0];
                 if (nodesEl.innerText !== String(p.nodes)) nodesEl.innerText = p.nodes;
             });
@@ -75,7 +89,9 @@ WebOS.registerApp({
             const sysUptime = container.querySelector('.tm-sys-uptime');
             if (sysUptime) {
                 const totalUptime = Math.floor((Date.now() - (api.system.START_TIME || Date.now())) / 1000);
-                sysUptime.innerText = `Uptime: ${totalUptime}s`;
+                if (totalUptime < 60) sysUptime.innerText = `Uptime: ${totalUptime}s`;
+                else if (totalUptime < 3600) sysUptime.innerText = `Uptime: ${Math.floor(totalUptime / 60)}m ${totalUptime % 60}s`;
+                else sysUptime.innerText = `Uptime: ${Math.floor(totalUptime / 3600)}h ${Math.floor((totalUptime % 3600) / 60)}m`;
             }
         };
         this._refreshInterval = api.system.setInterval(refresh, 2000);
