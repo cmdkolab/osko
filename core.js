@@ -18,7 +18,7 @@
                 const request = indexedDB.open(this.dbName, this.version);
                 request.onerror = (e) => {
                     this._isFallback = true;
-                    e.preventDefault(); // Prevent bubbling up to unhandled error
+                    e.preventDefault();
                     SysLog.log('WARN', 'IndexedDB access denied. Falling back to memory.', 'DBWrapper', { error: e.target.error?.message });
                     resolve();
                 };
@@ -100,7 +100,7 @@
         SYSTEM_DIR: '/sys',
         TEMP_DIR: '/tmp',
         START_TIME: Date.now(),
-        VERSION: '2.7.9',
+        VERSION: '2.8.0',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -306,7 +306,6 @@
             if (this._isTransaction) return;
             if (this._saveTimer) clearTimeout(this._saveTimer);
 
-            // Background timer
             this._saveTimer = setTimeout(async () => {
                 try {
                     await PersistenceManager.set(this.persistenceKey, this.root);
@@ -320,7 +319,6 @@
                 }
             }, 500);
 
-            // Return immediately, don't block the UI
             return Promise.resolve();
         },
 
@@ -454,9 +452,6 @@
 
             if (owner !== 'system') {
                 const currentUsage = this.calculateUsage(owner);
-                // If the app is overwriting its OWN file, net change is newSize - oldSize.
-                // If it's overwriting SOMEONE ELSE'S file, its usage increases by full newSize.
-
                 if (currentUsage + usageDelta > this.QUOTA_PER_APP) {
                     SysLog.log('ERR', `Quota Exceeded: ${owner} tried to write ${newSize} bytes`, owner);
                     Notifications.show({ title: 'System', message: window.I18n.t('dialog.quota_exceeded', owner) });
@@ -464,7 +459,6 @@
                 }
             }
 
-            // Refund the old owner for the space if the file is being completely overwritten by someone else
             if (existingNode && oldOwner !== owner && oldOwner !== 'system') {
                 this._usage[oldOwner] = Math.max(0, (this._usage[oldOwner] || 0) - oldSize);
             }
@@ -699,7 +693,6 @@
             this._invalidateCache(this.dirname(oldPath));
             this._invalidateCache(this.dirname(newPath));
 
-
             void this.save();
             SysLog.log('DEBUG', `Renamed: ${oldPath} -> ${newPath}`, 'VFS', { appId });
             EventBus.publish('vfs:changed', { from: appId || 'system', data: { path: oldPath, type: 'rename', newPath } });
@@ -707,7 +700,6 @@
             this._notifyWatchers(newPath);
             return true;
         },
-
         async copy(srcPath, dstPath, appId, manifest) {
             srcPath = this.join(srcPath);
             dstPath = this.join(dstPath);
@@ -738,7 +730,6 @@
                 }
             }
 
-            // Optional: parse destination
             const dstParts = dstPath.split('/').filter(p => p);
             if (dstParts.length === 0) return false;
 
@@ -968,13 +959,11 @@
             document.addEventListener('keydown', this._lockKeydown);
         }
     };
-
     const EventBus = {
         listeners: {},
         subscribe(event, callback) {
             if (!this.listeners[event]) this.listeners[event] = [];
 
-            // Generate a unique secure token
             const secureId = window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36) + Date.now().toString(36);
             const token = { id: secureId, cb: callback };
             this.listeners[event].push(token);
@@ -1493,7 +1482,6 @@
                     if (nextWinId) this.focus(nextWinId);
                 }
             }
-
             setTimeout(() => {
                 win.element.remove();
                 const currentIndex = state.windows.findIndex(w => w.id === id);
@@ -2017,7 +2005,6 @@
                         let snappedX = Math.round((parseInt(icon.style.left) - 20) / 100) * 100 + 20;
                         let snappedY = Math.round((parseInt(icon.style.top) - 20) / 120) * 120 + 20;
 
-                        // Constraint boundaries
                         const maxW = window.innerWidth - 80;
                         const maxH = window.innerHeight - 100;
                         snappedX = Math.max(20, Math.min(snappedX, maxW));
@@ -2664,13 +2651,11 @@
             searchBtn.title = window.I18n.t('system.search_tooltip');
             searchBtn.onclick = () => WebOS.ui.toggleSearch();
         }
-
         const switcherBtn = document.getElementById('switcher-btn');
         if (switcherBtn) {
             switcherBtn.title = window.I18n.t('system.switcher_tooltip');
             switcherBtn.onclick = () => WebOS.ui.toggleSwitcher();
         }
-
         const hddUsage = document.getElementById('hdd-usage');
         if (hddUsage) {
             hddUsage.title = window.I18n.t('system.hdd_usage');
@@ -2679,7 +2664,7 @@
         const taskbarContainer = document.getElementById('running-apps');
         if (taskbarContainer) {
             taskbarContainer.oncontextmenu = (e) => {
-                if (e.target.closest('.taskbar-item')) return; // Ignore clicks directly on app icons
+                if (e.target.closest('.taskbar-item')) return;
                 e.preventDefault();
                 e.stopPropagation();
                 ContextMenu.show(e, [

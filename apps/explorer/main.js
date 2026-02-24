@@ -245,9 +245,6 @@ WebOS.registerApp({
             const itemsArr = Array.from(itemsNodeList);
             let idx = itemsArr.indexOf(active);
 
-            // Columns count estimation (approximate based on grid layout width ~500px / ~80px item)
-            // A more robust way would be calculating offsetTop, but this is a simple fallback.
-            // Let's use getBoundingClientRect for accurate row calculation
             const getCols = () => {
                 if (itemsArr.length < 2) return 1;
                 const top0 = itemsArr[0].getBoundingClientRect().top;
@@ -281,13 +278,8 @@ WebOS.registerApp({
                 e.preventDefault();
                 if (idx >= 0 && idx < itemsArr.length) {
                     itemsArr[idx].click();
-                    // if it was a directory, clicking re-renders, so we blur
-                    if (document.activeElement === itemsArr[idx]) {
-                        // Try to maintain focus on grid if we didn't navigate away
-                    }
                 }
             } else if (e.key === 'Backspace') {
-                // Navigate up
                 e.preventDefault();
                 container.querySelector('.explorer-back').click();
             }
@@ -371,13 +363,13 @@ WebOS.registerApp({
                                             newName = `${name} (kopia ${++counter})`;
                                         }
                                         await this.api.fs.mkdir(this.api.fs.join(this.currentPath, newName));
-                                        this._pendingFocus = newName; // Added this line based on similar logic above
+                                        this._pendingFocus = newName;
                                         this.render(container);
                                     }
                                 });
                             } else {
                                 await this.api.fs.mkdir(path);
-                                this._pendingFocus = name; // Added this line based on similar logic above
+                                this._pendingFocus = name;
                                 this.render(container);
                             }
                         });

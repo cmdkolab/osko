@@ -72,7 +72,6 @@ WebOS.registerApp({
                 container.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 window.I18n.setLanguage(btn.dataset.lang);
-                // Force a full UI reload as requested
                 window.location.reload();
             };
         });
@@ -99,7 +98,7 @@ WebOS.registerApp({
             };
         });
 
-        // Initialize Audio Toggle
+
         let currentSound = 'on';
         try {
             const rawAudio = await api.fs.read('/home/user/settings/audio.json');
@@ -131,7 +130,7 @@ WebOS.registerApp({
             };
         });
 
-        // Autostart Logic
+
         const autostartList = container.querySelector('.autostart-list');
         const loadAutostart = async () => {
             let startupApps = [];
@@ -195,7 +194,6 @@ WebOS.registerApp({
                     btn.classList.toggle('active', btn.dataset.theme === newTheme);
                 });
             } else if (path === '/sys/startup.json') {
-                // If it changed externally, reload autostart
                 await loadAutostart();
             }
         };
