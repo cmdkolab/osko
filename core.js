@@ -100,7 +100,7 @@
         SYSTEM_DIR: '/sys',
         TEMP_DIR: '/tmp',
         START_TIME: Date.now(),
-        VERSION: '3.0.0',
+        VERSION: '3.0.1',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
