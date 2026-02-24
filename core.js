@@ -18,6 +18,7 @@
                 const request = indexedDB.open(this.dbName, this.version);
                 request.onerror = (e) => {
                     this._isFallback = true;
+                    e.preventDefault(); // Prevent bubbling up to unhandled error
                     SysLog.log('WARN', 'IndexedDB access denied. Falling back to memory.', 'DBWrapper', { error: e.target.error?.message });
                     resolve();
                 };
@@ -99,7 +100,7 @@
         SYSTEM_DIR: '/sys',
         TEMP_DIR: '/tmp',
         START_TIME: Date.now(),
-        VERSION: '2.7.2',
+        VERSION: '2.7.7',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -130,6 +131,7 @@
     };
     const deepMerge = (target, source) => {
         for (const key in source) {
+            if (key === '__proto__' || key === 'constructor') continue;
             if (source[key] && typeof source[key] === 'object' && source[key].content === undefined) {
                 if (Array.isArray(source[key])) {
                     target[key] = [...source[key]];
@@ -144,11 +146,13 @@
     };
     const deepMergeSync = (target, source) => {
         for (const key in target) {
+            if (key === '__proto__' || key === 'constructor') continue;
             if (!(key in source)) {
                 delete target[key];
             }
         }
         for (const key in source) {
+            if (key === '__proto__' || key === 'constructor') continue;
             const sourceVal = source[key];
             if (sourceVal && typeof sourceVal === 'object' && sourceVal.content === undefined) {
                 if (Array.isArray(sourceVal)) {
@@ -809,7 +813,7 @@
             });
         }
     };
-    const SESSION_ID = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const SESSION_ID = window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36).toUpperCase().padStart(4, '0').substring(0, 4);
     const SysLog = {
         _buffer: null,
         _writeTimer: null,
@@ -969,21 +973,25 @@
         listeners: {},
         subscribe(event, callback) {
             if (!this.listeners[event]) this.listeners[event] = [];
-            this.listeners[event].push(callback);
-            return callback;
+
+            // Generate a unique secure token
+            const secureId = window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36) + Date.now().toString(36);
+            const token = { id: secureId, cb: callback };
+            this.listeners[event].push(token);
+            return token;
         },
-        unsubscribe(event, callback) {
+        unsubscribe(event, token) {
             if (!this.listeners[event]) return;
-            this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+            this.listeners[event] = this.listeners[event].filter(t => t !== token && t.id !== token.id);
             if (this.listeners[event].length === 0) {
                 delete this.listeners[event];
             }
         },
         publish(event, data) {
             if (this.listeners[event]) {
-                [...this.listeners[event]].forEach(cb => {
+                [...this.listeners[event]].forEach(t => {
                     try {
-                        cb(data);
+                        t.cb(data);
                     } catch (e) {
                         console.error(`EventBus error [${event}]:`, e);
                     }
@@ -1216,14 +1224,14 @@
                         const proc = _getProc();
                         return {
                             uptime: Math.floor((Date.now() - (proc?.startTime || Date.now())) / 1000),
-                            nodeCount: win ? win.element.querySelectorAll('*').length : 0,
+                            nodeCount: win ? win.element.getElementsByTagName('*').length : 0,
                             storage: VFS.calculateUsage(appId)
                         };
                     },
                     getProcesses: () => {
                         return state.processes.map(p => {
                             const win = state.windows.find(w => w.id === p.windowId);
-                            const nodeCount = win ? win.element.querySelectorAll('*').length : 0;
+                            const nodeCount = win ? win.element.getElementsByTagName('*').length : 0;
                             const uptime = Math.floor((Date.now() - p.startTime) / 1000);
                             const storageBytes = VFS.calculateUsage(p.appId);
                             const storageStr = storageBytes > 1024 * 1024
@@ -1369,10 +1377,8 @@
                 document.removeEventListener('contextmenu', this._activeListener);
                 this._activeListener = null;
             }
-            const existing = document.querySelector('.context-menu');
-            if (existing) {
-                existing.remove();
-            }
+            const existings = document.querySelectorAll('.context-menu');
+            existings.forEach(existing => existing.remove());
         }
     };
     const events = {
@@ -1381,7 +1387,8 @@
     };
     const WindowManager = {
         create(options, appId) {
-            const id = `win_${Math.random().toString(36).substr(2, 9)}`;
+            const secureId = window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
+            const id = `win_${secureId}`;
             const winEl = document.createElement('div');
             winEl.className = 'window';
             winEl.id = id;
@@ -1843,6 +1850,7 @@
                     proc._resources.forEach(res => {
                         try {
                             if (res.type === 'interval') clearInterval(res.handle);
+                            if (res.type === 'timeout') clearTimeout(res.handle);
                             if (res.type === 'eventbus') EventBus.unsubscribe(res.handle.event, res.handle.token);
                             if (res.type === 'vfs_watch') res.handle();
                             if (res.type === 'event_listener') {
@@ -2005,8 +2013,15 @@
                         icon.style.transition = '';
                         icon.style.zIndex = '';
 
-                        const snappedX = Math.round((parseInt(icon.style.left) - 20) / 100) * 100 + 20;
-                        const snappedY = Math.round((parseInt(icon.style.top) - 20) / 120) * 120 + 20;
+                        let snappedX = Math.round((parseInt(icon.style.left) - 20) / 100) * 100 + 20;
+                        let snappedY = Math.round((parseInt(icon.style.top) - 20) / 120) * 120 + 20;
+
+                        // Constraint boundaries
+                        const maxW = window.innerWidth - 80;
+                        const maxH = window.innerHeight - 100;
+                        snappedX = Math.max(20, Math.min(snappedX, maxW));
+                        snappedY = Math.max(20, Math.min(snappedY, Math.max(20, maxH)));
+
                         icon.style.left = snappedX + 'px';
                         icon.style.top = snappedY + 'px';
                         this._desktopPositions[app.id] = { x: snappedX, y: snappedY };
@@ -2141,17 +2156,15 @@
                         if (state.processes.find(p => p.appId === appData.appId)) return;
                         WebOS.launchApp(appData.appId, appData.params || {});
 
-                        setTimeout(() => {
-                            const win = state.windows.find(w => w.appId === appData.appId);
-                            if (win && appData.window) {
-                                Object.assign(win.element.style, {
-                                    left: appData.window.x,
-                                    top: appData.window.y,
-                                    width: appData.window.width,
-                                    height: appData.window.height
-                                });
-                            }
-                        }, 100);
+                        const win = state.windows.find(w => w.appId === appData.appId);
+                        if (win && appData.window) {
+                            Object.assign(win.element.style, {
+                                left: appData.window.x,
+                                top: appData.window.y,
+                                width: appData.window.width,
+                                height: appData.window.height
+                            });
+                        }
                     });
                     this.updateTaskbar();
                 }, deferredData ? 100 : 500);

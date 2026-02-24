@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "taskmanager",
     get name() { return window.I18n.t('taskmanager.title'); },
     icon: "📊",
-    version: "2.3.1",
+    version: "2.3.2",
     manifest: {
         get name() { return window.I18n.t('taskmanager.title'); },
         icon: "📊",
@@ -80,10 +80,14 @@ WebOS.registerApp({
                 const storageEl = item.querySelector('.tm-storage');
                 const nodesEl = item.querySelector('.tm-nodes');
                 if (nameEl.innerText !== p.name) nameEl.innerText = p.name;
-                if (uptimeEl.innerText !== p.uptime) {
-                    const secs = parseInt(p.uptime);
-                    if (secs < 60) uptimeEl.innerText = `${secs}s`;
-                    else uptimeEl.innerText = `${Math.floor(secs / 60)}m ${secs % 60}s`;
+                const secs = parseInt(p.uptime);
+                if (uptimeEl.dataset.sec !== String(secs)) {
+                    uptimeEl.dataset.sec = String(secs);
+                    if (secs < 60) {
+                        uptimeEl.innerText = `${secs}s`;
+                    } else {
+                        uptimeEl.innerText = `${Math.floor(secs / 60)}m ${secs % 60}s`;
+                    }
                 }
                 if (storageEl.innerText !== p.storage.split(' / ')[0]) storageEl.innerText = p.storage.split(' / ')[0];
                 if (nodesEl.innerText !== String(p.nodes)) nodesEl.innerText = p.nodes;
@@ -92,9 +96,12 @@ WebOS.registerApp({
             const sysUptime = container.querySelector('.tm-sys-uptime');
             if (sysUptime) {
                 const totalUptime = Math.floor((Date.now() - (api.system.START_TIME || Date.now())) / 1000);
-                if (totalUptime < 60) sysUptime.innerText = `${window.I18n.t('taskmanager.uptime')}: ${totalUptime}s`;
-                else if (totalUptime < 3600) sysUptime.innerText = `${window.I18n.t('taskmanager.uptime')}: ${Math.floor(totalUptime / 60)}m ${totalUptime % 60}s`;
-                else sysUptime.innerText = `${window.I18n.t('taskmanager.uptime')}: ${Math.floor(totalUptime / 3600)}h ${Math.floor((totalUptime % 3600) / 60)}m`;
+                if (sysUptime.dataset.sec !== String(totalUptime)) {
+                    sysUptime.dataset.sec = String(totalUptime);
+                    if (totalUptime < 60) sysUptime.innerText = `${window.I18n.t('taskmanager.uptime')}: ${totalUptime}s`;
+                    else if (totalUptime < 3600) sysUptime.innerText = `${window.I18n.t('taskmanager.uptime')}: ${Math.floor(totalUptime / 60)}m ${totalUptime % 60}s`;
+                    else sysUptime.innerText = `${window.I18n.t('taskmanager.uptime')}: ${Math.floor(totalUptime / 3600)}h ${Math.floor((totalUptime % 3600) / 60)}m`;
+                }
             }
         };
         this._refreshInterval = api.system.setInterval(refresh, 2000);
