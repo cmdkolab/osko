@@ -32,7 +32,7 @@ WebOS.registerApp({
         this.prompt = container.querySelector('.terminal-prompt');
 
         this.updatePrompt();
-        this.print(`OS(KO) ${window.I18n.t('terminal.title')} v2.9.0`);
+        this.print(`OS(KO) ${window.I18n.t('terminal.title')} v3.0.0`);
         this.print(window.I18n.t('terminal.welcome'));
 
         this.input.onkeydown = (e) => {
@@ -99,24 +99,30 @@ WebOS.registerApp({
             case 'ls':
                 try {
                     const entries = await this.api.fs.list(this.cwd);
-                    this.print(entries.map(e => e.type === 'dir' ? e.name + '/' : e.name).join('  '));
+                    if (entries === null) {
+                        this.print(`ls: ${this.cwd}: ${window.I18n.t('terminal.not_found')}`, 'error');
+                    } else {
+                        this.print(entries.map(e => e.type === 'dir' ? e.name + '/' : e.name).join('  '));
+                    }
                 } catch (e) { this.print(`${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
                 break;
             case 'cd':
-                const newPath = this.api.fs.join(this.cwd, args[0] || '/home/user');
+                const target = args[0] || '/home/user';
+                const newPath = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
                 if (await this.api.fs.exists(newPath)) {
                     this.cwd = newPath;
                     this.updatePrompt();
                 } else {
-                    this.print(`cd: ${args[0]}: ${window.I18n.t('terminal.not_found')}`, 'error');
+                    this.print(`cd: ${target}: ${window.I18n.t('terminal.not_found')}`, 'error');
                 }
                 break;
             case 'cat':
                 if (!args[0]) { this.print("cat <file>"); break; }
                 try {
-                    const path = this.api.fs.join(this.cwd, args[0]);
-                    const isDir = await this.api.fs.list(path).catch(() => null);
-                    if (Array.isArray(isDir)) {
+                    const target = args[0];
+                    const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
+                    const entries = this.api.fs.list(path);
+                    if (entries !== null) {
                         this.print(`cat: ${args[0]}: ${window.I18n.t('terminal.is_dir')}`, 'error');
                         break;
                     }
@@ -131,13 +137,17 @@ WebOS.registerApp({
             case 'mkdir':
                 if (!args[0]) { this.print("mkdir <dir>"); break; }
                 try {
-                    await this.api.fs.mkdir(this.api.fs.join(this.cwd, args[0]));
+                    const target = args[0];
+                    const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
+                    await this.api.fs.mkdir(path);
                 } catch (e) { this.print(`mkdir: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
                 break;
             case 'rm':
                 if (!args[0]) { this.print("rm <file/dir>"); break; }
                 try {
-                    await this.api.fs.remove(this.api.fs.join(this.cwd, args[0]));
+                    const target = args[0];
+                    const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
+                    await this.api.fs.remove(path);
                 } catch (e) { this.print(`rm: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
                 break;
             case 'clear':
@@ -168,7 +178,8 @@ WebOS.registerApp({
             case 'edit':
                 if (!args[0]) { this.print("edit <file>"); break; }
                 try {
-                    const path = this.api.fs.join(this.cwd, args[0]);
+                    const target = args[0];
+                    const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
                     let content = '';
                     if (await this.api.fs.exists(path)) {
                         content = await this.api.fs.read(path);

@@ -100,7 +100,7 @@
         SYSTEM_DIR: '/sys',
         TEMP_DIR: '/tmp',
         START_TIME: Date.now(),
-        VERSION: '2.9.0',
+        VERSION: '3.0.0',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -508,7 +508,7 @@
 
         list(path, appId, manifest) {
             path = this.join(path);
-            if (!this.checkAccess(path, appId, 'r', manifest)) return [];
+            if (!this.checkAccess(path, appId, 'r', manifest)) return null;
             const node = this._resolve(path);
             if (node && typeof node === 'object' && node.content === undefined) {
                 return Object.keys(node)
@@ -519,7 +519,7 @@
                         return { name, type: isFile ? 'file' : 'dir' };
                     });
             }
-            return [];
+            return null;
         },
 
         calculateUsage(owner) {
