@@ -99,7 +99,7 @@
         SYSTEM_DIR: '/sys',
         TEMP_DIR: '/tmp',
         START_TIME: Date.now(),
-        VERSION: '2.7.1',
+        VERSION: '2.7.2',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -446,12 +446,12 @@
             const oldSize = existingNode?.size || 0;
             const oldOwner = existingNode?.owner || 'system';
             const owner = appId || 'system';
+            const usageDelta = (owner === oldOwner) ? (newSize - oldSize) : newSize;
 
             if (owner !== 'system') {
                 const currentUsage = this.calculateUsage(owner);
                 // If the app is overwriting its OWN file, net change is newSize - oldSize.
                 // If it's overwriting SOMEONE ELSE'S file, its usage increases by full newSize.
-                const usageDelta = (owner === oldOwner) ? (newSize - oldSize) : newSize;
 
                 if (currentUsage + usageDelta > this.QUOTA_PER_APP) {
                     SysLog.log('ERR', `Quota Exceeded: ${owner} tried to write ${newSize} bytes`, owner);
