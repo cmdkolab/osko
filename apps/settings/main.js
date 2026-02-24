@@ -4,7 +4,7 @@ WebOS.registerApp({
     icon: "⚙️",
     version: "2.3.0",
     manifest: {
-        name: "Settings",
+        name: window.I18n.t('settings.title'),
         icon: "⚙️",
         permissions: ["notifications", "fs.read", "fs.write", "system.manage"]
     },
@@ -24,40 +24,58 @@ WebOS.registerApp({
         container.innerHTML = `
             <div class="settings-app">
                 <div class="settings-section">
-                    <h3>Tapeta i kolory</h3>
+                    <h3>${window.I18n.t('settings.language')}</h3>
+                    <div class="theme-toggle-group">
+                        <button class="lang-btn" data-lang="en">English</button>
+                        <button class="lang-btn" data-lang="pl">Polski</button>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>${window.I18n.t('settings.tab_personalization')}</h3>
                     <div class="color-presets">
                         ${presets.map(p => `<div class="preset-btn" data-val="${p.val}" title="${p.name}" style="background: ${p.val}; background-size: cover;"></div>`).join('')}
                     </div>
                 </div>
                 <div class="settings-section">
-                    <h3>Styl systemu</h3>
+                    <h3>${window.I18n.t('settings.tab_system')}</h3>
                     <div class="theme-toggle-group">
-                        <button class="theme-btn" data-theme="default">Jasny / przezroczysty</button>
-                        <button class="theme-btn" data-theme="dark">Ciemny</button>
+                        <button class="theme-btn" data-theme="default">${window.I18n.t('settings.theme_light')} / ${window.I18n.t('settings.theme_auto')}</button>
+                        <button class="theme-btn" data-theme="dark">${window.I18n.t('settings.theme_dark')}</button>
                     </div>
                 </div>
                 <div class="settings-section">
-                    <h3>Dźwięk Systemu</h3>
+                    <h3>${window.I18n.t('settings.sound')}</h3>
                     <div class="theme-toggle-group">
-                        <button class="sound-btn" data-sound="on">Włączony</button>
-                        <button class="sound-btn" data-sound="off">Wyłączony</button>
+                        <button class="sound-btn" data-sound="on">${window.I18n.t('settings.sound_on')}</button>
+                        <button class="sound-btn" data-sound="off">${window.I18n.t('settings.sound_off')}</button>
                     </div>
                 </div>
                 <div class="settings-section">
-                    <h3>O systemie</h3>
+                    <h3>${window.I18n.t('settings.tab_about')}</h3>
                     <div class="system-box">
                         <div class="sys-info">
-                            <div class="sys-label">Status jądra</div>
-                            <div class="sys-val sys-ok">OK</div>
+                            <div class="sys-label">${window.I18n.t('settings.kernel_status')}</div>
+                            <div class="sys-val sys-ok">${window.I18n.t('settings.ok')}</div>
                         </div>
                     </div>
                 </div>
                 <div class="settings-section">
-                    <h3>Autostart</h3>
+                    <h3>${window.I18n.t('settings.autostart')}</h3>
                     <div class="autostart-list"></div>
                 </div>
             </div>
         `;
+
+        container.querySelectorAll('.lang-btn').forEach(btn => {
+            if (btn.dataset.lang === window.I18n.current) btn.classList.add('active');
+            btn.onclick = () => {
+                container.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                window.I18n.setLanguage(btn.dataset.lang);
+                // Force a full UI reload as requested
+                window.location.reload();
+            };
+        });
         const currentBackground = await api.fs.read('/home/user/settings/wallpaper.txt');
         container.querySelectorAll('.preset-btn').forEach(btn => {
             if (btn.dataset.val === currentBackground) btn.classList.add('active');
@@ -66,7 +84,7 @@ WebOS.registerApp({
                 btn.classList.add('active');
                 const val = btn.dataset.val;
                 api.system.setWallpaper(val);
-                api.notifications.show({ title: 'System', message: 'Zmieniono tapetę.' });
+                api.notifications.show({ title: window.I18n.t('settings.tab_system'), message: window.I18n.t('settings.wallpaper_changed') });
             };
         });
         const currentTheme = (await api.fs.read('/home/user/settings/theme.txt')) || 'default';
@@ -77,7 +95,7 @@ WebOS.registerApp({
                 btn.classList.add('active');
                 const theme = btn.dataset.theme;
                 api.system.setTheme(theme);
-                api.notifications.show({ title: 'System', message: `Ustawiono motyw: ${theme === 'dark' ? 'ciemny' : 'jasny'}` });
+                api.notifications.show({ title: window.I18n.t('settings.tab_system'), message: `${window.I18n.t('settings.theme_changed')} ${theme === 'dark' ? window.I18n.t('settings.theme_dark') : window.I18n.t('settings.theme_light')}` });
             };
         });
 
