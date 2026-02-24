@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "settings",
     name: "Settings",
     icon: "⚙️",
-    version: "1.6.0",
+    version: "2.3.0",
     manifest: {
         name: "Settings",
         icon: "⚙️",
@@ -37,17 +37,22 @@ WebOS.registerApp({
                     </div>
                 </div>
                 <div class="settings-section">
+                    <h3>Dźwięk Systemu</h3>
+                    <div class="theme-toggle-group">
+                        <button class="sound-btn" data-sound="on">Włączony</button>
+                        <button class="sound-btn" data-sound="off">Wyłączony</button>
+                    </div>
+                </div>
+                <div class="settings-section">
                     <h3>O systemie</h3>
                     <div class="system-box">
                         <div class="sys-info">
-                            <div class="sys-label">Aplikacje</div>
-                            <div class="sys-val proc-count">0</div>
-                        </div>
                         <div class="sys-info">
                             <div class="sys-label">Status jądra</div>
                             <div class="sys-val sys-ok">OK</div>
-                        </div>
-                    </div>
+                <div class="settings-section">
+                    <h3>Autostart</h3>
+                    <div class="autostart-list"></div>
                 </div>
             </div>
         `;
@@ -73,13 +78,90 @@ WebOS.registerApp({
                 api.notifications.show({ title: 'System', message: `Ustawiono motyw: ${theme === 'dark' ? 'ciemny' : 'jasny'}` });
             };
         });
-        const refreshStats = async () => {
-            const procCountEl = container.querySelector('.proc-count');
-            if (procCountEl) {
-                const procs = await api.system.getProcesses();
-                procCountEl.innerText = procs.length;
+
+        // Initialize Audio Toggle
+        let currentSound = 'on';
+        try {
+            const rawAudio = await api.fs.read('/home/user/settings/audio.json');
+            if (rawAudio) {
+                const parsed = JSON.parse(rawAudio);
+                currentSound = parsed.enabled ? 'on' : 'off';
             }
+        } catch (e) { }
+
+        container.querySelectorAll('.sound-btn').forEach(btn => {
+            if (btn.dataset.sound === currentSound) btn.classList.add('active');
+            btn.onclick = async () => {
+                container.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const isEnabled = btn.dataset.sound === 'on';
+                if (!(await api.fs.exists('/home/user/settings'))) {
+                    await api.fs.mkdir('/home/user/settings');
+                }
+                await api.fs.write('/home/user/settings/audio.json', JSON.stringify({ enabled: isEnabled }));
+                api.system.publish('settings:audio_changed', { enabled: isEnabled });
+                if (isEnabled) {
+                    try {
+                        // Play a test sound to confirm turning on
+                        const w = window;
+                        const ae = w.WebOS && w.WebOS.audio;
+                        if (ae && ae.play) ae.play('click');
+                    } catch (e) { }
+                }
+            };
+        });
+
+        // Autostart Logic
+        const autostartList = container.querySelector('.autostart-list');
+        const loadAutostart = async () => {
+            let startupApps = [];
+            try {
+                const raw = await api.fs.read('/sys/startup.json');
+                startupApps = JSON.parse(raw) || [];
+            } catch (e) {
+                console.error('Błąd odczytu autostartu:', e);
+            }
+
+            const allApps = api.system.getAllApps();
+            autostartList.innerHTML = '';
+
+            allApps.forEach(app => {
+                const isEnabled = startupApps.includes(app.id);
+
+                const item = document.createElement('div');
+                item.className = 'autostart-item';
+                item.innerHTML = `
+                        <div class="autostart-item-info">
+                            <span class="autostart-item-icon">${app.icon}</span>
+                            <span>${app.name}</span>
+                        </div>
+                        <input type="checkbox" class="autostart-toggle" data-appid="${app.id}" ${isEnabled ? 'checked' : ''}>
+                    `;
+
+                const toggle = item.querySelector('.autostart-toggle');
+                toggle.onchange = async (e) => {
+                    const checked = e.target.checked;
+                    const id = e.target.dataset.appid;
+
+                    let currentStartup = [];
+                    try {
+                        const raw = await api.fs.read('/sys/startup.json');
+                        currentStartup = JSON.parse(raw) || [];
+                    } catch (err) { }
+
+                    if (checked && !currentStartup.includes(id)) {
+                        currentStartup.push(id);
+                    } else if (!checked && currentStartup.includes(id)) {
+                        currentStartup = currentStartup.filter(appId => appId !== id);
+                    }
+
+                    await api.fs.write('/sys/startup.json', JSON.stringify(currentStartup));
+                };
+
+                autostartList.appendChild(item);
+            });
         };
+
         const syncUI = async (eventData) => {
             const path = eventData?.data?.path;
             if (path === '/home/user/settings/wallpaper.txt') {
@@ -87,17 +169,19 @@ WebOS.registerApp({
                 container.querySelectorAll('.preset-btn').forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.val === newVal);
                 });
+            } else if (path === '/home/user/settings/theme.txt') {
+                const newTheme = await api.fs.read('/home/user/settings/theme.txt');
+                container.querySelectorAll('.theme-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.theme === newTheme);
+                });
             }
         };
-        this.statsInterval = api.system.setInterval(refreshStats, 2000);
+
         this._watcher = api.system.subscribe('vfs:changed', syncUI);
-        refreshStats();
+
+        await loadAutostart();
     },
     unmount() {
-        if (this.statsInterval) {
-            this.api.system.clearInterval(this.statsInterval);
-            this.statsInterval = null;
-        }
         if (this._watcher) {
             this.api.system.unsubscribe('vfs:changed', this._watcher);
             this._watcher = null;

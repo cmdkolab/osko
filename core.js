@@ -96,7 +96,7 @@
     const PersistenceManager = {
         PREFIX: 'OSKO:',
         START_TIME: Date.now(),
-        VERSION: '1.6.0',
+        VERSION: '2.3.0',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -395,7 +395,8 @@
                 return true;
             }
             if (path.startsWith('/home/user/settings/')) {
-                return path.startsWith(`/home/user/settings/${appId}`) || appId === 'system';
+                if (appId === 'settings' || appId === 'system') return true;
+                return path.startsWith(`/home/user/settings/${appId}`);
             }
             if (firstPart === 'home') return true;
             return false;
@@ -423,16 +424,27 @@
 
             const dataStr = typeof data === 'string' ? data : JSON.stringify(data);
             const newSize = dataStr.length;
-            const oldSize = (this._resolve(path) || {}).size || 0;
+            const existingNode = this._resolve(path);
+            const oldSize = existingNode?.size || 0;
+            const oldOwner = existingNode?.owner || 'system';
             const owner = appId || 'system';
 
             if (owner !== 'system') {
                 const currentUsage = this.calculateUsage(owner);
-                if (currentUsage - oldSize + newSize > this.QUOTA_PER_APP) {
+                // If the app is overwriting its OWN file, net change is newSize - oldSize.
+                // If it's overwriting SOMEONE ELSE'S file, its usage increases by full newSize.
+                const usageDelta = (owner === oldOwner) ? (newSize - oldSize) : newSize;
+
+                if (currentUsage + usageDelta > this.QUOTA_PER_APP) {
                     SysLog.log('ERR', `Quota Exceeded: ${owner} tried to write ${newSize} bytes`, owner);
                     Notifications.show({ title: 'System', message: `Limit miejsca dla aplikacji ${owner} został wyczerpany.` });
                     return false;
                 }
+            }
+
+            // Refund the old owner for the space if the file is being completely overwritten by someone else
+            if (existingNode && oldOwner !== owner && oldOwner !== 'system') {
+                this._usage[oldOwner] = Math.max(0, (this._usage[oldOwner] || 0) - oldSize);
             }
 
             const parts = path.split('/').filter(p => p);
@@ -649,6 +661,14 @@
                 SysLog.log('ERR', `Rename failed: Target ${newPath} is a directory`, appId);
                 return false;
             }
+
+            // Fix Quota leak: if overwriting a file, subtract its size from its owner's usage
+            if (newParent[newName] !== undefined && newParent[newName].content !== undefined) {
+                const targetSize = newParent[newName].size || 0;
+                const targetOwner = newParent[newName].owner || 'system';
+                this._usage[targetOwner] = Math.max(0, (this._usage[targetOwner] || 0) - targetSize);
+            }
+
             newParent[newName] = oldParent[oldName];
             delete oldParent[oldName];
 
@@ -663,6 +683,88 @@
             EventBus.publish('vfs:changed', { from: appId || 'system', data: { path: oldPath, type: 'rename', newPath } });
             this._notifyWatchers(oldPath);
             this._notifyWatchers(newPath);
+            return true;
+        },
+
+        async copy(srcPath, dstPath, appId, manifest) {
+            srcPath = this.join(srcPath);
+            dstPath = this.join(dstPath);
+            if (!this.checkAccess(srcPath, appId, 'r', manifest) || !this.checkAccess(dstPath, appId, 'w', manifest)) {
+                SysLog.log('ERR', `Permission Denied (copy): ${srcPath} -> ${dstPath}`, appId);
+                return false;
+            }
+            if (dstPath === srcPath || dstPath.startsWith(srcPath + '/')) {
+                SysLog.log('ERR', `Invalid copy destination: ${srcPath} -> ${dstPath}`, appId);
+                return false;
+            }
+
+            const srcNode = this._resolve(srcPath, true);
+            if (!srcNode) return false;
+
+            // Optional: parse destination
+            const dstParts = dstPath.split('/').filter(p => p);
+            if (dstParts.length === 0) return false;
+
+            let dstParent = this.root;
+            for (let i = 0; i < dstParts.length - 1; i++) {
+                const part = dstParts[i];
+                if (!dstParent[part]) {
+                    dstParent[part] = { owner: appId || 'system', mtime: Date.now() };
+                }
+                dstParent = dstParent[part];
+            }
+            const dstName = dstParts[dstParts.length - 1];
+
+            if (dstParent[dstName] && typeof dstParent[dstName] === 'object' && dstParent[dstName].content === undefined) {
+                // Trying to copy over existing folder without proper merge/overwrite rules - fail for simplicity
+                SysLog.log('ERR', `Copy failed: Target ${dstPath} is a directory and already exists.`, appId);
+                return false;
+            }
+
+            // Fix Quota leak: if overwriting a file, subtract its size from its owner's usage
+            if (dstParent[dstName] !== undefined && dstParent[dstName].content !== undefined) {
+                const targetSize = dstParent[dstName].size || 0;
+                const targetOwner = dstParent[dstName].owner || 'system';
+                this._usage[targetOwner] = Math.max(0, (this._usage[targetOwner] || 0) - targetSize);
+            }
+
+            const cloneNode = (node) => {
+                if (!node) return node;
+                if (typeof node === 'string') return node;
+                if (node.content !== undefined) {
+                    const owner = appId || 'system';
+                    const newSize = node.content.length;
+                    if (this._usage[owner] !== undefined) {
+                        this._usage[owner] += newSize;
+                    } else {
+                        this._usage[owner] = newSize;
+                    }
+                    return {
+                        content: node.content,
+                        mtime: Date.now(),
+                        owner: owner,
+                        mode: node.mode || 0o644,
+                        size: newSize
+                    };
+                }
+                const newDir = { owner: appId || 'system', mtime: Date.now(), mode: node.mode || 0o755 };
+                for (const k in node) {
+                    if (['owner', 'mtime', 'mode', 'size'].includes(k)) continue;
+                    newDir[k] = cloneNode(node[k]);
+                }
+                return newDir;
+            };
+
+            dstParent[dstName] = cloneNode(srcNode);
+
+            this._invalidateCache(dstPath);
+            this._invalidateCache(this.dirname(dstPath));
+            await this.save();
+
+            SysLog.log('DEBUG', `Copied: ${srcPath} -> ${dstPath}`, 'VFS', { appId });
+            EventBus.publish('vfs:changed', { from: appId || 'system', data: { path: dstPath, type: 'copy', srcPath } });
+            this._notifyWatchers(dstPath);
+            this._notifyWatchers(this.dirname(dstPath));
             return true;
         },
 
@@ -887,8 +989,21 @@
     const AudioEngine = {
         ctx: null,
         enabled: true,
-        init() {
+        async init() {
             try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { }
+            try {
+                const audioSet = await VFS.read('/home/user/settings/audio.json', 'system');
+                if (audioSet) {
+                    const parsed = JSON.parse(audioSet);
+                    this.enabled = !!parsed.enabled;
+                }
+            } catch (e) { }
+
+            EventBus.subscribe('app:settings:audio_changed', (msg) => {
+                if (msg && msg.data !== undefined) {
+                    this.enabled = !!msg.data.enabled;
+                }
+            });
         },
         async play(type) {
             if (!this.enabled || !this.ctx) return;
@@ -1043,6 +1158,8 @@
                             );
                         }
                     },
+                    setClipboard: (data) => WebOS.clipboard = data,
+                    getClipboard: () => WebOS.clipboard,
                     window: {
                         focus: () => {
                             const proc = _getProc();
@@ -1080,11 +1197,26 @@
                             };
                         });
                     },
+                    getAllApps: () => {
+                        return Object.entries(state.apps).map(([id, app]) => ({
+                            id,
+                            name: app.name || (app.manifest && app.manifest.name) || id,
+                            icon: app.icon || (app.manifest && app.manifest.icon) || '❓'
+                        }));
+                    },
                     showContextMenu: (e, items) => ContextMenu.show(e, items),
                     lock: () => SessionManager.lock(),
                     getAssociation: (ext) => VFS.read(`/sys/associations/${ext}`, 'system'),
                     setTheme: (name) => ThemeEngine.setTheme(name),
-                    setWallpaper: (val) => ThemeEngine.setWallpaper(val)
+                    setWallpaper: (val) => ThemeEngine.setWallpaper(val),
+                    killApp: async (targetAppId) => {
+                        if (check('system.manage')) {
+                            if (targetAppId !== appId) {
+                                SysLog.log('INFO', `App ${appId} killing ${targetAppId} via Scoped API`);
+                            }
+                            await WebOS.killApp(targetAppId);
+                        }
+                    }
                 },
                 fs: {
                     read(path) { return check('fs.read') ? VFS.read(path, appId, manifest) : null; },
@@ -1093,6 +1225,7 @@
                     async mkdir(path) { return check('fs.write') ? await VFS.mkdir(path, appId, manifest) : null; },
                     async remove(path) { return check('fs.write') ? await VFS.remove(path, appId, manifest) : null; },
                     async rename(oldPath, newPath) { return check('fs.write') ? await VFS.rename(oldPath, newPath, appId, manifest) : null; },
+                    async copy(srcPath, dstPath) { return check('fs.write') && check('fs.read') ? await VFS.copy(srcPath, dstPath, appId, manifest) : null; },
                     find(query) { return VFS.find(query, appId, manifest); },
                     join: (...args) => VFS.join(...args),
                     dirname: (path) => VFS.dirname(path),
@@ -1230,12 +1363,14 @@
                     </div>
                 </div>
                 <div class="window-content"></div>
+                <div class="window-resizer"></div>
             `;
             winEl.querySelector('.window-title').textContent = `${options.icon || ''} ${options.title || 'App'}`;
             document.getElementById('window-layer').appendChild(winEl);
             const win = { id, element: winEl, appId, state: 'normal' };
             state.windows.push(win);
             this.makeDraggable(winEl);
+            this.makeResizable(winEl);
             this.setupFocus(winEl);
             this.focus(id);
             winEl.querySelector('.close').onclick = () => WebOS.killApp(appId);
@@ -1333,6 +1468,9 @@
                     console.error(`[Kernel] App "${proc.appDef.name}" onFocus error:`, e);
                     SysLog.log('ERR', `onFocus error in ${proc.appDef.name}: ${e.message}`);
                 }
+            }
+            if (proc) {
+                EventBus.publish('window:focus', { appId: proc.appId, windowId: id });
             }
             if (!state.windowStack) state.windowStack = [];
             state.windowStack = state.windowStack.filter(winId => winId !== id);
@@ -1433,7 +1571,7 @@
                     Object.assign(snapPreview.style, { top: '50vh', left: '50%', width: '50%', height: 'calc(50vh - 40px)' });
                 } else if (currentY < edge) {
                     snapPreview.dataset.snap = 'top';
-                    Object.assign(snapPreview.style, { top: '0', left: '0', width: '100%', height: 'calc(100vh - 40px)' });
+                    Object.assign(snapPreview.style, { top: '0', left: '0', width: '100%', height: '50vh' });
                 } else if (currentY > state.viewport.h - edge - 40) {
                     snapPreview.dataset.snap = 'bottom';
                     Object.assign(snapPreview.style, { top: '50vh', left: '0', width: '100%', height: 'calc(50vh - 40px)' });
@@ -1468,7 +1606,7 @@
                     if (snap === 'left' || snap === 'right') {
                         Object.assign(el.style, { top: '0', height: 'calc(100vh - 40px)', width: '50%', left: snap === 'left' ? '0' : '50%' });
                     } else if (snap === 'top') {
-                        WindowManager.toggleMaximize(win.id);
+                        Object.assign(el.style, { top: '0', left: '0', height: '50vh', width: '100%' });
                     } else if (snap === 'bottom') {
                         Object.assign(el.style, { left: '0', width: '100%', height: 'calc(50vh - 40px)', top: '50vh' });
                     } else if (snap === 'top-left') {
@@ -1488,6 +1626,49 @@
                 }
                 WebOS.saveState();
             };
+        },
+        makeResizable(el) {
+            const resizer = el.querySelector('.window-resizer');
+            if (!resizer) return;
+            let isResizing = false;
+            let startWidth, startHeight, startX, startY;
+            resizer.addEventListener('mousedown', (e) => {
+                const win = state.windows.find(w => w.element === el);
+                if (win && win.state === 'maximized') return;
+                isResizing = true;
+                this.focus(win ? win.id : el.id);
+                startWidth = el.offsetWidth;
+                startHeight = el.offsetHeight;
+                startX = e.clientX;
+                startY = e.clientY;
+                e.stopPropagation();
+                e.preventDefault();
+
+                const onMouseMove = (moveEvent) => {
+                    if (!isResizing) return;
+                    const newWidth = Math.max(320, startWidth + (moveEvent.clientX - startX));
+                    const newHeight = Math.max(200, startHeight + (moveEvent.clientY - startY));
+                    el.style.width = newWidth + 'px';
+                    el.style.height = newHeight + 'px';
+                    if (el.classList.contains('window-snapped')) {
+                        el.classList.remove('window-snapped');
+                        if (win) {
+                            win.oldWidth = null;
+                            win.oldHeight = null;
+                        }
+                    }
+                };
+
+                const onMouseUp = () => {
+                    isResizing = false;
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    WebOS.saveState();
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
         }
     };
     global.WebOS = {
@@ -2373,6 +2554,25 @@
         if (switcherBtn) {
             switcherBtn.onclick = () => WebOS.ui.toggleSwitcher();
         }
+
+        const taskbarContainer = document.getElementById('running-apps');
+        if (taskbarContainer) {
+            taskbarContainer.oncontextmenu = (e) => {
+                if (e.target.closest('.taskbar-item')) return; // Ignore clicks directly on app icons
+                e.preventDefault();
+                e.stopPropagation();
+                WebOS.ui.showContextMenu(e, [
+                    {
+                        label: 'Zamknij wszystkie',
+                        action: () => {
+                            WebOS.ui.confirm('Czy na pewno chcesz zamknąć wszystkie aplikacje?', async (confirmed) => {
+                                if (confirmed) await WebOS.killAll();
+                            });
+                        }
+                    }
+                ]);
+            };
+        }
         document.addEventListener('mousedown', (e) => {
             const switcher = document.getElementById('switcher-overlay');
             if (switcher && switcher.classList.contains('active') && !e.target.closest('.switcher-grid') && !e.target.closest('#switcher-btn')) {
@@ -2413,6 +2613,7 @@
                 ContextMenu.show(e, [
                     { label: 'Odśwież', action: () => window.location.reload() },
                     { label: 'Zablokuj system', action: () => SessionManager.lock() },
+                    { label: 'Personalizuj', action: () => WebOS.launchApp('settings') },
                     { label: 'Ustawienia', action: () => WebOS.launchApp('settings') },
                     { label: 'Nowa notatka', action: () => WebOS.launchApp('notes') },
                     { label: 'Zamknij wszystkie', action: () => WebOS.killAll() },

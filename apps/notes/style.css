@@ -44,6 +44,8 @@
     font-size: 14px;
     resize: none;
     outline: none;
+    white-space: pre-wrap;
+    overflow-x: auto;
     padding: 12px;
     line-height: 1.6;
 }

@@ -224,6 +224,16 @@ body {
     background: #ff4757;
 }
 
+.window-resizer {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 15px;
+    height: 15px;
+    cursor: nwse-resize;
+    z-index: 20;
+}
+
 .window-content {
     flex: 1;
     padding: 12px;
@@ -269,7 +279,7 @@ body {
 }
 
 .search-btn {
-    font-size: 14px;
+    font-size: 9px;
     font-weight: normal;
 }
 

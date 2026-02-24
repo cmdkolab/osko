@@ -2,11 +2,11 @@ WebOS.registerApp({
     id: "taskmanager",
     name: "Task Manager",
     icon: "📊",
-    version: "1.6.0",
+    version: "2.3.0",
     manifest: {
         name: "Task Manager",
         icon: "📊",
-        permissions: ["notifications"]
+        permissions: ["notifications", "system.manage"]
     },
     width: "400px",
     height: "500px",
@@ -32,14 +32,16 @@ WebOS.registerApp({
         `;
         const list = container.querySelector('.tm-list');
         const killAllBtn = container.querySelector('.tm-kill-all-btn');
-        killAllBtn.onclick = async () => {
-            if (confirm('Czy na pewno chcesz zakończyć wszystkie aplikacje?')) {
-                const processes = await api.system.getProcesses();
-                processes.forEach(p => {
-                    if (p.appId !== 'taskmanager') WebOS.killApp(p.appId);
-                });
-                refresh();
-            }
+        killAllBtn.onclick = () => {
+            api.ui.confirm('Czy na pewno chcesz zakończyć wszystkie aplikacje?', async (confirmed) => {
+                if (confirmed) {
+                    const processes = await api.system.getProcesses();
+                    processes.forEach(p => {
+                        if (p.appId !== 'taskmanager') api.system.killApp(p.appId);
+                    });
+                    refresh();
+                }
+            });
         };
         const refresh = async () => {
             const processes = await api.system.getProcesses();
@@ -67,7 +69,7 @@ WebOS.registerApp({
                         killBtn.innerText = '—';
                     } else {
                         killBtn.onclick = () => {
-                            WebOS.killApp(p.appId);
+                            api.system.killApp(p.appId);
                             refresh();
                         };
                     }

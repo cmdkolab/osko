@@ -7,7 +7,7 @@ WebOS.registerApp({
         icon: "📂",
         permissions: ["fs.read", "fs.write", "notifications"]
     },
-    version: "1.6.0",
+    version: "2.3.0",
     width: "500px",
     height: "400px",
     mount(container, api) {
@@ -204,6 +204,18 @@ WebOS.registerApp({
                     }
                 }
                 menuItems.push({
+                    label: 'Kopiuj',
+                    action: () => {
+                        this.api.system.setClipboard({
+                            type: 'file',
+                            path: fullPath,
+                            name: item.name,
+                            isDirectory: item.type === 'directory'
+                        });
+                        this.api.notifications.show({ title: 'Explorer', message: `Skopiowano: ${item.name}` });
+                    }
+                });
+                menuItems.push({
                     label: 'Usuń',
                     action: () => {
                         this.api.ui.confirm(`Czy na pewno usunąć ${item.name}?`, async (confirmed) => {
@@ -223,6 +235,62 @@ WebOS.registerApp({
             }
         });
         grid.appendChild(fragment);
+
+        grid.tabIndex = 0;
+        grid.onkeydown = (e) => {
+            const active = document.activeElement;
+            const itemsNodeList = grid.querySelectorAll('.explorer-item');
+            if (itemsNodeList.length === 0) return;
+            const itemsArr = Array.from(itemsNodeList);
+            let idx = itemsArr.indexOf(active);
+
+            // Columns count estimation (approximate based on grid layout width ~500px / ~80px item)
+            // A more robust way would be calculating offsetTop, but this is a simple fallback.
+            // Let's use getBoundingClientRect for accurate row calculation
+            const getCols = () => {
+                if (itemsArr.length < 2) return 1;
+                const top0 = itemsArr[0].getBoundingClientRect().top;
+                for (let i = 1; i < itemsArr.length; i++) {
+                    if (itemsArr[i].getBoundingClientRect().top > top0) return i;
+                }
+                return itemsArr.length;
+            };
+
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                idx = (idx + 1) % itemsArr.length;
+                itemsArr[idx].focus();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                idx = (idx - 1 + itemsArr.length) % itemsArr.length;
+                itemsArr[idx].focus();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const cols = getCols();
+                if (idx === -1) idx = 0;
+                else idx = Math.min(idx + cols, itemsArr.length - 1);
+                itemsArr[idx].focus();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const cols = getCols();
+                if (idx === -1) idx = 0;
+                else idx = Math.max(idx - cols, 0);
+                itemsArr[idx].focus();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (idx >= 0 && idx < itemsArr.length) {
+                    itemsArr[idx].click();
+                    // if it was a directory, clicking re-renders, so we blur
+                    if (document.activeElement === itemsArr[idx]) {
+                        // Try to maintain focus on grid if we didn't navigate away
+                    }
+                }
+            } else if (e.key === 'Backspace') {
+                // Navigate up
+                e.preventDefault();
+                container.querySelector('.explorer-back').click();
+            }
+        };
 
         breadcrumbs.innerHTML = '';
         const parts = this.api.fs.split(this.currentPath);
@@ -250,7 +318,8 @@ WebOS.registerApp({
             if (e.target.closest('.explorer-item')) return;
             e.preventDefault();
             e.stopPropagation();
-            this.api.system.showContextMenu(e, [
+
+            const gridMenuItems = [
                 {
                     label: 'Nowy plik (.txt)',
                     action: () => {
@@ -301,19 +370,51 @@ WebOS.registerApp({
                                             newName = `${name} (kopia ${++counter})`;
                                         }
                                         await this.api.fs.mkdir(this.api.fs.join(this.currentPath, newName));
-                                        this._pendingFocus = newName;
+                                        this._pendingFocus = newName; // Added this line based on similar logic above
                                         this.render(container);
                                     }
                                 });
                             } else {
                                 await this.api.fs.mkdir(path);
-                                this._pendingFocus = name;
+                                this._pendingFocus = name; // Added this line based on similar logic above
                                 this.render(container);
                             }
                         });
                     }
                 }
-            ]);
+            ];
+
+            const clip = this.api.system.getClipboard();
+            if (clip && clip.type === 'file' && clip.path) {
+                gridMenuItems.push({
+                    label: `Wklej (${clip.name})`,
+                    action: async () => {
+                        const src = clip.path;
+                        let dstName = clip.name;
+                        let dstPath = this.api.fs.join(this.currentPath, dstName);
+
+                        if (await this.api.fs.exists(dstPath)) {
+                            let counter = 1;
+                            const extMatch = dstName.includes('.') && !clip.isDirectory ? dstName.match(/(\.[^.]+)$/) : null;
+                            const ext = extMatch ? extMatch[1] : '';
+                            const base = extMatch ? dstName.slice(0, dstName.lastIndexOf(ext)) : dstName;
+
+                            let newName = `${base} (kopia)${ext}`;
+                            while (await this.api.fs.exists(this.api.fs.join(this.currentPath, newName))) {
+                                newName = `${base} (kopia ${++counter})${ext}`;
+                            }
+                            dstPath = this.api.fs.join(this.currentPath, newName);
+                            dstName = newName;
+                        }
+
+                        await this.api.fs.copy(src, dstPath);
+                        this._pendingFocus = dstName;
+                        this.render(container);
+                    }
+                });
+            }
+
+            this.api.system.showContextMenu(e, gridMenuItems);
         };
         container.onkeydown = (e) => {
             const active = document.activeElement;

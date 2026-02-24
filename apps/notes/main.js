@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "notes",
     name: "Notes",
     icon: "📝",
-    version: "1.6.0",
+    version: "2.3.0",
     manifest: {
         name: "Notes",
         icon: "📝",
@@ -18,6 +18,7 @@ WebOS.registerApp({
             <div class="notes-toolbar">
                 <button class="notes-btn new-btn">Nowy</button>
                 <button class="notes-btn save-btn">Zapisz</button>
+                <button class="notes-btn wrap-btn">Zawijanie</button>
                 <button class="notes-btn export-btn">Eksportuj</button>
                 <span class="notes-status">Niezapisany</span>
             </div>
@@ -28,7 +29,15 @@ WebOS.registerApp({
         const newBtn = container.querySelector('.new-btn');
         const saveBtn = container.querySelector('.save-btn');
         const exportBtn = container.querySelector('.export-btn');
+        const wrapBtn = container.querySelector('.wrap-btn');
         this._autoSaveTimer = null;
+        let isWrapped = true;
+
+        wrapBtn.onclick = () => {
+            isWrapped = !isWrapped;
+            textarea.style.whiteSpace = isWrapped ? 'pre-wrap' : 'pre';
+            wrapBtn.style.opacity = isWrapped ? '1' : '0.5';
+        };
         textarea.oninput = () => {
             status.innerText = 'Zapisuję...';
             if (this._autoSaveTimer) this.api.system.clearTimeout(this._autoSaveTimer);

@@ -46,7 +46,8 @@
     gap: 10px;
 }
 
-.theme-btn {
+.theme-btn,
+.sound-btn {
     flex: 1;
     padding: 12px;
     background: rgba(255, 255, 255, 0.05);
@@ -56,17 +57,48 @@
     cursor: pointer;
     font-size: 12px;
     font-weight: 600;
-    transition: var(--transition);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
 }
 
-.theme-btn:hover {
+.theme-btn:hover,
+.sound-btn:hover {
     background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
 }
 
-.theme-btn.active {
+.theme-btn:active,
+.sound-btn:active {
+    transform: scale(0.95);
+}
+
+.theme-btn.active,
+.sound-btn.active {
     background: var(--accent-color);
     border-color: var(--accent-color);
-    box-shadow: 0 0 15px var(--accent-color);
+    box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.4);
+    color: #fff;
+}
+
+/* Add a subtle ripple effect for the active sound button */
+.sound-btn.active::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 60%);
+    transform: translate(-50%, -50%) scale(0);
+    animation: ripple 0.6s ease-out forwards;
+}
+
+@keyframes ripple {
+    to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+    }
 }
 
 .system-box {
@@ -93,4 +125,72 @@
 
 .sys-ok {
     color: #4ade80;
+}
+
+.autostart-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.autostart-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--glass-border);
+}
+
+.autostart-item-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.autostart-item-icon {
+    font-size: 18px;
+}
+
+/* Custom Checkbox Toggle Stylng */
+.autostart-toggle {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 40px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    outline: none;
+    transition: var(--transition);
+    border: 1px solid var(--glass-border);
+}
+
+.autostart-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: var(--text-color);
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.autostart-toggle:checked {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.autostart-toggle:checked::after {
+    left: 22px;
+    background: #fff;
 }

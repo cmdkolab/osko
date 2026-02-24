@@ -8,7 +8,8 @@
 }
 
 .explorer-back,
-.explorer-home {
+.explorer-home,
+.explorer-sort {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
     color: var(--text-color);
@@ -23,7 +24,8 @@
 }
 
 .explorer-back:hover,
-.explorer-home:hover {
+.explorer-home:hover,
+.explorer-sort:hover {
     background: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
 }

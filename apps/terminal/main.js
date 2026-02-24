@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "terminal",
     name: "Terminal",
     icon: "🐚",
-    version: "1.6.0",
+    version: "2.3.0",
     manifest: {
         name: "Terminal",
         icon: "🐚",
@@ -32,7 +32,7 @@ WebOS.registerApp({
         this.prompt = container.querySelector('.terminal-prompt');
 
         this.updatePrompt();
-        this.print("OS(KO) Terminal v1.6.0");
+        this.print("OS(KO) Terminal v2.2.0");
         this.print("Wpisz 'help', aby uzyskać listę komend.");
 
         this.input.onkeydown = (e) => {

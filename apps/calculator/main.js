@@ -7,7 +7,7 @@ WebOS.registerApp({
         icon: "🧮",
         permissions: []
     },
-    version: "1.0.1",
+    version: "2.3.0",
     width: "320px",
     height: "460px",
     mount(container, api) {
@@ -106,7 +106,12 @@ WebOS.registerApp({
         };
 
         container.querySelectorAll('.calc-btn').forEach(btn => {
-            btn.onclick = () => {
+            btn.setAttribute('tabindex', '-1'); // Prevent tab focus
+            btn.onclick = (e) => {
+                // Return focus to the container if user clicked with mouse
+                // to maintain keyboard listener
+                container.focus();
+
                 const val = btn.dataset.val;
                 if (current === 'Error') { current = '0'; shouldReset = false; }
                 if (val === 'C') {
@@ -131,6 +136,34 @@ WebOS.registerApp({
                 updateDisplay();
             };
         });
+
+        const keyMap = {
+            '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
+            '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
+            '.': '.', ',': '.',
+            '+': '+', '-': '-', '*': '*', '/': '/', '%': '%',
+            '(': '()', ')': '()',
+            'Enter': '=', '=': '=',
+            'Escape': 'C', 'Backspace': 'C', 'Delete': 'C'
+        };
+
+        // Attach global keydown to the container so that focus within app works
+        container.tabIndex = 0; // make focusable
+        container.style.outline = 'none'; // hide focus ring
+        container.onkeydown = (e) => {
+            if (keyMap[e.key]) {
+                e.preventDefault();
+                const v = keyMap[e.key];
+                const btn = container.querySelector(`.calc-btn[data-val="${v}"]`);
+                if (btn) {
+                    btn.classList.add('active');
+                    setTimeout(() => btn.classList.remove('active'), 100);
+                    btn.click();
+                }
+            }
+        };
+        // Auto-focus on mount
+        setTimeout(() => container.focus(), 100);
     },
     unmount() {
         this.container = null;
