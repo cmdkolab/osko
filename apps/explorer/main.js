@@ -196,9 +196,9 @@ WebOS.registerApp({
                                 const content = await this.api.fs.read(fullPath);
                                 if (content && typeof content === 'string' && (content.startsWith('#') || content.startsWith('linear-gradient') || content.startsWith('url') || content.startsWith('http') || (content.length > 50 && content.length < 2000))) {
                                     await this.api.system.setWallpaper(content);
-                                    this.api.notifications.show({ title: 'System', message: 'Tapeta została zaktualizowana.' });
+                                    this.api.notifications.show({ title: 'System', message: window.I18n.t('explorer.wallpaper_success') });
                                 } else {
-                                    this.api.notifications.show({ title: 'System', message: 'Ten plik nie może być tapetą.' });
+                                    this.api.notifications.show({ title: 'System', message: window.I18n.t('explorer.wallpaper_invalid') });
                                 }
                             }
                         });

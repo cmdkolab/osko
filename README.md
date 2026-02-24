@@ -1,6 +1,6 @@
 # 🚀 OS(KO) - Browser OS
 
-![Version](https://img.shields.io/badge/version-2.8.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.9.0-blue.svg)
 ![Vanilla JS](https://img.shields.io/badge/Vanilla-Javascript-yellow)
 ![Local](https://img.shields.io/badge/Runs-Locally-success)
 

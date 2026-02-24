@@ -78,7 +78,7 @@ WebOS.registerApp({
                 this.api.ui.prompt(window.I18n.t('explorer.prompt_file_name'), 'osko_note', async (name) => {
                     if (!name) return;
                     const filename = name.endsWith('.txt') ? name : name + '.txt';
-                    const fullPath = `/home/user/documents/${filename}`;
+                    const fullPath = `/home/user/Documents/${filename}`;
                     if (await this.api.fs.exists(fullPath)) {
                         this.api.ui.fileConflict(filename, async (choice) => {
                             if (choice === 'replace') {
@@ -88,10 +88,10 @@ WebOS.registerApp({
                                 const base = filename.replace('.txt', '');
                                 let newName = `${base} (kopia).txt`;
                                 let counter = 1;
-                                while (await this.api.fs.exists(`/home/user/documents/${newName}`)) {
+                                while (await this.api.fs.exists(`/home/user/Documents/${newName}`)) {
                                     newName = `${base} (kopia ${++counter}).txt`;
                                 }
-                                this.currentPath = `/home/user/documents/${newName}`;
+                                this.currentPath = `/home/user/Documents/${newName}`;
                                 await this.saveContent();
                             }
                         });

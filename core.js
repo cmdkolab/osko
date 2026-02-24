@@ -100,7 +100,7 @@
         SYSTEM_DIR: '/sys',
         TEMP_DIR: '/tmp',
         START_TIME: Date.now(),
-        VERSION: '2.8.0',
+        VERSION: '2.9.0',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -388,7 +388,7 @@
             if (manifest?.sandbox) {
                 if (path.startsWith(`/var/apps/${appId}`)) return true;
                 if (path.startsWith(`/home/user/settings/${appId}`)) return true;
-                if (path.startsWith('/home/user/documents') && manifest.permissions?.includes('fs.shared')) return true;
+                if (path.startsWith('/home/user/Documents') && manifest.permissions?.includes('fs.shared')) return true;
                 return false;
             }
 
@@ -411,7 +411,7 @@
             if (path.startsWith('/var/apps/')) {
                 return path.startsWith(`/var/apps/${appId}`);
             }
-            if (path.startsWith('/home/user/documents')) {
+            if (path.startsWith('/home/user/Documents')) {
                 return true;
             }
             if (path.startsWith('/home/user/settings/')) {
@@ -512,7 +512,7 @@
             const node = this._resolve(path);
             if (node && typeof node === 'object' && node.content === undefined) {
                 return Object.keys(node)
-                    .filter(name => name !== 'owner' && name !== 'mtime' && name !== 'size')
+                    .filter(name => !['owner', 'mtime', 'size', 'mode'].includes(name))
                     .map(name => {
                         const child = node[name];
                         const isFile = typeof child === 'string' || (child && child.content !== undefined);
@@ -588,7 +588,7 @@
             const scan = (node, currentPath) => {
                 if (!node || typeof node !== 'object') return;
                 for (const name in node) {
-                    if (['owner', 'mtime', 'size', 'content'].includes(name)) continue;
+                    if (['owner', 'mtime', 'size', 'content', 'mode'].includes(name)) continue;
                     const path = this.join(currentPath, name);
                     if (!this.checkAccess(path, appId, 'r', manifest)) continue;
                     if (name.toLowerCase().includes(q)) {

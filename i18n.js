@@ -62,6 +62,8 @@ window.I18n = {
             'settings.autostart': 'Autostart',
             'settings.wallpaper_changed': 'Wallpaper changed.',
             'settings.theme_changed': 'Theme changed to:',
+            'explorer.wallpaper_success': 'Wallpaper updated.',
+            'explorer.wallpaper_invalid': 'This file cannot be used as wallpaper.',
 
             // Syslog
             'syslog.title': 'Syslog',
@@ -171,6 +173,8 @@ window.I18n = {
             'settings.autostart': 'Autostart',
             'settings.wallpaper_changed': 'Zmieniono tapetę.',
             'settings.theme_changed': 'Ustawiono motyw:',
+            'explorer.wallpaper_success': 'Tapeta została zaktualizowana.',
+            'explorer.wallpaper_invalid': 'Ten plik nie może być tapetą.',
 
             // Syslog
             'syslog.title': 'Logi systemowe',
