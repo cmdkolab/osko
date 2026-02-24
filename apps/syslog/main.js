@@ -1,10 +1,10 @@
 WebOS.registerApp({
     id: "syslog",
-    name: "System Log",
+    get name() { return window.I18n.t('syslog.title'); },
     icon: "📜",
-    version: "2.3.0",
+    version: "2.3.1",
     manifest: {
-        name: "System Log",
+        get name() { return window.I18n.t('syslog.title'); },
         icon: "📜",
         permissions: ["fs.read", "fs.write", "notifications"]
     },
@@ -15,8 +15,8 @@ WebOS.registerApp({
         container.innerHTML = `
             <div class="syslog-app">
                 <div class="syslog-toolbar">
-                    <button class="notes-btn refresh-btn">Odśwież</button>
-                    <button class="notes-btn clear-btn">Wyczyść</button>
+                    <button class="notes-btn refresh-btn">${window.I18n.t('menu.refresh')}</button>
+                    <button class="notes-btn clear-btn">${window.I18n.t('syslog.clear')}</button>
                 </div>
                 <div class="syslog-viewer"></div>
             </div>
@@ -25,7 +25,7 @@ WebOS.registerApp({
         const refreshBtn = container.querySelector('.refresh-btn');
         const clearBtn = container.querySelector('.clear-btn');
         clearBtn.onclick = () => {
-            api.ui.confirm('Czy na pewno wyczyścić logi?', async (confirmed) => {
+            api.ui.confirm(window.I18n.t('syslog.confirm_clear'), async (confirmed) => {
                 if (confirmed) {
                     await api.fs.write('/var/log/syslog', '[CLEARED] ' + new Date().toLocaleString() + '\n');
                     await refresh();
@@ -35,7 +35,7 @@ WebOS.registerApp({
         const refresh = async () => {
             const logs = await api.fs.read('/var/log/syslog');
             if (!logs) {
-                viewer.innerHTML = 'Brak logów.';
+                viewer.innerHTML = window.I18n.t('syslog.no_logs');
                 return;
             }
             const lines = logs.split('\n');

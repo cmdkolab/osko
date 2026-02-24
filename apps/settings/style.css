@@ -47,7 +47,8 @@
 }
 
 .theme-btn,
-.sound-btn {
+.sound-btn,
+.lang-btn {
     flex: 1;
     padding: 12px;
     background: rgba(255, 255, 255, 0.05);
@@ -63,18 +64,21 @@
 }
 
 .theme-btn:hover,
-.sound-btn:hover {
+.sound-btn:hover,
+.lang-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     transform: translateY(-2px);
 }
 
 .theme-btn:active,
-.sound-btn:active {
+.sound-btn:active,
+.lang-btn:active {
     transform: scale(0.95);
 }
 
 .theme-btn.active,
-.sound-btn.active {
+.sound-btn.active,
+.lang-btn.active {
     background: var(--accent-color);
     border-color: var(--accent-color);
     box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.4);
@@ -82,7 +86,8 @@
 }
 
 /* Add a subtle ripple effect for the active sound button */
-.sound-btn.active::after {
+.sound-btn.active::after,
+.lang-btn.active::after {
     content: '';
     position: absolute;
     top: 50%;

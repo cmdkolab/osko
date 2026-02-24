@@ -1,10 +1,10 @@
 WebOS.registerApp({
     id: "settings",
-    name: "Settings",
+    get name() { return window.I18n.t('settings.title'); },
     icon: "⚙️",
-    version: "2.3.0",
+    version: "2.3.1",
     manifest: {
-        name: window.I18n.t('settings.title'),
+        get name() { return window.I18n.t('settings.title'); },
         icon: "⚙️",
         permissions: ["notifications", "fs.read", "fs.write", "system.manage"]
     },

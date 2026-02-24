@@ -1,10 +1,10 @@
 WebOS.registerApp({
     id: "terminal",
-    name: "Terminal",
+    get name() { return window.I18n.t('terminal.title'); },
     icon: "🐚",
-    version: "2.3.0",
+    version: "2.3.1",
     manifest: {
-        name: "Terminal",
+        get name() { return window.I18n.t('terminal.title'); },
         icon: "🐚",
         permissions: ["fs.read", "fs.write"]
     },
@@ -32,8 +32,8 @@ WebOS.registerApp({
         this.prompt = container.querySelector('.terminal-prompt');
 
         this.updatePrompt();
-        this.print("OS(KO) Terminal v2.2.0");
-        this.print("Wpisz 'help', aby uzyskać listę komend.");
+        this.print(`OS(KO) ${window.I18n.t('terminal.title')} v2.2.0`);
+        this.print(window.I18n.t('terminal.welcome'));
 
         this.input.onkeydown = (e) => {
             if (e.key === 'Enter') {
@@ -85,7 +85,7 @@ WebOS.registerApp({
 
         switch (cmd) {
             case 'help':
-                this.print("Dostępne komendy: ls, cd, cat, edit, mkdir, rm, clear, echo, date, pwd, help, version, play, uptime, ps");
+                this.print(window.I18n.t('terminal.help'));
                 break;
             case 'echo':
                 this.print(args.join(' '));
@@ -100,7 +100,7 @@ WebOS.registerApp({
                 try {
                     const entries = await this.api.fs.list(this.cwd);
                     this.print(entries.map(e => e.type === 'dir' ? e.name + '/' : e.name).join('  '));
-                } catch (e) { this.print(`Błąd: ${e.message}`, 'error'); }
+                } catch (e) { this.print(`${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
                 break;
             case 'cd':
                 const newPath = this.api.fs.join(this.cwd, args[0] || '/home/user');
@@ -108,37 +108,37 @@ WebOS.registerApp({
                     this.cwd = newPath;
                     this.updatePrompt();
                 } else {
-                    this.print(`cd: ${args[0]}: Nie ma takiego folderu`, 'error');
+                    this.print(`cd: ${args[0]}: ${window.I18n.t('terminal.not_found')}`, 'error');
                 }
                 break;
             case 'cat':
-                if (!args[0]) { this.print("Użycie: cat <plik>"); break; }
+                if (!args[0]) { this.print("cat <file>"); break; }
                 try {
                     const path = this.api.fs.join(this.cwd, args[0]);
                     const isDir = await this.api.fs.list(path).catch(() => null);
                     if (Array.isArray(isDir)) {
-                        this.print(`cat: ${args[0]}: Jest folderem`, 'error');
+                        this.print(`cat: ${args[0]}: ${window.I18n.t('terminal.is_dir')}`, 'error');
                         break;
                     }
                     const content = await this.api.fs.read(path);
                     if (content === null) {
-                        this.print(`cat: ${args[0]}: Nie ma takiego pliku`, 'error');
+                        this.print(`cat: ${args[0]}: ${window.I18n.t('terminal.not_found')}`, 'error');
                     } else {
                         this.print(content);
                     }
-                } catch (e) { this.print(`cat: ${args[0]}: Błąd odczytu`, 'error'); }
+                } catch (e) { this.print(`cat: ${args[0]}: ${window.I18n.t('terminal.read_error')}`, 'error'); }
                 break;
             case 'mkdir':
-                if (!args[0]) { this.print("Użycie: mkdir <folder>"); break; }
+                if (!args[0]) { this.print("mkdir <dir>"); break; }
                 try {
                     await this.api.fs.mkdir(this.api.fs.join(this.cwd, args[0]));
-                } catch (e) { this.print(`mkdir: ${args[0]}: Błąd`, 'error'); }
+                } catch (e) { this.print(`mkdir: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
                 break;
             case 'rm':
-                if (!args[0]) { this.print("Użycie: rm <plik/folder>"); break; }
+                if (!args[0]) { this.print("rm <file/dir>"); break; }
                 try {
                     await this.api.fs.remove(this.api.fs.join(this.cwd, args[0]));
-                } catch (e) { this.print(`rm: ${args[0]}: Błąd`, 'error'); }
+                } catch (e) { this.print(`rm: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
                 break;
             case 'clear':
                 this.output.innerHTML = '';
@@ -147,42 +147,42 @@ WebOS.registerApp({
                 this.print(`OS(KO) Kernel v${this.api.system.VERSION}`);
                 break;
             case 'uptime':
-                this.print(`Uptime jądra twardego: ${this.api.system.getUptime()}`);
+                this.print(`${window.I18n.t('about.uptime')}: ${this.api.system.getUptime()}`);
                 break;
             case 'ps':
                 try {
                     const procs = await this.api.system.getProcesses();
-                    this.print('PID   RAM        CZAS    APLIKACJA', 'echo');
+                    this.print(`PID   RAM        ${window.I18n.t('taskmanager.status').toUpperCase()}    ${window.I18n.t('taskmanager.app').toUpperCase()}`, 'echo');
                     procs.forEach(p => {
                         const pidStr = String(p.pid).padEnd(5, ' ');
                         const ramStr = p.storage.split(' / ')[0].padEnd(10, ' ');
                         const timeStr = String(p.uptime).padEnd(7, ' ');
                         this.print(`${pidStr} ${ramStr} ${timeStr} ${p.name}`);
                     });
-                } catch (e) { this.print(`ps: Błąd: ${e.message}`, 'error'); }
+                } catch (e) { this.print(`ps: ${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
                 break;
             case 'play':
                 if (!args[0]) { this.print("Dostępne dźwięki: startup, click, error, notify"); break; }
                 this.api.audio.play(args[0]);
                 break;
             case 'edit':
-                if (!args[0]) { this.print("Użycie: edit <plik>"); break; }
+                if (!args[0]) { this.print("edit <file>"); break; }
                 try {
                     const path = this.api.fs.join(this.cwd, args[0]);
                     let content = '';
                     if (await this.api.fs.exists(path)) {
                         content = await this.api.fs.read(path);
                     }
-                    this.api.ui.prompt(`Edytuj: ${args[0]}`, content, async (newContent) => {
+                    this.api.ui.prompt(`${window.I18n.t('menu.edit')}: ${args[0]}`, content, async (newContent) => {
                         if (newContent !== null) {
                             await this.api.fs.write(path, newContent);
-                            this.print(`Zapisano ${args[0]}`);
+                            this.print(`${window.I18n.t('dialog.ok')} ${args[0]}`);
                         }
                     });
-                } catch (e) { this.print(`edit: ${args[0]}: Błąd`, 'error'); }
+                } catch (e) { this.print(`edit: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
                 break;
             default:
-                this.print(`Komenda nieodnaleziona: ${cmd}`, 'error');
+                this.print(`${window.I18n.t('terminal.not_found')}: ${cmd}`, 'error');
         }
     },
     async handleTab() {

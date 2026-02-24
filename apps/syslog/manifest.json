@@ -2,7 +2,7 @@
     "id": "syslog",
     "name": "System Log",
     "icon": "📜",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "permissions": [
         "fs.read",
         "notifications"

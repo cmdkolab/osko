@@ -1,5 +1,6 @@
 (function (global) {
     'use strict';
+    if (!window.I18n) { window.I18n = { t: (key, ...args) => args[0] || key, current: 'en' }; }
     const DBWrapper = {
         dbName: 'OSKO_DB',
         storeName: 'vfs_nodes',
@@ -98,7 +99,7 @@
         SYSTEM_DIR: '/sys',
         TEMP_DIR: '/tmp',
         START_TIME: Date.now(),
-        VERSION: '2.6.0',
+        VERSION: '2.7.1',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -454,7 +455,7 @@
 
                 if (currentUsage + usageDelta > this.QUOTA_PER_APP) {
                     SysLog.log('ERR', `Quota Exceeded: ${owner} tried to write ${newSize} bytes`, owner);
-                    Notifications.show({ title: 'System', message: `Limit miejsca dla aplikacji ${owner} został wyczerpany.` });
+                    Notifications.show({ title: 'System', message: window.I18n.t('dialog.quota_exceeded', owner) });
                     return false;
                 }
             }
@@ -491,14 +492,14 @@
                 mode: (current[nameInDir] && current[nameInDir].mode !== undefined) ? current[nameInDir].mode : 0o644
             };
 
-            const sizeDiff = owner === 'system' ? 0 : (newSize - oldSize);
+            const sizeDiff = owner === 'system' ? 0 : usageDelta;
             if (sizeDiff !== 0) {
                 this._usage[owner] = (this._usage[owner] || 0) + sizeDiff;
             }
 
             this._invalidateCache(path);
             this._invalidateCache(this.dirname(path));
-            await this.save();
+            void this.save();
             if (path !== '/var/log/syslog') {
                 SysLog.log('DEBUG', `File Written: ${path}`, 'VFS', { appId, size: newSize });
             }
@@ -575,7 +576,7 @@
             }
             this._invalidateCache(path);
             this._invalidateCache(this.dirname(path));
-            await this.save();
+            void this.save();
             SysLog.log('DEBUG', `Directory Created: ${path}`, 'VFS', { appId });
             EventBus.publish('vfs:changed', { from: appId || 'system', data: { path, type: 'mkdir' } });
             this._notifyWatchers(path);
@@ -634,7 +635,7 @@
             delete current[parts[parts.length - 1]];
             this._invalidateCache(path);
             this._invalidateCache(this.dirname(path));
-            await this.save();
+            void this.save();
             SysLog.log('DEBUG', `Path Removed: ${path}`, 'VFS', { appId });
             EventBus.publish('vfs:changed', { from: appId || 'system', data: { path, type: 'remove' } });
             this._notifyWatchers(path);
@@ -695,7 +696,7 @@
             this._invalidateCache(this.dirname(newPath));
 
 
-            await this.save();
+            void this.save();
             SysLog.log('DEBUG', `Renamed: ${oldPath} -> ${newPath}`, 'VFS', { appId });
             EventBus.publish('vfs:changed', { from: appId || 'system', data: { path: oldPath, type: 'rename', newPath } });
             this._notifyWatchers(oldPath);
@@ -717,6 +718,21 @@
 
             const srcNode = this._resolve(srcPath, true);
             if (!srcNode) return false;
+
+            const owner = appId || 'system';
+            if (owner !== 'system') {
+                const calculateNodeSize = (node) => {
+                    if (!node || typeof node === 'string') return 0;
+                    if (node.content !== undefined) return node.size || 0;
+                    return Object.values(node).reduce((sum, child) => sum + calculateNodeSize(child), 0);
+                };
+                const totalSrcSize = calculateNodeSize(srcNode);
+                if (this.calculateUsage(owner) + totalSrcSize > this.QUOTA_PER_APP) {
+                    SysLog.log('ERR', `Quota Exceeded: ${owner} tried to copy ${totalSrcSize} bytes`, owner);
+                    Notifications.show({ title: 'System', message: window.I18n.t('dialog.quota_exceeded', owner) });
+                    return false;
+                }
+            }
 
             // Optional: parse destination
             const dstParts = dstPath.split('/').filter(p => p);
@@ -765,7 +781,7 @@
 
             this._invalidateCache(dstPath);
             this._invalidateCache(this.dirname(dstPath));
-            await this.save();
+            void this.save();
 
             SysLog.log('DEBUG', `Copied: ${srcPath} -> ${dstPath}`, 'VFS', { appId });
             EventBus.publish('vfs:changed', { from: appId || 'system', data: { path: dstPath, type: 'copy', srcPath } });
@@ -906,6 +922,10 @@
             document.body.classList.remove('system-locked');
             const ls = document.getElementById('lock-screen');
             if (ls) ls.remove();
+            if (this._lockKeydown) {
+                document.removeEventListener('keydown', this._lockKeydown);
+                this._lockKeydown = null;
+            }
             SysLog.log('INFO', 'System unlocked');
             if (state.deferredRestoration) {
                 WebOS.flushDeferredRestoration();
@@ -935,6 +955,13 @@
             btn.onclick = () => {
                 this.unlock();
             };
+            this._lockKeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.unlock();
+                }
+            };
+            document.addEventListener('keydown', this._lockKeydown);
         }
     };
 
@@ -2047,7 +2074,7 @@
                         e.stopPropagation();
                         ContextMenu.show(e, [
                             {
-                                label: 'Zakończ',
+                                label: window.I18n.t('menu.terminate'),
                                 action: () => WebOS.killApp(proc.appId)
                             }
                         ]);
@@ -2176,12 +2203,12 @@
             },
             fileConflict(filename, cb) {
                 this.showDialog({
-                    message: `Plik "${filename}" już istnieje. Co chcesz zrobić?`,
+                    message: window.I18n.t('dialog.file_exists', filename),
                     type: 'choice',
                     choices: [
-                        { label: 'Zastąp', value: 'replace', class: 'danger' },
-                        { label: 'Utwórz kopię', value: 'copy' },
-                        { label: 'Anuluj', value: 'cancel' }
+                        { label: window.I18n.t('dialog.replace'), value: 'replace', class: 'danger' },
+                        { label: window.I18n.t('dialog.copy'), value: 'copy' },
+                        { label: window.I18n.t('dialog.cancel'), value: 'cancel' }
                     ],
                     onChoice: (val) => cb(val)
                 });
@@ -2240,7 +2267,7 @@
                         <div class="search-container glass-panel">
                             <div class="search-input-wrapper">
                                 <span class="search-icon">🔍</span>
-                                <input type="text" class="search-input" placeholder="Szukaj aplikacji i plików...">
+                                <input type="text" class="search-input" placeholder="${window.I18n.t('system.search_placeholder')}">
                             </div>
                             <div class="search-results"></div>
                         </div>
@@ -2272,13 +2299,30 @@
                             } catch (e) { }
                         }
                         allResults = [...allResults, ...appResults, ...fileResults.slice(0, 10)];
-                        results.innerHTML = allResults.map(res => `
-                            <div class="search-item" data-type="${res.type}" data-id="${res.id || res.path}">
-                                <span class="res-icon">${res.icon || (res.type === 'dir' ? '📁' : '📄')}</span>
-                                <span class="res-name">${res.name}</span>
-                                <span class="res-path">${res.path || 'Aplikacja'}</span>
-                            </div>
-                        `).join('');
+                        results.innerHTML = '';
+                        allResults.forEach(res => {
+                            const item = document.createElement('div');
+                            item.className = 'search-item';
+                            item.dataset.type = res.type;
+                            item.dataset.id = res.id || res.path;
+
+                            const iconSpan = document.createElement('span');
+                            iconSpan.className = 'res-icon';
+                            iconSpan.textContent = res.icon || (res.type === 'dir' ? '📁' : '📄');
+
+                            const nameSpan = document.createElement('span');
+                            nameSpan.className = 'res-name';
+                            nameSpan.textContent = res.name;
+
+                            const pathSpan = document.createElement('span');
+                            pathSpan.className = 'res-path';
+                            pathSpan.textContent = res.path || window.I18n.t('taskmanager.app');
+
+                            item.appendChild(iconSpan);
+                            item.appendChild(nameSpan);
+                            item.appendChild(pathSpan);
+                            results.appendChild(item);
+                        });
 
                         results.querySelectorAll('.search-item').forEach(item => {
                             item.onclick = () => {
@@ -2319,6 +2363,9 @@
                             else currentIndex = items.length - 1;
                         } else if (e.key === 'Enter' && currentIndex !== -1) {
                             items[currentIndex].click();
+                            return;
+                        } else if (e.key === 'Escape') {
+                            this.toggleSearch(false);
                             return;
                         } else {
                             return; // Not an arrow/enter key
@@ -2365,7 +2412,8 @@
                 const isActive = force !== undefined ? force : !overlay.classList.contains('active');
                 if (isActive) {
                     const now = new Date();
-                    const month = now.toLocaleString('pl-PL', { month: 'long' });
+                    const loc = window.I18n.current === 'pl' ? 'pl-PL' : 'en-US';
+                    const month = now.toLocaleString(loc, { month: 'long' });
                     const year = now.getFullYear();
                     const daysInMonth = new Date(year, now.getMonth() + 1, 0).getDate();
                     const firstDay = (new Date(year, now.getMonth(), 1).getDay() + 6) % 7;
@@ -2377,10 +2425,13 @@
                         daysHtml += `<div class="cal-day ${isToday}">${i}</div>`;
                     }
 
+                    const weekdays = window.I18n.current === 'pl' ? ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+                    const weekHtml = weekdays.map(w => `<div class="cal-weekday">${w}</div>`).join('');
+
                     overlay.innerHTML = `
                         <div class="cal-header">${month} ${year}</div>
                         <div class="cal-grid">
-                            <div class="cal-weekday">Pn</div><div class="cal-weekday">Wt</div><div class="cal-weekday">Śr</div><div class="cal-weekday">Cz</div><div class="cal-weekday">Pt</div><div class="cal-weekday">So</div><div class="cal-weekday">Nd</div>
+                            ${weekHtml}
                             ${daysHtml}
                         </div>
                     `;
@@ -2391,6 +2442,9 @@
                 }
             },
             showDialog(options) {
+                if (document.activeElement && document.activeElement !== document.body) {
+                    try { document.activeElement.blur(); } catch (e) { }
+                }
                 const overlay = document.createElement('div');
                 overlay.className = 'system-dialog-overlay';
 
@@ -2403,12 +2457,12 @@
                     ).join('');
                 } else if (options.type === 'alert') {
                     actionsHtml = `
-                        <button class="dialog-btn accept primary">${options.acceptText || 'OK'}</button>
+                        <button class="dialog-btn accept primary">${options.acceptText || window.I18n.t('dialog.ok')}</button>
                     `;
                 } else {
                     actionsHtml = `
-                        <button class="dialog-btn cancel">${options.cancelText || 'Anuluj'}</button>
-                        <button class="dialog-btn accept primary">${options.acceptText || 'OK'}</button>
+                        <button class="dialog-btn cancel">${options.cancelText || window.I18n.t('dialog.cancel')}</button>
+                        <button class="dialog-btn accept primary">${options.acceptText || window.I18n.t('dialog.ok')}</button>
                     `;
                 }
                 overlay.innerHTML = `
@@ -2554,7 +2608,7 @@
             }, 'GlobalHandler');
             if (logMsg !== _lastErr) {
                 const errText = String(logMsg).slice(0, 50);
-                Notifications.show({ title: 'System Error', message: `Wystąpił nieoczekiwany błąd: ${errText}...` });
+                Notifications.show({ title: 'System Error', message: window.I18n.t('dialog.error', errText) });
                 _lastErr = logMsg;
                 setTimeout(() => { if (_lastErr === logMsg) _lastErr = null; }, 5000);
             }
@@ -2574,9 +2628,9 @@
         AudioEngine.play('startup');
         if (DBWrapper._isFallback) {
             WebOS.ui.showDialog({
-                message: 'Twoja przeglądarka nie obsługuje IndexedDB lub dostęp został zablokowany. System będzie działać w trybie "tylko do odczytu" (zmiany nie zostaną zapisane po odświeżeniu strony).',
+                message: window.I18n.t('dialog.db_fallback'),
                 type: 'alert',
-                acceptText: 'Rozumiem'
+                acceptText: window.I18n.t('dialog.ok')
             });
         }
         await WebOS._loadDesktopPositions();
@@ -2593,12 +2647,19 @@
         }
         const searchBtn = document.getElementById('search-btn');
         if (searchBtn) {
+            searchBtn.title = window.I18n.t('system.search_tooltip');
             searchBtn.onclick = () => WebOS.ui.toggleSearch();
         }
 
         const switcherBtn = document.getElementById('switcher-btn');
         if (switcherBtn) {
+            switcherBtn.title = window.I18n.t('system.switcher_tooltip');
             switcherBtn.onclick = () => WebOS.ui.toggleSwitcher();
+        }
+
+        const hddUsage = document.getElementById('hdd-usage');
+        if (hddUsage) {
+            hddUsage.title = window.I18n.t('system.hdd_usage');
         }
 
         const taskbarContainer = document.getElementById('running-apps');
@@ -2609,9 +2670,9 @@
                 e.stopPropagation();
                 ContextMenu.show(e, [
                     {
-                        label: 'Zamknij wszystkie',
+                        label: window.I18n.t('menu.close_all'),
                         action: () => {
-                            WebOS.ui.confirm('Czy na pewno chcesz zamknąć wszystkie aplikacje?', async (confirmed) => {
+                            WebOS.ui.confirm(window.I18n.t('dialog.close_all_confirm'), async (confirmed) => {
                                 if (confirmed) await WebOS.killAll();
                             });
                         }
@@ -2634,7 +2695,7 @@
             const clockEl = document.getElementById('clock');
             if (clockEl) {
                 clockEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                clockEl.title = now.toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                clockEl.title = now.toLocaleDateString(window.I18n.current === 'pl' ? 'pl-PL' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 if (!clockEl.onclick) {
                     clockEl.onclick = (e) => {
                         e.stopPropagation();
@@ -2657,13 +2718,12 @@
                 e.preventDefault();
                 if (e.target.closest('#window-layer') || (e.target.id !== 'desktop' && !e.target.closest('#desktop-icons'))) return;
                 ContextMenu.show(e, [
-                    { label: 'Odśwież', action: () => window.location.reload() },
-                    { label: 'Zablokuj system', action: () => SessionManager.lock() },
-                    { label: 'Personalizuj', action: () => WebOS.launchApp('settings') },
-                    { label: 'Ustawienia', action: () => WebOS.launchApp('settings') },
-                    { label: 'Nowa notatka', action: () => WebOS.launchApp('notes') },
-                    { label: 'Zamknij wszystkie', action: () => WebOS.killAll() },
-                    { label: 'Wyłącz', action: () => WebOS.shutdown() }
+                    { label: window.I18n.t('menu.refresh'), action: () => window.location.reload() },
+                    { label: window.I18n.t('menu.lock_system'), action: () => SessionManager.lock() },
+                    { label: window.I18n.t('menu.settings'), action: () => WebOS.launchApp('settings') },
+                    { label: window.I18n.t('menu.new_note'), action: () => WebOS.launchApp('notes') },
+                    { label: window.I18n.t('menu.close_all'), action: () => WebOS.killAll() },
+                    { label: window.I18n.t('menu.shutdown'), action: () => WebOS.shutdown() }
                 ]);
             };
         }

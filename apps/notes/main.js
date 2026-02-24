@@ -1,10 +1,10 @@
 WebOS.registerApp({
     id: "notes",
-    name: "Notes",
+    get name() { return window.I18n.t('notes.title'); },
     icon: "📝",
-    version: "2.3.0",
+    version: "2.3.1",
     manifest: {
-        name: "Notes",
+        get name() { return window.I18n.t('notes.title'); },
         icon: "📝",
         permissions: ["fs.read", "fs.write", "notifications"]
     },
@@ -16,13 +16,13 @@ WebOS.registerApp({
         this.container = container;
         container.innerHTML = `
             <div class="notes-toolbar">
-                <button class="notes-btn new-btn">Nowy</button>
-                <button class="notes-btn save-btn">Zapisz</button>
-                <button class="notes-btn wrap-btn">Zawijanie</button>
-                <button class="notes-btn export-btn">Eksportuj</button>
-                <span class="notes-status">Niezapisany</span>
+                <button class="notes-btn new-btn">${window.I18n.t('notes.new')}</button>
+                <button class="notes-btn save-btn">${window.I18n.t('notes.save')}</button>
+                <button class="notes-btn wrap-btn">${window.I18n.t('notes.wrap')}</button>
+                <button class="notes-btn export-btn">${window.I18n.t('notes.export')}</button>
+                <span class="notes-status">${window.I18n.t('notes.unsaved')}</span>
             </div>
-            <textarea class="notes-editor" placeholder="Zacznij pisać..."></textarea>
+            <textarea class="notes-editor" placeholder="${window.I18n.t('notes.placeholder')}"></textarea>
         `;
         const textarea = container.querySelector('.notes-editor');
         const status = container.querySelector('.notes-status');
@@ -39,14 +39,14 @@ WebOS.registerApp({
             wrapBtn.style.opacity = isWrapped ? '1' : '0.5';
         };
         textarea.oninput = () => {
-            status.innerText = 'Zapisuję...';
+            status.innerText = window.I18n.t('notes.saving');
             if (this._autoSaveTimer) this.api.system.clearTimeout(this._autoSaveTimer);
             this._autoSaveTimer = this.api.system.setTimeout(async () => {
                 if (this.currentPath) {
                     await this.api.fs.write(this.currentPath, textarea.value);
                     status.innerText = this.api.fs.basename(this.currentPath);
                 } else {
-                    status.innerText = 'Zmodyfikowano (brak pliku)';
+                    status.innerText = window.I18n.t('notes.modified');
                 }
                 this._autoSaveTimer = null;
             }, 800);
@@ -66,7 +66,7 @@ WebOS.registerApp({
         };
         newBtn.onclick = async () => {
             if (await this.hasUnsavedChanges()) {
-                this.api.ui.confirm('Masz niezapisane zmiany. Czy na pewno chcesz utworzyć nowy plik?', (confirmed) => {
+                this.api.ui.confirm(window.I18n.t('notes.unsaved_confirm'), (confirmed) => {
                     if (confirmed) this.resetEditor();
                 });
             } else {
@@ -75,7 +75,7 @@ WebOS.registerApp({
         };
         saveBtn.onclick = async () => {
             if (!this.currentPath) {
-                this.api.ui.prompt('Podaj nazwę pliku:', 'notatka', async (name) => {
+                this.api.ui.prompt(window.I18n.t('explorer.prompt_file_name'), 'osko_note', async (name) => {
                     if (!name) return;
                     const filename = name.endsWith('.txt') ? name : name + '.txt';
                     const fullPath = `/home/user/documents/${filename}`;
@@ -109,7 +109,7 @@ WebOS.registerApp({
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = this.currentPath ? this.api.fs.basename(this.currentPath) : 'notatka.txt';
+            a.download = this.currentPath ? this.api.fs.basename(this.currentPath) : 'osko_note.txt';
             a.click();
             URL.revokeObjectURL(url);
         };
@@ -124,15 +124,15 @@ WebOS.registerApp({
         const status = this.container.querySelector('.notes-status');
         textarea.value = '';
         this.currentPath = null;
-        status.innerText = 'Nowy plik';
-        this.api.window.setTitle('Notes - Nowy');
+        status.innerText = window.I18n.t('notes.new_file');
+        this.api.window.setTitle(`${window.I18n.t('notes.title')} - ${window.I18n.t('notes.new_file')}`);
     },
     async saveContent() {
         const textarea = this.container.querySelector('.notes-editor');
         const status = this.container.querySelector('.notes-status');
         await this.api.fs.write(this.currentPath, textarea.value);
         status.innerText = this.api.fs.basename(this.currentPath);
-        this.api.window.setTitle(`Notes - ${status.innerText}`);
+        this.api.window.setTitle(`${window.I18n.t('notes.title')} - ${status.innerText}`);
     },
     async hasUnsavedChanges() {
         const current = this.container.querySelector('.notes-editor').value;
@@ -152,12 +152,12 @@ WebOS.registerApp({
                 if (!editor) return;
                 await this.api.fs.write(this.currentPath, editor.value);
                 this.api.notifications.show({
-                    title: 'Notatki',
-                    message: 'Zmiany zostały automatycznie zapisane.'
+                    title: window.I18n.t('notes.title'),
+                    message: window.I18n.t('notes.auto_saved')
                 });
             } else {
                 return new Promise(resolve => {
-                    this.api.ui.confirm('Masz niezapisane zmiany. Zamknąć bez zapisywania?', confirmed => {
+                    this.api.ui.confirm(window.I18n.t('notes.confirm_close'), confirmed => {
                         resolve(confirmed ? true : false);
                     });
                 });
@@ -177,7 +177,7 @@ WebOS.registerApp({
                     await this.api.fs.write(this.currentPath, this.container.querySelector('.notes-editor').value);
                 } else {
                     const confirmed = await new Promise(resolve => {
-                        this.api.ui.confirm('Masz niezapisane zmiany. Porzucić je i otworzyć plik?', resolve);
+                        this.api.ui.confirm(window.I18n.t('notes.confirm_open'), resolve);
                     });
                     if (!confirmed) return;
                 }
@@ -191,7 +191,7 @@ WebOS.registerApp({
             textarea.value = content;
             this.currentPath = path;
             status.innerText = this.api.fs.basename(path);
-            this.api.window.setTitle(`Notes - ${status.innerText}`);
+            this.api.window.setTitle(`${window.I18n.t('notes.title')} - ${status.innerText}`);
             textarea.focus();
         }
     }

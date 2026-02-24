@@ -1,13 +1,13 @@
 WebOS.registerApp({
     id: "explorer",
-    name: "Explorer",
+    get name() { return window.I18n.t('explorer.title'); },
     icon: "📂",
     manifest: {
-        name: "Explorer",
+        get name() { return window.I18n.t('explorer.title'); },
         icon: "📂",
         permissions: ["fs.read", "fs.write", "notifications"]
     },
-    version: "2.3.0",
+    version: "2.3.1",
     width: "500px",
     height: "400px",
     mount(container, api) {
@@ -52,7 +52,7 @@ WebOS.registerApp({
                     <button class="explorer-back" title="Wstecz">⬅</button>
                     <div class="explorer-breadcrumbs"></div>
                     <button class="explorer-sort" title="Sortuj">↕️</button>
-                    <input type="text" class="explorer-search" placeholder="Szukaj...">
+                    <input type="text" class="explorer-search" placeholder="${window.I18n.t('system.search_placeholder')}">
                 </div>
                 <div class="explorer-grid"></div>
             `;
@@ -145,7 +145,7 @@ WebOS.registerApp({
                     const ext = item.name.split('.').pop()?.toLowerCase();
                     const app = this.api.system.getAssociation(ext);
                     if (app) WebOS.launchApp(app, { filePath: nextPath });
-                    else this.api.notifications.show({ title: 'Explorer', message: `Nieznany typ pliku: ${item.name} ` });
+                    else this.api.notifications.show({ title: window.I18n.t('explorer.title'), message: `Nieznany typ pliku: ${item.name} ` });
                 }
             };
             el.oncontextmenu = async (e) => {
@@ -153,11 +153,11 @@ WebOS.registerApp({
                 e.stopPropagation();
                 const fullPath = this.api.fs.join(this.currentPath, item.name);
                 const menuItems = [
-                    { label: 'Otwórz', action: () => el.onclick() },
+                    { label: window.I18n.t('explorer.open'), action: () => el.onclick() },
                     {
-                        label: 'Zmień nazwę',
+                        label: window.I18n.t('explorer.rename'),
                         action: () => {
-                            this.api.ui.prompt('Nowa nazwa:', item.name, async (newName) => {
+                            this.api.ui.prompt(window.I18n.t('explorer.prompt_rename', item.name), item.name, async (newName) => {
                                 if (!newName || newName === item.name) return;
                                 const newPath = this.api.fs.join(this.currentPath, newName);
                                 if (await this.api.fs.exists(newPath)) {
@@ -205,7 +205,7 @@ WebOS.registerApp({
                     }
                 }
                 menuItems.push({
-                    label: 'Kopiuj',
+                    label: window.I18n.t('explorer.copy'),
                     action: () => {
                         this.api.system.setClipboard({
                             type: 'file',
@@ -213,13 +213,13 @@ WebOS.registerApp({
                             name: item.name,
                             isDirectory: item.type === 'dir'
                         });
-                        this.api.notifications.show({ title: 'Explorer', message: `Skopiowano: ${item.name}` });
+                        this.api.notifications.show({ title: window.I18n.t('explorer.title'), message: `${window.I18n.t('explorer.copy')}: ${item.name}` });
                     }
                 });
                 menuItems.push({
-                    label: 'Usuń',
+                    label: window.I18n.t('explorer.delete'),
                     action: () => {
-                        this.api.ui.confirm(`Czy na pewno usunąć ${item.name}?`, async (confirmed) => {
+                        this.api.ui.confirm(window.I18n.t('explorer.confirm_delete', item.name), async (confirmed) => {
                             if (confirmed) {
                                 await this.api.fs.remove(fullPath);
                                 this.render(container);
@@ -322,9 +322,9 @@ WebOS.registerApp({
 
             const gridMenuItems = [
                 {
-                    label: 'Nowy plik (.txt)',
+                    label: window.I18n.t('explorer.new_file'),
                     action: () => {
-                        this.api.ui.prompt('Nazwa pliku:', 'nowy_plik', async (name) => {
+                        this.api.ui.prompt(window.I18n.t('explorer.prompt_file_name'), 'nowy_plik', async (name) => {
                             if (!name) return;
                             const filename = name.endsWith('.txt') ? name : name + '.txt';
                             const path = this.api.fs.join(this.currentPath, filename);
@@ -354,9 +354,9 @@ WebOS.registerApp({
                     }
                 },
                 {
-                    label: 'Nowy folder',
+                    label: window.I18n.t('explorer.new_folder'),
                     action: () => {
-                        this.api.ui.prompt('Nazwa folderu:', 'nowy_folder', async (name) => {
+                        this.api.ui.prompt(window.I18n.t('explorer.prompt_folder_name'), 'nowy_folder', async (name) => {
                             if (!name) return;
                             const path = this.api.fs.join(this.currentPath, name);
                             if (await this.api.fs.exists(path)) {
@@ -388,7 +388,7 @@ WebOS.registerApp({
             const clip = this.api.system.getClipboard();
             if (clip && clip.type === 'file' && clip.path) {
                 gridMenuItems.push({
-                    label: `Wklej (${clip.name})`,
+                    label: `${window.I18n.t('explorer.paste')} (${clip.name})`,
                     action: async () => {
                         const src = clip.path;
                         let dstName = clip.name;
@@ -426,7 +426,7 @@ WebOS.registerApp({
             if (e.key === 'Delete') {
                 const item = items[index];
                 const fullPath = this.api.fs.join(this.currentPath, item.name);
-                this.api.ui.confirm(`Czy na pewno usunąć ${item.name}?`, async (confirmed) => {
+                this.api.ui.confirm(window.I18n.t('explorer.confirm_delete', item.name), async (confirmed) => {
                     if (confirmed) {
                         await this.api.fs.remove(fullPath);
                         this.render(container);

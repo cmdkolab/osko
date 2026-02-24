@@ -1,10 +1,10 @@
 WebOS.registerApp({
     id: "taskmanager",
-    name: "Task Manager",
+    get name() { return window.I18n.t('taskmanager.title'); },
     icon: "📊",
-    version: "2.3.0",
+    version: "2.3.1",
     manifest: {
-        name: "Task Manager",
+        get name() { return window.I18n.t('taskmanager.title'); },
         icon: "📊",
         permissions: ["notifications", "system.manage"]
     },
@@ -18,14 +18,14 @@ WebOS.registerApp({
                 <div class="tm-sysinfo">
                     <span>OS(KO) v${api.system.VERSION}</span>
                     <span class="tm-sys-uptime"></span>
-                    <button class="tm-kill-all-btn">Kill All</button>
+                    <button class="tm-kill-all-btn">${window.I18n.t('menu.close_all')}</button>
                 </div>
                 <div class="tm-header">
-                    <span>Aplikacja</span>
-                    <span>Status</span>
-                    <span>Pamięć</span>
-                    <span>DOM</span>
-                    <span>Akcja</span>
+                    <span>${window.I18n.t('taskmanager.app')}</span>
+                    <span>${window.I18n.t('taskmanager.status')}</span>
+                    <span>${window.I18n.t('taskmanager.memory')}</span>
+                    <span>${window.I18n.t('taskmanager.dom')}</span>
+                    <span>${window.I18n.t('taskmanager.action')}</span>
                 </div>
                 <div class="tm-list"></div>
             </div>
@@ -33,7 +33,7 @@ WebOS.registerApp({
         const list = container.querySelector('.tm-list');
         const killAllBtn = container.querySelector('.tm-kill-all-btn');
         killAllBtn.onclick = () => {
-            api.ui.confirm('Czy na pewno chcesz zakończyć wszystkie aplikacje?', async (confirmed) => {
+            api.ui.confirm(window.I18n.t('dialog.close_all_confirm'), async (confirmed) => {
                 if (confirmed) {
                     const processes = await api.system.getProcesses();
                     processes.forEach(p => {
@@ -92,9 +92,9 @@ WebOS.registerApp({
             const sysUptime = container.querySelector('.tm-sys-uptime');
             if (sysUptime) {
                 const totalUptime = Math.floor((Date.now() - (api.system.START_TIME || Date.now())) / 1000);
-                if (totalUptime < 60) sysUptime.innerText = `Uptime: ${totalUptime}s`;
-                else if (totalUptime < 3600) sysUptime.innerText = `Uptime: ${Math.floor(totalUptime / 60)}m ${totalUptime % 60}s`;
-                else sysUptime.innerText = `Uptime: ${Math.floor(totalUptime / 3600)}h ${Math.floor((totalUptime % 3600) / 60)}m`;
+                if (totalUptime < 60) sysUptime.innerText = `${window.I18n.t('taskmanager.uptime')}: ${totalUptime}s`;
+                else if (totalUptime < 3600) sysUptime.innerText = `${window.I18n.t('taskmanager.uptime')}: ${Math.floor(totalUptime / 60)}m ${totalUptime % 60}s`;
+                else sysUptime.innerText = `${window.I18n.t('taskmanager.uptime')}: ${Math.floor(totalUptime / 3600)}h ${Math.floor((totalUptime % 3600) / 60)}m`;
             }
         };
         this._refreshInterval = api.system.setInterval(refresh, 2000);

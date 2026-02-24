@@ -1,13 +1,13 @@
 WebOS.registerApp({
     id: "calculator",
-    name: "Calculator",
+    get name() { return window.I18n.t('calculator.title'); },
     icon: "🧮",
     manifest: {
-        name: "Calculator",
+        get name() { return window.I18n.t('calculator.title'); },
         icon: "🧮",
         permissions: []
     },
-    version: "2.3.0",
+    version: "2.3.1",
     width: "320px",
     height: "460px",
     mount(container, api) {

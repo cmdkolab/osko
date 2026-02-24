@@ -1,13 +1,13 @@
 WebOS.registerApp({
     id: "about",
-    name: "About",
+    get name() { return window.I18n.t('about.title'); },
     icon: "ℹ️",
     manifest: {
-        name: "About",
+        get name() { return window.I18n.t('about.title'); },
         icon: "ℹ️",
         permissions: ["notifications"]
     },
-    version: "1.0.0",
+    version: "1.0.1",
     width: "450px",
     height: "350px",
     mount(container, api) {
@@ -17,10 +17,10 @@ WebOS.registerApp({
             <div class="about-container">
                 <div class="about-logo">🚀</div>
                 <h2 class="about-title">OS(KO)</h2>
-                <div class="about-desc">Zaawansowany system operacyjny w przeglądarce.</div>
+                <div class="about-desc">${window.I18n.t('about.desc')}</div>
                 <div class="about-details">
-                    <div>Wersja: ${api.system.VERSION}</div>
-                    <div>Uptime: <span class="about-uptime">${api.system.getUptime()}</span></div>
+                    <div>${window.I18n.t('about.version')}: ${api.system.VERSION}</div>
+                    <div>${window.I18n.t('about.uptime')}: <span class="about-uptime">${api.system.getUptime()}</span></div>
                 </div>
             </div>
         `;
