@@ -25,9 +25,14 @@
 
 .explorer-back:hover,
 .explorer-home:hover,
-.explorer-sort:hover {
+.explorer-sort:hover,
+.explorer-back:focus-visible,
+.explorer-home:focus-visible,
+.explorer-sort:focus-visible {
     background: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
+    outline: 2px solid var(--accent-color, #3b82f6);
+    outline-offset: -2px;
 }
 
 .explorer-breadcrumbs {
@@ -82,9 +87,11 @@
     transition: var(--transition);
 }
 
-.explorer-item:hover {
+.explorer-item:hover,
+.explorer-item:focus-visible {
     background: rgba(255, 255, 255, 0.12);
     transform: translateY(-3px);
+    outline: 2px solid var(--accent-color, #3b82f6);
 }
 
 .item-icon {

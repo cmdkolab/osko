@@ -58,6 +58,7 @@ WebOS.registerApp({
                 const end = textarea.selectionEnd;
                 textarea.value = textarea.value.substring(0, start) + "\t" + textarea.value.substring(end);
                 textarea.selectionStart = textarea.selectionEnd = start + 1;
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
             } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
                 e.preventDefault();
                 await saveBtn.onclick();
@@ -173,14 +174,12 @@ WebOS.registerApp({
             const unsaved = await this.hasUnsavedChanges();
             if (unsaved) {
                 if (this.currentPath) {
-                    await this.onBeforeClose();
+                    await this.api.fs.write(this.currentPath, this.container.querySelector('.notes-editor').value);
                 } else {
-                    this.api.ui.confirm('Masz niezapisane zmiany. Porzucić je i otworzyć plik?', (confirmed) => {
-                        if (confirmed) {
-                            this.openFile(params.filePath, this.container.querySelector('.notes-editor'), this.container.querySelector('.notes-status'));
-                        }
+                    const confirmed = await new Promise(resolve => {
+                        this.api.ui.confirm('Masz niezapisane zmiany. Porzucić je i otworzyć plik?', resolve);
                     });
-                    return;
+                    if (!confirmed) return;
                 }
             }
             this.openFile(params.filePath, this.container.querySelector('.notes-editor'), this.container.querySelector('.notes-status'));

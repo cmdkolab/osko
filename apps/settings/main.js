@@ -6,7 +6,7 @@ WebOS.registerApp({
     manifest: {
         name: "Settings",
         icon: "⚙️",
-        permissions: ["notifications", "fs.read", "fs.write"]
+        permissions: ["notifications", "fs.read", "fs.write", "system.manage"]
     },
     width: "420px",
     height: "480px",
@@ -47,9 +47,11 @@ WebOS.registerApp({
                     <h3>O systemie</h3>
                     <div class="system-box">
                         <div class="sys-info">
-                        <div class="sys-info">
                             <div class="sys-label">Status jądra</div>
                             <div class="sys-val sys-ok">OK</div>
+                        </div>
+                    </div>
+                </div>
                 <div class="settings-section">
                     <h3>Autostart</h3>
                     <div class="autostart-list"></div>
@@ -174,6 +176,9 @@ WebOS.registerApp({
                 container.querySelectorAll('.theme-btn').forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.theme === newTheme);
                 });
+            } else if (path === '/sys/startup.json') {
+                // If it changed externally, reload autostart
+                await loadAutostart();
             }
         };
 

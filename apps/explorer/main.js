@@ -66,10 +66,11 @@ WebOS.registerApp({
             };
             const sortBtn = container.querySelector('.explorer-sort');
             sortBtn.onclick = (e) => {
+                const sortBy = this.settings.sortBy || 'name';
                 this.api.system.showContextMenu(e, [
-                    { label: 'Nazwa', action: () => { this.settings.sortBy = 'name'; this._saveSettings(); this.render(container); } },
-                    { label: 'Rozmiar', action: () => { this.settings.sortBy = 'size'; this._saveSettings(); this.render(container); } },
-                    { label: 'Data', action: () => { this.settings.sortBy = 'date'; this._saveSettings(); this.render(container); } }
+                    { label: `Nazwa ${sortBy === 'name' ? '✓' : ''}`, action: () => { this.settings.sortBy = 'name'; this._saveSettings(); this.render(container); } },
+                    { label: `Rozmiar ${sortBy === 'size' ? '✓' : ''}`, action: () => { this.settings.sortBy = 'size'; this._saveSettings(); this.render(container); } },
+                    { label: `Data ${sortBy === 'date' ? '✓' : ''}`, action: () => { this.settings.sortBy = 'date'; this._saveSettings(); this.render(container); } }
                 ]);
             };
             const searchInput = container.querySelector('.explorer-search');
@@ -167,13 +168,13 @@ WebOS.registerApp({
                                             this.render(container);
                                         } else if (choice === 'copy') {
                                             let finalName = newName;
-                                            const ext = newName.includes('.') ? `.${newName.split('.').pop()} ` : '';
+                                            const ext = newName.includes('.') ? `.${newName.split('.').pop()}` : '';
                                             const base = newName.replace(ext, '');
                                             let counter = 1;
-                                            while (await this.api.fs.exists(this.api.fs.join(this.currentPath, `${base} (kopia${counter > 1 ? ' ' + counter : ''})${ext} `))) {
+                                            while (await this.api.fs.exists(this.api.fs.join(this.currentPath, `${base} (kopia${counter > 1 ? ' ' + counter : ''})${ext}`))) {
                                                 counter++;
                                             }
-                                            finalName = `${base} (kopia${counter > 1 ? ' ' + counter : ''})${ext} `;
+                                            finalName = `${base} (kopia${counter > 1 ? ' ' + counter : ''})${ext}`;
                                             await this.api.fs.rename(fullPath, this.api.fs.join(this.currentPath, finalName));
                                             this.render(container);
                                         }
@@ -210,7 +211,7 @@ WebOS.registerApp({
                             type: 'file',
                             path: fullPath,
                             name: item.name,
-                            isDirectory: item.type === 'directory'
+                            isDirectory: item.type === 'dir'
                         });
                         this.api.notifications.show({ title: 'Explorer', message: `Skopiowano: ${item.name}` });
                     }

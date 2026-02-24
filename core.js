@@ -95,8 +95,10 @@
     };
     const PersistenceManager = {
         PREFIX: 'OSKO:',
+        SYSTEM_DIR: '/sys',
+        TEMP_DIR: '/tmp',
         START_TIME: Date.now(),
-        VERSION: '2.3.0',
+        VERSION: '2.6.0',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -128,8 +130,12 @@
     const deepMerge = (target, source) => {
         for (const key in source) {
             if (source[key] && typeof source[key] === 'object' && source[key].content === undefined) {
-                if (!target[key]) target[key] = {};
-                deepMerge(target[key], source[key]);
+                if (Array.isArray(source[key])) {
+                    target[key] = [...source[key]];
+                } else {
+                    if (!target[key] || Array.isArray(target[key])) target[key] = {};
+                    deepMerge(target[key], source[key]);
+                }
             } else {
                 target[key] = source[key];
             }
@@ -144,10 +150,14 @@
         for (const key in source) {
             const sourceVal = source[key];
             if (sourceVal && typeof sourceVal === 'object' && sourceVal.content === undefined) {
-                if (!target[key] || typeof target[key] !== 'object' || target[key].content !== undefined) {
-                    target[key] = {};
+                if (Array.isArray(sourceVal)) {
+                    target[key] = [...sourceVal];
+                } else {
+                    if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key]) || target[key].content !== undefined) {
+                        target[key] = {};
+                    }
+                    deepMergeSync(target[key], sourceVal);
                 }
-                deepMergeSync(target[key], sourceVal);
             } else {
                 target[key] = sourceVal;
             }
@@ -185,7 +195,7 @@
             }
         },
         _usage: {},
-        _resolveCache: {},
+        _resolveCache: new Map(),
         _watchers: [],
         _saveTimer: null,
         _transactionQueue: Promise.resolve(),
@@ -250,17 +260,19 @@
         },
 
         _recalculateUsage() {
-            this._usage = {};
-            const traverse = (node) => {
-                if (!node || typeof node === 'string') return;
+            const newUsage = {};
+            const queue = [this.root];
+            while (queue.length > 0) {
+                const node = queue.shift();
+                if (!node || typeof node === 'string') continue;
                 if (node.content !== undefined) {
                     const owner = node.owner || 'system';
-                    this._usage[owner] = (this._usage[owner] || 0) + (node.size || 0);
-                    return;
+                    newUsage[owner] = (newUsage[owner] || 0) + (node.size || 0);
+                    continue;
                 }
-                Object.values(node).forEach(v => traverse(v));
-            };
-            traverse(this.root);
+                queue.push(...Object.values(node));
+            }
+            this._usage = newUsage;
         },
 
         async transaction(fn) {
@@ -323,23 +335,27 @@
 
         _resolveInternal(path) {
             const normalized = this.join(path);
-            if (Object.keys(this._resolveCache).length > 200) {
-                this._resolveCache = {};
+            let node = this._resolveCache.get(normalized);
+            if (node !== undefined) {
+                this._resolveCache.delete(normalized);
+                this._resolveCache.set(normalized, node);
+                return node;
             }
-            let node = this._resolveCache[normalized];
-            if (!node) {
-                if (normalized === '/') {
-                    node = this.root;
-                } else {
-                    const parts = normalized.split('/').filter(Boolean);
-                    let current = this.root;
-                    for (const part of parts) {
-                        current = current[part];
-                        if (current === undefined) return null;
-                    }
-                    node = current;
+            if (normalized === '/') {
+                node = this.root;
+            } else {
+                const parts = normalized.split('/').filter(Boolean);
+                let current = this.root;
+                for (const part of parts) {
+                    current = current[part];
+                    if (current === undefined) return null;
                 }
-                this._resolveCache[normalized] = node;
+                node = current;
+            }
+            this._resolveCache.set(normalized, node);
+            if (this._resolveCache.size > 200) {
+                const firstKey = this._resolveCache.keys().next().value;
+                this._resolveCache.delete(firstKey);
             }
             return node;
         },
@@ -376,6 +392,7 @@
             if (firstPart === 'sys' || (firstPart === 'var' && path.startsWith('/var/log/'))) {
                 if (mode === 'w') {
                     if (path === '/var/log/syslog') return true;
+                    if (manifest?.permissions?.includes('system.manage')) return true;
                     return false;
                 }
                 return true;
@@ -516,11 +533,11 @@
 
         _invalidateCache(changedPath) {
             if (changedPath) {
-                for (const path in this._resolveCache) {
-                    if (path === changedPath || path.startsWith(changedPath + '/')) delete this._resolveCache[path];
+                for (const path of this._resolveCache.keys()) {
+                    if (path === changedPath || path.startsWith(changedPath + '/')) this._resolveCache.delete(path);
                 }
             } else {
-                this._resolveCache = {};
+                this._resolveCache.clear();
             }
         },
 
@@ -715,47 +732,36 @@
             }
             const dstName = dstParts[dstParts.length - 1];
 
-            if (dstParent[dstName] && typeof dstParent[dstName] === 'object' && dstParent[dstName].content === undefined) {
-                // Trying to copy over existing folder without proper merge/overwrite rules - fail for simplicity
-                SysLog.log('ERR', `Copy failed: Target ${dstPath} is a directory and already exists.`, appId);
-                return false;
-            }
-
-            // Fix Quota leak: if overwriting a file, subtract its size from its owner's usage
-            if (dstParent[dstName] !== undefined && dstParent[dstName].content !== undefined) {
-                const targetSize = dstParent[dstName].size || 0;
-                const targetOwner = dstParent[dstName].owner || 'system';
-                this._usage[targetOwner] = Math.max(0, (this._usage[targetOwner] || 0) - targetSize);
-            }
-
-            const cloneNode = (node) => {
-                if (!node) return node;
-                if (typeof node === 'string') return node;
-                if (node.content !== undefined) {
-                    const owner = appId || 'system';
-                    const newSize = node.content.length;
-                    if (this._usage[owner] !== undefined) {
-                        this._usage[owner] += newSize;
-                    } else {
-                        this._usage[owner] = newSize;
+            const cloneAndMerge = (src, destParent, destName) => {
+                if (!src) return;
+                if (typeof src === 'string' || src.content !== undefined) {
+                    if (destParent[destName] && destParent[destName].content !== undefined) {
+                        const oldSize = destParent[destName].size || 0;
+                        const oldOwner = destParent[destName].owner || 'system';
+                        this._usage[oldOwner] = Math.max(0, (this._usage[oldOwner] || 0) - oldSize);
                     }
-                    return {
-                        content: node.content,
+                    const owner = appId || 'system';
+                    const newSize = typeof src === 'string' ? src.length : src.content.length;
+                    this._usage[owner] = (this._usage[owner] || 0) + newSize;
+                    destParent[destName] = {
+                        content: typeof src === 'string' ? src : src.content,
                         mtime: Date.now(),
                         owner: owner,
-                        mode: node.mode || 0o644,
+                        mode: src.mode || 0o644,
                         size: newSize
                     };
+                } else {
+                    if (!destParent[destName] || destParent[destName].content !== undefined || typeof destParent[destName] === 'string') {
+                        destParent[destName] = { owner: appId || 'system', mtime: Date.now(), mode: src.mode || 0o755 };
+                    }
+                    for (const k in src) {
+                        if (['owner', 'mtime', 'mode', 'size'].includes(k)) continue;
+                        cloneAndMerge(src[k], destParent[destName], k);
+                    }
                 }
-                const newDir = { owner: appId || 'system', mtime: Date.now(), mode: node.mode || 0o755 };
-                for (const k in node) {
-                    if (['owner', 'mtime', 'mode', 'size'].includes(k)) continue;
-                    newDir[k] = cloneNode(node[k]);
-                }
-                return newDir;
             };
 
-            dstParent[dstName] = cloneNode(srcNode);
+            cloneAndMerge(srcNode, dstParent, dstName);
 
             this._invalidateCache(dstPath);
             this._invalidateCache(this.dirname(dstPath));
@@ -981,8 +987,11 @@
             }
             container.appendChild(toast);
             setTimeout(() => {
+                if (!toast.isConnected) return;
                 toast.classList.add('fade-out');
-                setTimeout(() => toast.remove(), 500);
+                setTimeout(() => {
+                    if (toast.isConnected) toast.remove();
+                }, 500);
             }, 3000);
         }
     };
@@ -997,7 +1006,10 @@
                     const parsed = JSON.parse(audioSet);
                     this.enabled = !!parsed.enabled;
                 }
-            } catch (e) { }
+            } catch (e) {
+                SysLog.log('WARN', 'Failed to parse audio.json, defaulting to enabled.', 'AudioEngine');
+                this.enabled = true;
+            }
 
             EventBus.subscribe('app:settings:audio_changed', (msg) => {
                 if (msg && msg.data !== undefined) {
@@ -1022,25 +1034,24 @@
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(440, now);
                 osc.frequency.exponentialRampToValueAtTime(880, now + 0.5);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
                 osc.start(now);
                 osc.stop(now + 0.5);
+                osc.onended = () => { osc.disconnect(); gain.disconnect(); };
             } else if (type === 'click') {
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(600, now);
                 gain.gain.setValueAtTime(0.05, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.05);
                 osc.start(now);
                 osc.stop(now + 0.05);
+                osc.onended = () => { osc.disconnect(); gain.disconnect(); };
             } else if (type === 'error') {
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(200, now);
                 osc.frequency.linearRampToValueAtTime(100, now + 0.3);
                 gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.3);
                 osc.start(now);
                 osc.stop(now + 0.3);
+                osc.onended = () => { osc.disconnect(); gain.disconnect(); };
             } else if (type === 'notify') {
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(880, now);
@@ -1049,6 +1060,7 @@
                 gain.gain.linearRampToValueAtTime(0, now + 0.3);
                 osc.start(now);
                 osc.stop(now + 0.3);
+                osc.onended = () => { osc.disconnect(); gain.disconnect(); };
             }
         }
     };
@@ -1113,16 +1125,20 @@
                     addEventListener: (target, type, fn, options) => {
                         if (!target || typeof target.addEventListener !== 'function') return;
                         target.addEventListener(type, fn, options);
-                        track({ target, type, fn, options }, 'event_listener');
+                        track({ target: typeof WeakRef !== 'undefined' ? new WeakRef(target) : target, type, fn, options }, 'event_listener');
                     },
                     removeEventListener: (target, type, fn, options) => {
                         if (!target || typeof target.removeEventListener !== 'function') return;
                         target.removeEventListener(type, fn, options);
                         const proc = _getProc();
                         if (proc && proc._resources) {
-                            proc._resources = proc._resources.filter(r =>
-                                !(r.type === 'event_listener' && r.handle.target === target && r.handle.type === type && r.handle.fn === fn)
-                            );
+                            proc._resources = proc._resources.filter(r => {
+                                if (r.type === 'event_listener') {
+                                    const t = typeof WeakRef !== 'undefined' && r.handle.target instanceof WeakRef ? r.handle.target.deref() : r.handle.target;
+                                    if (t === target && r.handle.type === type && r.handle.fn === fn) return false;
+                                }
+                                return true;
+                            });
                         }
                     },
                     publish: (event, data) => EventBus.publish(`app:${event}`, { from: appId, data }),
@@ -1512,25 +1528,33 @@
                 initialY = e.clientY;
                 if (!snapPreview) snapPreview = WindowManager.createSnapPreview();
 
+                let animationQueued = false;
                 const onMouseMove = (moveEvent) => {
                     if (!dragging) return;
-                    const win = state.windows.find(w => w.element === el);
-                    if (win && (win.state === 'maximized' || el.classList.contains('window-snapped'))) {
-                        const ratio = (moveEvent.clientX - el.offsetLeft) / el.offsetWidth;
-                        if (win.state === 'maximized') {
-                            WindowManager.toggleMaximize(win.id);
-                        } else {
-                            el.classList.remove('window-snapped');
-                            if (win.oldWidth) el.style.width = win.oldWidth;
-                            if (win.oldHeight) el.style.height = win.oldHeight;
-                        }
-                        const newWidth = parseInt(el.style.width) || el.offsetWidth;
-                        initialX = moveEvent.clientX;
-                        el.style.left = (moveEvent.clientX - (newWidth * ratio)) + 'px';
-                    }
                     currentX = moveEvent.clientX;
                     currentY = moveEvent.clientY;
-                    requestAnimationFrame(updatePosition);
+
+                    if (!animationQueued) {
+                        animationQueued = true;
+                        requestAnimationFrame(() => {
+                            animationQueued = false;
+                            const win = state.windows.find(w => w.element === el);
+                            if (win && (win.state === 'maximized' || el.classList.contains('window-snapped'))) {
+                                const ratio = (currentX - el.offsetLeft) / el.offsetWidth;
+                                if (win.state === 'maximized') {
+                                    WindowManager.toggleMaximize(win.id);
+                                } else {
+                                    el.classList.remove('window-snapped');
+                                    if (win.oldWidth) el.style.width = win.oldWidth;
+                                    if (win.oldHeight) el.style.height = win.oldHeight;
+                                }
+                                const newWidth = parseInt(el.style.width) || el.offsetWidth;
+                                initialX = currentX;
+                                el.style.left = (currentX - (newWidth * ratio)) + 'px';
+                            }
+                            updatePosition();
+                        });
+                    }
                 };
                 const onMouseUp = () => {
                     if (dragging) {
@@ -1644,18 +1668,28 @@
                 e.stopPropagation();
                 e.preventDefault();
 
+                let rAFQueued = false;
+                let dX, dY;
                 const onMouseMove = (moveEvent) => {
                     if (!isResizing) return;
-                    const newWidth = Math.max(320, startWidth + (moveEvent.clientX - startX));
-                    const newHeight = Math.max(200, startHeight + (moveEvent.clientY - startY));
-                    el.style.width = newWidth + 'px';
-                    el.style.height = newHeight + 'px';
-                    if (el.classList.contains('window-snapped')) {
-                        el.classList.remove('window-snapped');
-                        if (win) {
-                            win.oldWidth = null;
-                            win.oldHeight = null;
-                        }
+                    dX = moveEvent.clientX - startX;
+                    dY = moveEvent.clientY - startY;
+                    if (!rAFQueued) {
+                        rAFQueued = true;
+                        requestAnimationFrame(() => {
+                            rAFQueued = false;
+                            const newWidth = Math.max(320, startWidth + dX);
+                            const newHeight = Math.max(200, startHeight + dY);
+                            el.style.width = newWidth + 'px';
+                            el.style.height = newHeight + 'px';
+                            if (el.classList.contains('window-snapped')) {
+                                el.classList.remove('window-snapped');
+                                if (win) {
+                                    win.oldWidth = null;
+                                    win.oldHeight = null;
+                                }
+                            }
+                        });
                     }
                 };
 
@@ -1675,15 +1709,16 @@
         state,
         installApp(folderPath) {
             console.log(`System: Installing app from ${folderPath}...`);
+            const ts = Date.now();
             const link = document.createElement('link');
             link.rel = 'stylesheet';
-            link.href = `${folderPath}/style.css`;
+            link.href = `${folderPath}/style.css?v=${ts}`;
             link.onerror = () => {
                 Notifications.show({ title: 'System', message: `Nie udało się załadować stylów dla aplikacji z: ${folderPath}` });
             };
             document.head.appendChild(link);
             const script = document.createElement('script');
-            script.src = `${folderPath}/main.js`;
+            script.src = `${folderPath}/main.js?v=${ts}`;
             script.onerror = () => {
                 Notifications.show({ title: 'System', message: `Błąd instalacji: Nie znaleziono pliku main.js w ${folderPath}` });
             };
@@ -1781,11 +1816,13 @@
                     proc._resources.forEach(res => {
                         try {
                             if (res.type === 'interval') clearInterval(res.handle);
-                            if (res.type === 'timeout') clearTimeout(res.handle);
                             if (res.type === 'eventbus') EventBus.unsubscribe(res.handle.event, res.handle.token);
                             if (res.type === 'vfs_watch') res.handle();
                             if (res.type === 'event_listener') {
-                                try { res.handle.target.removeEventListener(res.handle.type, res.handle.fn, res.handle.options); } catch (e) { }
+                                try {
+                                    const t = typeof WeakRef !== 'undefined' && res.handle.target instanceof WeakRef ? res.handle.target.deref() : res.handle.target;
+                                    if (t) t.removeEventListener(res.handle.type, res.handle.fn, res.handle.options);
+                                } catch (e) { }
                             }
                         } catch (e) {
                             console.warn("Resource cleanup error:", e);
@@ -1919,12 +1956,20 @@
                 initialX = parseInt(icon.style.left);
                 initialY = parseInt(icon.style.top);
 
+                let rAFQueued = false;
+                let cX, cY;
                 const onMouseMove = (moveEvent) => {
                     if (!dragging) return;
-                    const dx = moveEvent.clientX - startX;
-                    const dy = moveEvent.clientY - startY;
-                    icon.style.left = (initialX + dx) + 'px';
-                    icon.style.top = (initialY + dy) + 'px';
+                    cX = moveEvent.clientX - startX;
+                    cY = moveEvent.clientY - startY;
+                    if (!rAFQueued) {
+                        rAFQueued = true;
+                        requestAnimationFrame(() => {
+                            rAFQueued = false;
+                            icon.style.left = (initialX + cX) + 'px';
+                            icon.style.top = (initialY + cY) + 'px';
+                        });
+                    }
                 };
 
                 const onMouseUp = () => {
@@ -2000,7 +2045,7 @@
                     item.oncontextmenu = (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        WebOS.ui.showContextMenu(e, [
+                        ContextMenu.show(e, [
                             {
                                 label: 'Zakończ',
                                 action: () => WebOS.killApp(proc.appId)
@@ -2088,9 +2133,15 @@
 
             setTimeout(() => {
                 startupAppsList.forEach(appId => {
-                    if (!state.processes.find(p => p.appId === appId)) {
-                        WebOS.launchApp(appId);
-                    }
+                    const tryLaunch = (attempts = 0) => {
+                        if (state.processes.find(p => p.appId === appId)) return;
+                        if (state.apps[appId]) {
+                            WebOS.launchApp(appId);
+                        } else if (attempts < 10) {
+                            setTimeout(() => tryLaunch(attempts + 1), 500);
+                        }
+                    };
+                    tryLaunch();
                 });
             }, deferredData ? 300 : 1000);
         },
@@ -2174,11 +2225,10 @@
                             this.toggleSwitcher(false);
                         };
                     });
-                    overlay.style.display = 'flex';
+                    if (!overlay.style.display || overlay.style.display === 'none') overlay.style.display = 'flex';
                     setTimeout(() => overlay.classList.add('active'), 10);
                 } else {
                     overlay.classList.remove('active');
-                    setTimeout(() => overlay.style.display = 'none', 300);
                 }
             },
             toggleSearch(force) {
@@ -2334,11 +2384,10 @@
                             ${daysHtml}
                         </div>
                     `;
-                    overlay.style.display = 'block';
+                    if (!overlay.style.display || overlay.style.display === 'none') overlay.style.display = 'block';
                     setTimeout(() => overlay.classList.add('active'), 10);
                 } else {
                     overlay.classList.remove('active');
-                    setTimeout(() => overlay.style.display = 'none', 300);
                 }
             },
             showDialog(options) {
@@ -2496,9 +2545,6 @@
         let _lastErr = null;
         window.onerror = (msg, url, line, col, error) => {
             let logMsg = msg;
-            if (msg === 'Script error.') {
-                logMsg = 'Script error (CORS/Cross-origin). Browser masked details due to security.';
-            }
             SysLog.log('ERR', {
                 message: logMsg,
                 line,
@@ -2561,7 +2607,7 @@
                 if (e.target.closest('.taskbar-item')) return; // Ignore clicks directly on app icons
                 e.preventDefault();
                 e.stopPropagation();
-                WebOS.ui.showContextMenu(e, [
+                ContextMenu.show(e, [
                     {
                         label: 'Zamknij wszystkie',
                         action: () => {

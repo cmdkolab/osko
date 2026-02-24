@@ -47,24 +47,34 @@ WebOS.registerApp({
                 const entry = document.createElement('div');
                 entry.className = 'log-entry';
 
-                const match = line.match(/^\[(.*?)\] \[([A-Z]+)\] (.*)$/);
+                const match = line.match(/^\[(.*?)\] \[(.*?)\] \[([A-Z]+)\] \[(.*?)\] (.*)$/);
                 if (match) {
                     const timeEl = document.createElement('span');
                     timeEl.className = 'log-time';
                     timeEl.textContent = '[' + match[1] + ']';
 
+                    const sessionEl = document.createElement('span');
+                    sessionEl.style.color = '#a855f7';
+                    sessionEl.textContent = ' [' + match[2] + ']';
+
                     const levelEl = document.createElement('span');
-                    const level = match[2];
+                    const level = match[3];
                     if (level === 'ERR') levelEl.className = 'log-level-err';
                     else if (level === 'INFO') levelEl.className = 'log-level-info';
                     else if (level === 'WARN') levelEl.style.color = '#fbbf24';
-                    levelEl.textContent = ' [' + level + '] ';
+                    levelEl.textContent = ' [' + level + ']';
+
+                    const sourceEl = document.createElement('span');
+                    sourceEl.style.color = '#10b981';
+                    sourceEl.textContent = ' [' + match[4] + '] ';
 
                     const msgEl = document.createElement('span');
-                    msgEl.textContent = match[3];
+                    msgEl.textContent = match[5];
 
                     entry.appendChild(timeEl);
+                    entry.appendChild(sessionEl);
                     entry.appendChild(levelEl);
+                    entry.appendChild(sourceEl);
                     entry.appendChild(msgEl);
                 } else if (line.startsWith('[CLEARED]')) {
                     entry.className = 'log-entry log-level-info';

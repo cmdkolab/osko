@@ -85,7 +85,7 @@ WebOS.registerApp({
 
         switch (cmd) {
             case 'help':
-                this.print("Dostępne komendy: ls, cd, cat, edit, mkdir, rm, clear, echo, date, pwd, help, version, play");
+                this.print("Dostępne komendy: ls, cd, cat, edit, mkdir, rm, clear, echo, date, pwd, help, version, play, uptime, ps");
                 break;
             case 'echo':
                 this.print(args.join(' '));
@@ -114,8 +114,18 @@ WebOS.registerApp({
             case 'cat':
                 if (!args[0]) { this.print("Użycie: cat <plik>"); break; }
                 try {
-                    const content = await this.api.fs.read(this.api.fs.join(this.cwd, args[0]));
-                    this.print(content);
+                    const path = this.api.fs.join(this.cwd, args[0]);
+                    const isDir = await this.api.fs.list(path).catch(() => null);
+                    if (Array.isArray(isDir)) {
+                        this.print(`cat: ${args[0]}: Jest folderem`, 'error');
+                        break;
+                    }
+                    const content = await this.api.fs.read(path);
+                    if (content === null) {
+                        this.print(`cat: ${args[0]}: Nie ma takiego pliku`, 'error');
+                    } else {
+                        this.print(content);
+                    }
                 } catch (e) { this.print(`cat: ${args[0]}: Błąd odczytu`, 'error'); }
                 break;
             case 'mkdir':
@@ -136,6 +146,21 @@ WebOS.registerApp({
             case 'version':
                 this.print(`OS(KO) Kernel v${this.api.system.VERSION}`);
                 break;
+            case 'uptime':
+                this.print(`Uptime jądra twardego: ${this.api.system.getUptime()}`);
+                break;
+            case 'ps':
+                try {
+                    const procs = await this.api.system.getProcesses();
+                    this.print('PID   RAM        CZAS    APLIKACJA', 'echo');
+                    procs.forEach(p => {
+                        const pidStr = String(p.pid).padEnd(5, ' ');
+                        const ramStr = p.storage.split(' / ')[0].padEnd(10, ' ');
+                        const timeStr = String(p.uptime).padEnd(7, ' ');
+                        this.print(`${pidStr} ${ramStr} ${timeStr} ${p.name}`);
+                    });
+                } catch (e) { this.print(`ps: Błąd: ${e.message}`, 'error'); }
+                break;
             case 'play':
                 if (!args[0]) { this.print("Dostępne dźwięki: startup, click, error, notify"); break; }
                 this.api.audio.play(args[0]);
@@ -148,11 +173,12 @@ WebOS.registerApp({
                     if (await this.api.fs.exists(path)) {
                         content = await this.api.fs.read(path);
                     }
-                    const newContent = prompt(`Edytuj: ${args[0]}`, content);
-                    if (newContent !== null) {
-                        await this.api.fs.write(path, newContent);
-                        this.print(`Zapisano ${args[0]}`);
-                    }
+                    this.api.ui.prompt(`Edytuj: ${args[0]}`, content, async (newContent) => {
+                        if (newContent !== null) {
+                            await this.api.fs.write(path, newContent);
+                            this.print(`Zapisano ${args[0]}`);
+                        }
+                    });
                 } catch (e) { this.print(`edit: ${args[0]}: Błąd`, 'error'); }
                 break;
             default:
