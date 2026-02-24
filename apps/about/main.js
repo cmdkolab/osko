@@ -7,7 +7,7 @@ WebOS.registerApp({
         icon: "ℹ️",
         permissions: ["notifications"]
     },
-    version: "3.0.1",
+    version: "3.5.0",
     width: "450px",
     height: "350px",
     mount(container, api) {

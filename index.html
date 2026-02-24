@@ -2,6 +2,7 @@
 <html lang="pl">
 
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OS(KO) - Browser OS</title>
@@ -25,7 +26,22 @@
     </nav>
     <div id="notification-center" role="log" aria-live="polite"></div>
     <script src="i18n.js"></script>
-    <script src="core.js"></script>
+    <script src="system/utils.js"></script>
+    <script src="system/db.js"></script>
+    <script src="system/storage.js"></script>
+    <script src="system/state.js"></script>
+    <script src="system/vfs.js"></script>
+    <script src="system/syslog.js"></script>
+    <script src="system/session.js"></script>
+    <script src="system/eventbus.js"></script>
+    <script src="system/notifications.js"></script>
+    <script src="system/audio.js"></script>
+    <script src="system/permissions.js"></script>
+    <script src="system/ui.js"></script>
+    <script src="system/windowmanager.js"></script>
+    <script src="system/theme.js"></script>
+    <script src="system/webos.js"></script>
+    <script src="system/init.js"></script>
     <script>
         WebOS.installApp('apps/about');
         WebOS.installApp('apps/notes');

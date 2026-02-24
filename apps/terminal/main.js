@@ -32,7 +32,7 @@ WebOS.registerApp({
         this.prompt = container.querySelector('.terminal-prompt');
 
         this.updatePrompt();
-        this.print(`OS(KO) ${window.I18n.t('terminal.title')} v3.0.1`);
+        this.print(`OS(KO) ${window.I18n.t('terminal.title')} v3.5.0`);
         this.print(window.I18n.t('terminal.welcome'));
 
         this.input.onkeydown = (e) => {
