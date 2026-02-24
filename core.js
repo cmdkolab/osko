@@ -1,6 +1,6 @@
 (function (global) {
     'use strict';
-    if (!window.I18n) { window.I18n = { t: (key, ...args) => args[0] || key, current: 'en' }; }
+    if (!window.I18n) { window.I18n = { t: (key, ...args) => { let res = key; args.forEach((a, i) => res = res.replace(`{${i}}`, a)); return res; }, current: 'en' }; }
     const DBWrapper = {
         dbName: 'OSKO_DB',
         storeName: 'vfs_nodes',
@@ -100,7 +100,7 @@
         SYSTEM_DIR: '/sys',
         TEMP_DIR: '/tmp',
         START_TIME: Date.now(),
-        VERSION: '2.7.7',
+        VERSION: '2.7.9',
         async get(key) {
             try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
         },
@@ -1753,6 +1753,7 @@
             document.head.appendChild(link);
             const script = document.createElement('script');
             script.src = `${folderPath}/main.js?v=${ts}`;
+            script.async = false;
             script.onerror = () => {
                 Notifications.show({ title: 'System', message: `Błąd instalacji: Nie znaleziono pliku main.js w ${folderPath}` });
             };
