@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/cmdkolab/osko/refs/heads/main/logo.jpeg" alt="OSKO Logo" width="640">
+</p>
+
 # 🚀 OS(KO) - Browser OS
 
 ![Version](https://img.shields.io/badge/version-3.0.1-blue.svg)
