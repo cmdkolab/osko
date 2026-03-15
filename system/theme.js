@@ -16,7 +16,7 @@
             if (isUrl) {
                 const img = new Image();
                 img.onload = async () => {
-                    setStyle(`url('${val.replace(/'/g, "\\'")}')`);
+                    setStyle(`url('${val.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}')`);
                     await VFS.write('/home/user/settings/wallpaper.txt', val, 'system');
                 };
                 img.onerror = () => {

@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "settings",
     get name() { return window.I18n.t('settings.title'); },
     icon: "⚙️",
-    version: "4.1.0",
+    version: "4.1.1",
     manifest: {
         get name() { return window.I18n.t('settings.title'); },
         icon: "⚙️",
