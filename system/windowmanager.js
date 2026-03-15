@@ -57,10 +57,14 @@
             if (state.focusedWindow === currentId) {
                 state.focusedWindow = null;
                 if (state.windowStack) {
-                    const nextWinId = [...state.windowStack].reverse().find(
+                    const stack = state.windowStack || [];
+                    const nextWinId = [...stack].reverse().find(
                         wid => wid !== currentId && state.windows.find(w => w.id === wid && w.state !== 'minimized' && !w.element.classList.contains('window-closing'))
                     );
                     if (nextWinId) this.focus(nextWinId);
+                    else state.focusedWindow = null;
+                } else {
+                    state.focusedWindow = null;
                 }
             }
         },
@@ -155,6 +159,7 @@
             if (!preview) {
                 preview = document.createElement('div');
                 preview.id = 'snap-preview';
+                preview.className = 'glass-panel';
                 document.body.appendChild(preview);
             }
             return preview;

@@ -35,9 +35,13 @@
         },
         async init() {
             const savedTheme = await VFS.read('/home/user/settings/theme.txt', 'system');
-            if (savedTheme) {
-                document.documentElement.setAttribute('data-theme', savedTheme);
-                this._manualTheme = true;
+            if (savedTheme && ['dark', 'light', 'default'].includes(savedTheme)) {
+                if (savedTheme === 'default') {
+                    this.applyAutoTheme();
+                } else {
+                    document.documentElement.setAttribute('data-theme', savedTheme);
+                    this._manualTheme = true;
+                }
             } else {
                 this.applyAutoTheme();
             }

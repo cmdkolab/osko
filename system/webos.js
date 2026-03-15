@@ -30,17 +30,10 @@ window.WebOS = {
     },
     registerApp(appDef) {
         SysLog.log('DEBUG', `Registering App: ${appDef.id}`, 'WebOS');
-        const entry = state.apps[appDef.id];
-        if (!entry) {
-            state.apps[appDef.id] = { 
-                manifest: { 
-                    name: appDef.name || window.I18n.t('system.default_app_name'), 
-                    icon: appDef.icon || '❓' 
-                }, 
-                folderPath: '' 
-            };
+        if (!state.apps[appDef.id]) {
+            state.apps[appDef.id] = { folderPath: '' };
         }
-        Object.assign(state.apps[appDef.id], appDef);
+        Object.defineProperties(state.apps[appDef.id], Object.getOwnPropertyDescriptors(appDef));
         const existing = document.querySelector(`.desktop-icon[data-id="${appDef.id}"]`);
         if (!existing) {
             this.createDesktopIcon(state.apps[appDef.id]);
@@ -84,10 +77,23 @@ window.WebOS = {
             startTime: Date.now()
         };
         state.processes.push(process);
+        
+
+        const mountingTimeout = setTimeout(() => {
+            if (state.processes.includes(process) && !process.mounted) {
+                SysLog.log('ERR', `Mounting timeout for ${app.name}`, 'WebOS');
+                Notifications.show({ title: 'System', message: `App "${app.name}" is taking too long to load.`, type: 'error' });
+                this.killApp(appId, pid);
+            }
+        }, 10000);
+
         try {
             SysLog.log('INFO', `Mounting App: ${app.name}`, 'WebOS', { appId, pid });
             await app.mount(winHandle.container, api, params);
+            process.mounted = true;
+            clearTimeout(mountingTimeout);
         } catch (e) {
+            clearTimeout(mountingTimeout);
             console.error(`[Kernel] Failed to mount app "${app.name}":`, e);
             SysLog.log('ERR', `Mount error in ${app.name}`, 'WebOS', { appId, pid, error: e.message });
             Notifications.show({ 
@@ -128,6 +134,7 @@ window.WebOS = {
                             const t = (res.handle.target instanceof WeakRef) ? res.handle.target.deref() : res.handle.target;
                             if (t) t.removeEventListener(res.handle.type, res.handle.fn, res.handle.options);
                         }
+                        if (res.type === 'vfs_unsubscribe' && res.handle) res.handle();
                     } catch (e) { }
                 });
             }
@@ -237,21 +244,27 @@ window.WebOS = {
             if (e.button !== 0) return;
             document.querySelectorAll('.desktop-icon.selected').forEach(el => el.classList.remove('selected'));
             icon.classList.add('selected');
-            dragging = true;
             icon.style.zIndex = '1000';
             startX = e.clientX;
             startY = e.clientY;
             initialX = icon.offsetLeft;
             initialY = icon.offsetTop;
             const onMouseMove = (mE) => {
-                if (!dragging) return;
-                icon.style.left = (initialX + (mE.clientX - startX)) + 'px';
-                icon.style.top = (initialY + (mE.clientY - startY)) + 'px';
+                const diffX = mE.clientX - startX;
+                const diffY = mE.clientY - startY;
+                if (!dragging && (Math.abs(diffX) > 3 || Math.abs(diffY) > 3)) {
+                    dragging = true;
+                    icon.classList.add('dragging');
+                }
+                if (dragging) {
+                    icon.style.left = (initialX + diffX) + 'px';
+                    icon.style.top = (initialY + diffY) + 'px';
+                }
             };
             const onMouseUp = () => {
                 if (dragging) {
                     dragging = false;
-                    icon.style.zIndex = '';
+                    icon.classList.remove('dragging');
                     let sX = Math.max(grid.OFFSET, Math.min(Math.round((icon.offsetLeft - grid.OFFSET) / grid.CELL_W) * grid.CELL_W + grid.OFFSET, window.innerWidth - 80));
                     let sY = Math.max(grid.OFFSET, Math.min(Math.round((icon.offsetTop - grid.OFFSET) / grid.CELL_H) * grid.CELL_H + grid.OFFSET, window.innerHeight - 100));
                     icon.style.left = sX + 'px';
@@ -265,6 +278,26 @@ window.WebOS = {
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         };
+    },
+    _setupNotificationClearButton() {
+        const container = document.getElementById('notification-center');
+        if (container) {
+            const observer = new MutationObserver(() => {
+                let clearBtn = document.querySelector('.notification-clear-btn');
+                if (container.childElementCount > 1) {
+                    if (!clearBtn) {
+                        const header = document.createElement('div');
+                        header.className = 'notification-header';
+                        header.innerHTML = `<button class="notification-clear-btn">${window.I18n.t('notifications.clear_all')}</button>`;
+                        container.parentElement.insertBefore(header, container);
+                        header.querySelector('.notification-clear-btn').onclick = () => window.Notifications.clearAll();
+                    }
+                } else {
+                    if (clearBtn) clearBtn.parentElement.remove();
+                }
+            });
+            observer.observe(container, { childList: true });
+        }
     },
     _taskbarCache: {},
     updateTaskbar() {
@@ -280,17 +313,17 @@ window.WebOS = {
         state.processes.forEach(proc => {
             let item = this._taskbarCache[proc.pid];
             const isActive = state.focusedWindow === proc.windowId;
+            const name = proc.appDef.name || (proc.appDef.manifest && proc.appDef.manifest.name) || 'App';
+            const icon = proc.appDef.icon || (proc.appDef.manifest && proc.appDef.manifest.icon) || '❓';
             if (!item) {
-                const name = proc.appDef.name || (proc.appDef.manifest && proc.appDef.manifest.name) || 'App';
-                const icon = proc.appDef.icon || (proc.appDef.manifest && proc.appDef.icon) || '❓';
                 item = document.createElement('div');
                 item.className = 'taskbar-item';
                 item.dataset.pid = proc.pid;
                 item.innerHTML = `
-                        <span class="tb-icon">${icon}</span> <span class="tb-name">${name}</span>
+                        <span class="tb-icon"></span> <span class="tb-name"></span>
                         <div class="taskbar-preview">
-                            <div class="preview-thumbnail">${icon}</div>
-                            <div class="preview-info">${name}</div>
+                            <div class="preview-thumbnail"></div>
+                            <div class="preview-info"></div>
                         </div>
                     `;
                 item.onclick = () => {
@@ -317,6 +350,10 @@ window.WebOS = {
                 container.appendChild(item);
                 this._taskbarCache[proc.pid] = item;
             }
+            item.querySelector('.tb-icon').innerText = icon;
+            item.querySelector('.tb-name').innerText = name;
+            item.querySelector('.preview-thumbnail').innerText = icon;
+            item.querySelector('.preview-info').innerText = name;
             item.classList.toggle('active', isActive);
         });
     },
@@ -467,8 +504,11 @@ window.WebOS = {
                     results.innerHTML = allResults.map(res => `
                         <div class="search-item" data-type="${res.type}" data-id="${res.id || res.path}">
                             <span class="res-icon">${res.icon || (res.type === 'dir' ? '📁' : '📄')}</span>
-                            <span class="res-name">${res.name}</span>
-                            <span class="res-path">${res.path || window.I18n.t('taskmanager.app')}</span>
+                            <div class="res-info">
+                                <span class="res-name">${res.name}</span>
+                                <span class="res-path">${res.path || window.I18n.t('taskmanager.app')}</span>
+                            </div>
+                            <span class="res-type-badge">${res.type}</span>
                         </div>
                     `).join('');
                     results.querySelectorAll('.search-item').forEach(item => {
@@ -580,5 +620,47 @@ window.WebOS = {
                 if (can) can.onclick = () => { item.cleanup(); if (options.onCancel) options.onCancel(); };
             }
         }
+    },
+    refreshDesktopIcons() {
+        Object.entries(state.apps).forEach(([id, app]) => {
+            const icon = document.querySelector(`.desktop-icon[data-id="${id}"]`);
+            if (icon) {
+                const label = icon.querySelector('.label');
+                if (label) label.innerText = app.name || (app.manifest && app.manifest.name) || window.I18n.t('system.default_app_name');
+            }
+        });
+    },
+    refreshUI() {
+        SysLog.log('DEBUG', 'Refreshing UI for language change...', 'WebOS');
+        this.refreshDesktopIcons();
+        this.updateTaskbar();
+        state.processes.forEach(proc => {
+            const winEl = document.getElementById(proc.windowId);
+            if (winEl) {
+                const titleEl = winEl.querySelector('.window-title');
+                if (titleEl) titleEl.innerText = proc.appDef.name || (proc.appDef.manifest && proc.appDef.manifest.name) || 'App';
+            }
+        });
+    },
+    repositionDesktopIcons() {
+        const container = document.getElementById('desktop-icons');
+        if (!container) return;
+        const icons = Array.from(container.querySelectorAll('.desktop-icon'));
+        const grid = this.CONST.DESKTOP_GRID;
+        const columns = Math.floor(container.clientWidth / grid.CELL_W) || 1;
+        
+        icons.forEach((icon, index) => {
+            const appId = icon.dataset.id;
+            if (!this._desktopPositions[appId]) {
+                const col = index % columns;
+                const row = Math.floor(index / columns);
+                icon.style.left = (grid.OFFSET + col * grid.CELL_W) + 'px';
+                icon.style.top = (grid.OFFSET + row * grid.CELL_H) + 'px';
+            }
+        });
     }
 };
+
+window.addEventListener('resize', () => {
+    WebOS.repositionDesktopIcons();
+});

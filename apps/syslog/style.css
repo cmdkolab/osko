@@ -12,15 +12,19 @@
 .syslog-toolbar {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
     padding: 12px;
     background: rgba(255, 255, 255, 0.03);
     border-bottom: 1px solid var(--glass-border);
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
 .toolbar-left, .toolbar-right {
     display: flex;
-    gap: 15px;
+    gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .syslog-app .sys-btn {
@@ -46,7 +50,8 @@
     padding: 6px 12px;
     color: var(--text-color);
     font-size: 11px;
-    width: 150px;
+    width: 120px;
+    min-width: 80px;
 }
 
 .syslog-viewer {

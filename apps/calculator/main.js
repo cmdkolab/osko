@@ -7,7 +7,7 @@ WebOS.registerApp({
         icon: "🧮",
         permissions: []
     },
-    version: "4.1.1",
+    version: "4.1.13",
     width: "320px",
     height: "480px",
     async mount(container, api) {
@@ -41,7 +41,7 @@ WebOS.registerApp({
                         <button class="calc-btn num" data-val="2">2</button>
                         <button class="calc-btn num" data-val="3">3</button>
                         <button class="calc-btn op" data-val="+">+</button>
-                        <button class="calc-btn num" data-val="0" style="grid-column: span 2">0</button>
+                        <button class="calc-btn num" data-val="0">0</button>
                         <button class="calc-btn num" data-val=".">.</button>
                         <button class="calc-btn eq" data-val="=">=</button>
                     </div>
@@ -97,8 +97,10 @@ WebOS.registerApp({
                 expr = expr.replace(/(^|\()\-(\d+\.\d+|\d+)/g, '$1(0-$2)');
                 const result = safeEval(expr);
                 if (!isFinite(result) || isNaN(result)) throw new Error('Math Error');
+                const resultStr = String(Number(result.toFixed(8)));
+                
                 this.history = this.current + ' =';
-                this.current = String(Number(result.toFixed(8)));
+                this.current = resultStr;
                 this.shouldReset = true;
                 this.openParens = 0;
             } catch (e) {
@@ -145,6 +147,9 @@ WebOS.registerApp({
             'Escape': 'C', 'Backspace': 'Backspace'
         };
         const appEl = container.querySelector('.calc-app');
+        
+
+
         if (appEl) {
             appEl.onkeydown = (e) => {
                 if (e.key === 'Backspace') {

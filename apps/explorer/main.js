@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "explorer",
     get name() { return window.I18n.t('explorer.title'); },
     icon: "📂",
-    version: "4.1.1",
+    version: "4.1.13",
     manifest: {
         get name() { return window.I18n.t('explorer.title'); },
         icon: "📂",
@@ -10,18 +10,22 @@ WebOS.registerApp({
     },
     width: "600px",
     height: "450px",
-    async mount(container, api) {
+    async mount(container, api, params) {
+        this.container = container;
         this.api = api;
-        this.container = container; 
-        this.currentPath = '/home/user';
+        this.currentPath = params.path || '/home/user';
         this.searchQuery = '';
         this.selectedItem = null;
-        this.settings = { sortBy: 'name' };
+        this.selectedFiles = new Set();
+        this.clipboard = null;
+        this.sortBy = await api.system.storage.get('explorer:sort') || 'name';
+        this.sortOrder = 1;
         const render = async () => {
             if (!container.querySelector('.explorer-toolbar')) {
                 container.innerHTML = `
                     <div class="explorer-app">
                         <div class="explorer-toolbar">
+                            <button class="sys-btn home-btn" title="${window.I18n.t('explorer.home') || '🏠'}">🏠</button>
                             <button class="sys-btn back-btn" title="${window.I18n.t('explorer.back')}">⬅</button>
                             <div class="explorer-breadcrumbs"></div>
                             <button class="sys-btn sort-btn" title="${window.I18n.t('explorer.sort')}">↕️</button>
@@ -45,6 +49,10 @@ WebOS.registerApp({
         window.addEventListener('i18n:changed', this._i18nListener);
     },
     setupToolbar(container) {
+        container.querySelector('.home-btn').onclick = () => {
+            this.currentPath = '/home/user';
+            this.render(container);
+        };
         container.querySelector('.back-btn').onclick = () => {
             if (this.currentPath === '/') return;
             this.currentPath = this.api.fs.dirname(this.currentPath);
@@ -52,9 +60,9 @@ WebOS.registerApp({
         };
         container.querySelector('.sort-btn').onclick = (e) => {
             this.api.system.showContextMenu(e, [
-                { label: `${window.I18n.t('explorer.sort_name')} ${this.settings.sortBy === 'name' ? '✓' : ''}`, action: () => { this.settings.sortBy = 'name'; this.render(container); } },
-                { label: `${window.I18n.t('explorer.sort_size')} ${this.settings.sortBy === 'size' ? '✓' : ''}`, action: () => { this.settings.sortBy = 'size'; this.render(container); } },
-                { label: `${window.I18n.t('explorer.sort_date')} ${this.settings.sortBy === 'date' ? '✓' : ''}`, action: () => { this.settings.sortBy = 'date'; this.render(container); } }
+                { label: `${window.I18n.t('explorer.sort_name')} ${this.sortBy === 'name' ? '✓' : ''}`, action: () => { this.sortBy = 'name'; this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } },
+                { label: `${window.I18n.t('explorer.sort_size')} ${this.sortBy === 'size' ? '✓' : ''}`, action: () => { this.sortBy = 'size'; this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } },
+                { label: `${window.I18n.t('explorer.sort_date')} ${this.sortBy === 'date' ? '✓' : ''}`, action: () => { this.sortBy = 'date'; this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } }
             ]);
         };
         const search = container.querySelector('.explorer-search');
@@ -81,7 +89,7 @@ WebOS.registerApp({
         }
         items.sort((a, b) => {
             if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-            const sort = this.settings.sortBy;
+            const sort = this.sortBy;
             if (sort === 'size') return (b.size || 0) - (a.size || 0);
             if (sort === 'date') return (b.mtime || 0) - (a.mtime || 0);
             return a.name.localeCompare(b.name, undefined, { numeric: true });
@@ -167,11 +175,27 @@ WebOS.registerApp({
         let destName = clip.name;
         let destPath = this.api.fs.join(this.currentPath, destName);
         if (await this.api.fs.exists(destPath)) {
-            const parts = destName.split('.');
-            const ext = parts.length > 1 ? parts.pop() : '';
-            const base = parts.join('.');
-            destName = `${base} - Copy${ext ? '.' + ext : ''}`;
-            destPath = this.api.fs.join(this.currentPath, destName);
+            const conflictChoice = await new Promise(resolve => {
+                WebOS.ui.showChoiceDialog({
+                    title: window.I18n.t('explorer.title'),
+                    message: window.I18n.t('explorer.conflict_msg', destName),
+                    choices: [
+                        { label: window.I18n.t('explorer.conflict_overwrite'), value: 'overwrite', type: 'danger' },
+                        { label: window.I18n.t('explorer.conflict_keep_both'), value: 'keep', type: 'primary' },
+                        { label: window.I18n.t('dialog.cancel'), value: 'cancel' }
+                    ],
+                    callback: resolve
+                });
+            });
+
+            if (conflictChoice === 'cancel') return;
+            if (conflictChoice === 'keep') {
+                const parts = destName.split('.');
+                const ext = parts.length > 1 ? parts.pop() : '';
+                const base = parts.join('.');
+                destName = `${base} - ${Date.now()}${ext ? '.' + ext : ''}`;
+                destPath = this.api.fs.join(this.currentPath, destName);
+            }
         }
         await this.api.fs.copy(clip.path, destPath);
         this.api.system.setClipboard(null);

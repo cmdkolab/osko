@@ -81,7 +81,7 @@
     background: var(--accent);
     color: #fff;
     font-weight: 700;
-    grid-row: span 1; /* Changed to match grid better */
+    grid-row: span 1;
 }
 
 .calc-btn.clear {
@@ -93,7 +93,7 @@
     background: rgba(255, 59, 48, 0.2);
 }
 
-/* Specific styling for operators to make them stand out */
+
 .calc-btn[data-val="/"], 
 .calc-btn[data-val="*"], 
 .calc-btn[data-val="-"], 

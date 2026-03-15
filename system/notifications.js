@@ -65,5 +65,11 @@ window.Notifications = {
                 if (toast.isConnected) toast.remove();
             }, 500);
         }
+    },
+    clearAll() {
+        const container = document.getElementById('notification-center');
+        if (!container) return;
+        const toasts = Array.from(container.children);
+        toasts.forEach(t => this.close(t.id));
     }
 };

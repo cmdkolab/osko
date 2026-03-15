@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "notes",
     get name() { return window.I18n.t('notes.title'); },
     icon: "📝",
-    version: "4.1.1",
+    version: "4.1.13",
     manifest: {
         get name() { return window.I18n.t('notes.title'); },
         icon: "📝",
@@ -15,6 +15,17 @@ WebOS.registerApp({
         this.container = container;
         this.currentPath = null;
         this._autoSaveTimer = null;
+        const updateStats = () => {
+            const textarea = container.querySelector('.notes-editor');
+            if (!textarea) return;
+            const stats = container.querySelector('.stats-text');
+            if (!stats) return;
+            const text = textarea.value.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            const chars = text.length;
+            stats.innerText = `${words} ${window.I18n.t('notes.words')} | ${chars} ${window.I18n.t('notes.chars')}`;
+        };
+        this.updateStats = updateStats;
         const render = () => {
             container.innerHTML = `
                 <div class="notes-app">
@@ -48,15 +59,9 @@ WebOS.registerApp({
     setupEvents(container) {
         const textarea = container.querySelector('.notes-editor');
         const status = container.querySelector('.status-text');
-        const stats = container.querySelector('.stats-text');
-        const updateStats = () => {
-            const text = textarea.value.trim();
-            const words = text ? text.split(/\s+/).length : 0;
-            const chars = text.length;
-            stats.innerText = `${words} ${window.I18n.t('notes.words')} | ${chars} ${window.I18n.t('notes.chars')}`;
-        };
+        
         textarea.oninput = () => {
-            updateStats();
+            this.updateStats();
             status.innerText = `* ${window.I18n.t('notes.unsaved_changes')}`;
             if (this._autoSaveTimer) this.api.system.clearTimeout(this._autoSaveTimer);
             this._autoSaveTimer = this.api.system.setTimeout(async () => {
@@ -89,7 +94,7 @@ WebOS.registerApp({
                 this.saveFile();
             }
         };
-        updateStats();
+        this.updateStats();
     },
     async openFile(path) {
         const content = await this.api.fs.read(path);
@@ -100,6 +105,7 @@ WebOS.registerApp({
             this.currentPath = path;
             status.innerText = this.api.fs.basename(path);
             this.api.window.setTitle(`Notes - ${status.innerText}`);
+            this.updateStats();
             this.container.querySelector('.notes-editor').focus();
         }
     },

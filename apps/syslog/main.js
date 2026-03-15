@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "syslog",
     get name() { return window.I18n.t('syslog.title'); },
     icon: "📜",
-    version: "4.1.1",
+    version: "4.1.13",
     manifest: {
         get name() { return window.I18n.t('syslog.title'); },
         icon: "📜",
@@ -24,6 +24,9 @@ WebOS.registerApp({
                             <button class="sys-btn filter-btn" data-filter="INFO">${window.I18n.t('syslog.filter_info')}</button>
                             <button class="sys-btn filter-btn" data-filter="WARN">${window.I18n.t('syslog.filter_warn')}</button>
                             <button class="sys-btn filter-btn" data-filter="ERR">${window.I18n.t('syslog.filter_err')}</button>
+                            <select class="sys-btn source-select">
+                                <option value="ALL">${window.I18n.t('syslog.source_all')}</option>
+                            </select>
                         </div>
                         <div class="toolbar-right">
                             <input type="text" class="syslog-search" placeholder="${window.I18n.t('syslog.search')}">
@@ -83,6 +86,25 @@ WebOS.registerApp({
             return;
         }
         const lines = logs.split('\n').filter(l => l.trim());
+        const sources = new Set(['ALL']);
+        lines.forEach(line => {
+             const m = line.match(/\[(.*?)\] \[(.*?)\] \[([A-Z]+)\] \[(.*?)\]/);
+             if (m) sources.add(m[4]);
+        });
+        const sourceSelect = this.container.querySelector('.source-select');
+        if (sourceSelect && sourceSelect.options.length <= 1) {
+            const currentSource = sourceSelect.value;
+            sourceSelect.innerHTML = '';
+            Array.from(sources).sort().forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = opt.innerText = s === 'ALL' ? window.I18n.t('syslog.source_all') : s;
+                if (s === 'ALL') opt.value = 'ALL';
+                sourceSelect.appendChild(opt);
+            });
+            sourceSelect.value = currentSource;
+            sourceSelect.onchange = () => this.refresh();
+        }
+
         const fragment = document.createDocumentFragment();
         let visibleCount = 0;
         const renderLines = lines.slice(-1000);
@@ -91,6 +113,7 @@ WebOS.registerApp({
             if (!match) return;
             const [_, time, session, level, source, message] = match;
             if (this.filter !== 'ALL' && level !== this.filter) return;
+            if (sourceSelect && sourceSelect.value !== 'ALL' && source !== sourceSelect.value) return;
             if (this.searchQuery && !line.toLowerCase().includes(this.searchQuery)) return;
             visibleCount++;
             const entry = document.createElement('div');
@@ -102,6 +125,10 @@ WebOS.registerApp({
                 <span class="log-source">[${source}]</span>
                 <span class="log-msg">${this.highlight(message)}</span>
             `;
+            entry.onclick = () => {
+                this.api.system.setClipboard(line);
+                this.api.notifications.show({ title: 'Syslog', message: 'Log entry copied to clipboard' });
+            };
             fragment.appendChild(entry);
         });
         this.viewer.innerHTML = '';

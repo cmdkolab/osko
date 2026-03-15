@@ -171,9 +171,7 @@
         _resolve(path, noClone = false) {
             const node = this._resolveInternal(path);
             if (node === null || noClone) return node;
-            try {
-                return JSON.parse(JSON.stringify(node));
-            } catch (e) { return node; }
+            return window.deepClone(node);
         },
         checkAccess(path, appId, mode, manifest) {
             path = this.join(path);

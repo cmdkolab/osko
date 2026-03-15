@@ -5,16 +5,16 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="OS(KO) - Advanced, lightweight, client-side browser operating system.">
+    <meta name="description" content="OS(KO) - Advanced browser-based operating system with window management, virtual file system, and multi-language support.">
     <meta name="theme-color" content="#1e293b">
     
-    <!-- Open Graph / Facebook -->
+
     <meta property="og:type" content="website">
     <meta property="og:title" content="OS(KO) - Browser OS">
-    <meta property="og:description" content="Browser-based desktop experience with window management and VFS.">
+    <meta property="og:description" content="Elite browser-based desktop experience with advanced window management and VFS.">
     <meta property="og:image" content="logo.jpeg">
 
-    <title>OS(KO) - Browser OS</title>
+    <title>OS(KO)</title>
     
     <link rel="manifest" href="app.webmanifest">
     <link rel="stylesheet" href="osko.min.css">
@@ -28,7 +28,7 @@
             <div class="boot-loader">
                 <div class="loader-bar"></div>
             </div>
-            <p class="boot-status">Wczytywanie systemu...</p>
+            <p class="boot-status"></p>
         </div>
     </div>
 
@@ -39,26 +39,16 @@
 
     <nav id="taskbar" role="navigation">
         <div class="taskbar-blur"></div>
-        <button id="search-btn" class="search-btn" title="Search" aria-label="Search">🔍</button>
-        <button id="switcher-btn" class="switcher-btn" title="Task View" aria-label="Task View">+</button>
+        <button id="search-btn" class="search-btn" aria-label="Search">🔍</button>
+        <button id="switcher-btn" class="switcher-btn" aria-label="Task View">+</button>
         <div id="running-apps" role="list"></div>
         <div id="system-tray">
-            <span id="hdd-usage" class="tray-item" title="Zajętość dysku">0 B</span>
-            <span id="clock" role="timer" aria-label="Zegar">00:00:00</span>
+            <span id="hdd-usage" class="tray-item">0 B</span>
+            <span id="clock" role="timer" aria-label="Clock">00:00:00</span>
         </div>
     </nav>
     <div id="notification-center" role="log" aria-live="polite"></div>
     <script src="osko.min.js"></script>
-    <script>
-        WebOS.installApp('apps/about');
-        WebOS.installApp('apps/notes');
-        WebOS.installApp('apps/explorer');
-        WebOS.installApp('apps/settings');
-        WebOS.installApp('apps/taskmanager');
-        WebOS.installApp('apps/syslog');
-        WebOS.installApp('apps/calculator');
-        WebOS.installApp('apps/terminal');
-    </script>
 </body>
 
 </html>

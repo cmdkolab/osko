@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "settings",
     get name() { return window.I18n.t('settings.title'); },
     icon: "⚙️",
-    version: "4.1.1",
+    version: "4.1.13",
     manifest: {
         get name() { return window.I18n.t('settings.title'); },
         icon: "⚙️",
@@ -71,6 +71,7 @@ WebOS.registerApp({
             `;
             this._setupEvents(container, api);
             await this._loadAutostart(container, api);
+            this._startInfoTimer(container, api);
         };
         this._render = render;
         await render();
@@ -165,5 +166,13 @@ WebOS.registerApp({
         if (this._vfsWatcher) {
             this.api.system.unsubscribe('vfs:changed', this._vfsWatcher);
         }
+        if (this._infoTimer) clearInterval(this._infoTimer);
+    },
+    _startInfoTimer(container, api) {
+        if (this._infoTimer) clearInterval(this._infoTimer);
+        this._infoTimer = setInterval(() => {
+            const uptimeEl = container.querySelector('.sys-uptime');
+            if (uptimeEl) uptimeEl.innerText = api.system.getUptime();
+        }, 1000);
     }
 });

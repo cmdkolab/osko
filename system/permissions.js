@@ -41,6 +41,11 @@
                 system: {
                     VERSION: PersistenceManager.VERSION,
                     START_TIME: PersistenceManager.START_TIME,
+                    storage: {
+                        get: (key) => PersistenceManager.get(key),
+                        set: (key, value) => PersistenceManager.set(key, value),
+                        remove: (key) => PersistenceManager.remove(key)
+                    },
                     getUptime: () => {
                         const seconds = Math.floor((Date.now() - PersistenceManager.START_TIME) / 1000);
                         const s = window.I18n.t('taskmanager.unit_s');

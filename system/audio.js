@@ -48,12 +48,19 @@
                 try { await this.ctx.resume(); } catch (e) { return; }
             }
             if (type === 'startup') {
-                const src = this._createSource('sine');
-                if (!src) return;
-                src.osc.frequency.setValueAtTime(440, src.now);
-                src.osc.frequency.exponentialRampToValueAtTime(880, src.now + 0.5);
-                src.osc.start(src.now);
-                src.osc.stop(src.now + 0.5);
+                const playTone = (freq, start, dur) => {
+                    const src = this._createSource('sine');
+                    if (!src) return;
+                    src.osc.frequency.setValueAtTime(freq, src.now + start);
+                    src.gain.gain.setValueAtTime(0, src.now + start);
+                    src.gain.gain.linearRampToValueAtTime(0.05, src.now + start + 0.05);
+                    src.gain.gain.linearRampToValueAtTime(0, src.now + start + dur);
+                    src.osc.start(src.now + start);
+                    src.osc.stop(src.now + start + dur);
+                };
+                playTone(440, 0, 0.4);
+                playTone(554.37, 0.15, 0.4);
+                playTone(659.25, 0.3, 0.6);
             } else if (type === 'click') {
                 const src = this._createSource('sine');
                 if (!src) return;

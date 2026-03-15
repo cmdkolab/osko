@@ -17,6 +17,7 @@
             });
         }
         WebOS.updateSystemStats();
+        WebOS._setupNotificationClearButton();
         EventBus.subscribe('vfs:changed', () => WebOS.updateSystemStats());
         if (state.isLocked) {
             const data = await PersistenceManager.get(state.persistenceKey);
@@ -33,6 +34,10 @@
             setTimeout(() => {
                 const bootScreen = document.getElementById('boot-screen');
                 if (bootScreen) bootScreen.classList.add('hidden');
+                
+                document.querySelectorAll('.desktop-icon').forEach((icon, i) => {
+                    setTimeout(() => icon.classList.add('show'), 100 + (i * 60));
+                });
             }, 500);
         });
         EventBus.publish('system:ready');
@@ -75,6 +80,18 @@
         };
     }
     function _setupUIInteractives() {
+        const apps = [
+            'apps/about',
+            'apps/notes',
+            'apps/explorer',
+            'apps/settings',
+            'apps/taskmanager',
+            'apps/syslog',
+            'apps/calculator',
+            'apps/terminal'
+        ];
+        apps.forEach(app => WebOS.installApp(app));
+
         const binds = [
             { id: 'search-btn', tooltip: 'system.search_tooltip', action: () => WebOS.ui.toggleSearch() },
             { id: 'switcher-btn', tooltip: 'system.switcher_tooltip', action: () => WebOS.ui.toggleSwitcher() },
@@ -83,8 +100,21 @@
         binds.forEach(b => {
             const el = document.getElementById(b.id);
             if (!el) return;
-            if (b.tooltip) el.title = window.I18n.t(b.tooltip);
             el.onclick = b.action;
+        });
+        
+        const updateTooltips = () => {
+            binds.forEach(b => {
+                const el = document.getElementById(b.id);
+                if (el && b.tooltip) el.title = window.I18n.t(b.tooltip);
+            });
+            const hddUsage = document.getElementById('hdd-usage');
+            if (hddUsage) hddUsage.title = window.I18n.t('system.hdd_usage');
+        };
+        updateTooltips();
+        window.addEventListener('i18n:changed', () => {
+            updateTooltips();
+            WebOS.refreshUI();
         });
         const hddUsage = document.getElementById('hdd-usage');
         if (hddUsage) hddUsage.title = window.I18n.t('system.hdd_usage');

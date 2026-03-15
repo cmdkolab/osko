@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "terminal",
     get name() { return window.I18n.t('terminal.title'); },
     icon: "🐚",
-    version: "4.1.1",
+    version: "4.1.13",
     manifest: {
         get name() { return window.I18n.t('terminal.title'); },
         icon: "🐚",
@@ -16,6 +16,7 @@ WebOS.registerApp({
         this.cwd = '/home/user';
         this.history = [];
         this.historyIndex = -1;
+        this._loadHistory();
         container.innerHTML = `
             <div class="terminal-container">
                 <div class="terminal-output"></div>
@@ -29,13 +30,15 @@ WebOS.registerApp({
         this.input = container.querySelector('.terminal-input');
         this.prompt = container.querySelector('.terminal-prompt');
         this.updatePrompt();
-        this.print(`OS(KO) ${window.I18n.t('terminal.title')} v4.0.1`);
+        this.print(`OS(KO) ${window.I18n.t('terminal.title')} v${this.api.system.VERSION}`);
         this.print(window.I18n.t('terminal.welcome'));
         this.input.onkeydown = (e) => {
             if (e.key === 'Enter') {
                 const cmd = this.input.value.trim();
                 if (cmd) {
                     this.history.unshift(cmd);
+                    if (this.history.length > 50) this.history.pop();
+                    this._saveHistory();
                     this.historyIndex = -1;
                     this.execute(cmd);
                 }
@@ -57,6 +60,9 @@ WebOS.registerApp({
                 e.preventDefault();
             } else if (e.key === 'Tab') {
                 this.handleTab();
+                e.preventDefault();
+            } else if (e.ctrlKey && e.key === 'l') {
+                this.output.innerHTML = '';
                 e.preventDefault();
             }
         };
@@ -96,7 +102,11 @@ WebOS.registerApp({
                     if (entries === null) {
                         this.print(`ls: ${this.cwd}: ${window.I18n.t('terminal.not_found')}`, 'error');
                     } else {
-                        this.print(entries.map(e => e.type === 'dir' ? e.name + '/' : e.name).join('  '));
+                        const sorted = [...entries].sort((a, b) => {
+                            if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+                            return a.name.localeCompare(b.name, undefined, { numeric: true });
+                        });
+                        this.print(sorted.map(e => e.type === 'dir' ? e.name + '/' : e.name).join('  '));
                     }
                 } catch (e) { this.print(`${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
                 break;
@@ -156,14 +166,51 @@ WebOS.registerApp({
             case 'ps':
                 try {
                     const procs = await this.api.system.getProcesses();
-                    this.print(`PID   RAM        ${window.I18n.t('taskmanager.status').toUpperCase()}    ${window.I18n.t('taskmanager.app').toUpperCase()}`, 'echo');
+                    this.print(`${'PID'.padEnd(6)}${'STORAGE'.padEnd(12)}${'UPTIME'.padEnd(10)}${window.I18n.t('taskmanager.status').padEnd(12)}${window.I18n.t('taskmanager.app')}`, 'echo');
                     procs.forEach(p => {
-                        const pidStr = String(p.pid).padEnd(5, ' ');
-                        const ramStr = p.storage.split(' / ')[0].padEnd(10, ' ');
-                        const timeStr = String(p.uptime).padEnd(7, ' ');
-                        this.print(`${pidStr} ${ramStr} ${timeStr} ${p.name}`);
+                        const pidStr = String(p.pid).padEnd(6);
+                        const storage = (this.api.system.storage.calculateUsage(p.appId) / 1024).toFixed(1) + ' KB';
+                        const storageStr = storage.padEnd(12);
+                        const uptime = Math.floor((Date.now() - p.startTime) / 1000);
+                        const uptimeStr = (uptime + 's').padEnd(10);
+                        const statusStr = 'Running'.padEnd(12);
+                        this.print(`${pidStr}${storageStr}${uptimeStr}${statusStr}${p.name || p.appId}`);
                     });
                 } catch (e) { this.print(`ps: ${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
+                break;
+            case 'du':
+                try {
+                    const target = args[0] || this.cwd;
+                    const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
+                    const stats = await this.api.fs.stat(path);
+                    if (!stats) {
+                        this.print(`du: ${target}: ${window.I18n.t('terminal.not_found')}`, 'error');
+                        break;
+                    }
+                    const calculateSize = async (p) => {
+                        const s = await this.api.fs.stat(p);
+                        if (s.type === 'file') return s.size;
+                        const entries = await this.api.fs.list(p);
+                        let total = 0;
+                        for (const e of entries) {
+                            total += await calculateSize(this.api.fs.join(p, e.name));
+                        }
+                        return total;
+                    };
+                    const totalSize = await calculateSize(path);
+                    const formattedSize = totalSize < 1024 ? totalSize + ' B' : (totalSize / 1024).toFixed(1) + ' KB';
+                    this.print(window.I18n.t('terminal.du_total', path, formattedSize));
+                } catch (e) { this.print(`du: ${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
+                break;
+            case 'system':
+                this.print(`OS(KO) Kernel v${this.api.system.VERSION}`, 'echo');
+                this.print(`Uptime: ${this.api.system.getUptime()}`);
+                const totalUsage = this.api.system.storage.getTotalUsage();
+                const quota = 10 * 1024 * 1024;
+                const percent = ((totalUsage / quota) * 100).toFixed(1);
+                this.print(`VFS Usage: ${(totalUsage / 1024 / 1024).toFixed(2)} MB / 10.00 MB (${percent}%)`);
+                this.print(`Resolution: ${window.innerWidth}x${window.innerHeight}`);
+                this.print(`Language: ${window.I18n.current.toUpperCase()}`);
                 break;
             case 'play':
                 if (!args[0]) { this.print(window.I18n.t('terminal.sounds')); break; }
@@ -194,19 +241,39 @@ WebOS.registerApp({
         const val = this.input.value;
         const parts = val.split(/\s+/);
         const last = parts[parts.length - 1];
-        if (!last) return;
+        if (!last && parts.length > 1) return;
+        
         try {
+            const commands = ['ls', 'cd', 'cat', 'edit', 'mkdir', 'rm', 'clear', 'echo', 'date', 'pwd', 'help', 'version', 'play', 'uptime', 'ps', 'du', 'system'];
             const entries = await this.api.fs.list(this.cwd);
-            const files = entries.map(e => e.name);
+            const files = entries ? entries.map(e => e.name) : [];
             const apps = Object.values(WebOS.state.apps).map(a => a.id);
-            const all = [...files, ...apps];
-            const matches = all.filter(f => f.toLowerCase().startsWith(last.toLowerCase()));
+            
+            let candidates = [];
+            if (parts.length <= 1) {
+                candidates = [...commands, ...apps];
+            } else {
+                candidates = [...files, ...apps];
+            }
+
+            const matches = candidates.filter(f => f.toLowerCase().startsWith(last.toLowerCase()));
             if (matches.length === 1) {
                 parts[parts.length - 1] = matches[0];
-                this.input.value = parts.join(' ');
+                this.input.value = parts.join(' ') + (parts.length === 1 ? ' ' : '');
             } else if (matches.length > 1) {
-                this.print(matches.join('  '));
+                this.print([...new Set(matches)].join('  '));
             }
         } catch (e) { }
+    },
+    async _loadHistory() {
+        try {
+            const data = await this.api.fs.read('/home/user/settings/terminal_history.json');
+            if (data) this.history = JSON.parse(data);
+        } catch (e) {}
+    },
+    async _saveHistory() {
+        try {
+            await this.api.fs.write('/home/user/settings/terminal_history.json', JSON.stringify(this.history));
+        } catch (e) {}
     }
 });
