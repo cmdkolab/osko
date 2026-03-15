@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "explorer",
     get name() { return window.I18n.t('explorer.title'); },
     icon: "📂",
-    version: "4.0.1",
+    version: "4.1.0",
     manifest: {
         get name() { return window.I18n.t('explorer.title'); },
         icon: "📂",
@@ -132,7 +132,7 @@ WebOS.registerApp({
             frag.appendChild(el);
         });
         grid.appendChild(frag);
-        status.innerText = `${items.length} items`;
+        status.innerText = `${items.length} ${window.I18n.t('explorer.items')}`;
     },
     updateBreadcrumbs(el) {
         el.innerHTML = '';
@@ -159,7 +159,7 @@ WebOS.registerApp({
     copyFile(item) {
         const fullPath = this.api.fs.join(this.currentPath, item.name);
         this.api.system.setClipboard({ type: 'file', path: fullPath, name: item.name });
-        this.api.notifications.show({ title: 'Explorer', message: `Copied ${item.name}` });
+        this.api.notifications.show({ title: 'Explorer', message: window.I18n.t('explorer.copied', item.name) });
     },
     async pasteFile() {
         const clip = this.api.system.getClipboard();

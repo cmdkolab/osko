@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "taskmanager",
     get name() { return window.I18n.t('taskmanager.title'); },
     icon: "📊",
-    version: "4.0.1",
+    version: "4.1.0",
     manifest: {
         get name() { return window.I18n.t('taskmanager.title'); },
         icon: "📊",
@@ -25,7 +25,7 @@ WebOS.registerApp({
                 <div class="tm-table">
                     <div class="tm-header">
                         <span>${window.I18n.t('taskmanager.app')}</span>
-                        <span class="text-center">PID</span>
+                        <span class="text-center">${window.I18n.t('taskmanager.pid')}</span>
                         <span class="text-right">${window.I18n.t('taskmanager.uptime')}</span>
                         <span class="text-right">${window.I18n.t('taskmanager.memory')}</span>
                         <span class="text-center">${window.I18n.t('taskmanager.action')}</span>
@@ -74,11 +74,16 @@ WebOS.registerApp({
                 const uptimeEl = row.querySelector('.tm-uptime');
                 const memEl = row.querySelector('.tm-mem');
                 const uptime = Math.floor((Date.now() - p.startTime) / 1000);
-                uptimeEl.innerText = uptime < 60 ? `${uptime}s` : `${Math.floor(uptime/60)}m ${uptime%60}s`;
+                const s = window.I18n.t('taskmanager.unit_s');
+                const m = window.I18n.t('taskmanager.unit_m');
+                uptimeEl.innerText = uptime < 60 ? `${uptime}${s}` : `${Math.floor(uptime/60)}${m} ${uptime%60}${s}`;
                 memEl.innerText = p.storage ? p.storage.split(' ')[0] : '---';
             });
             const totalUptime = Math.floor((Date.now() - (api.system.START_TIME || Date.now())) / 1000);
-            sysUptimeEl.innerText = `${window.I18n.t('taskmanager.uptime')}: ${totalUptime < 3600 ? Math.floor(totalUptime/60)+'m '+(totalUptime%60)+'s' : Math.floor(totalUptime/3600)+'h '+Math.floor((totalUptime%3600)/60)+'m'}`;
+            const s = window.I18n.t('taskmanager.unit_s');
+            const m = window.I18n.t('taskmanager.unit_m');
+            const h = window.I18n.t('taskmanager.unit_h');
+            sysUptimeEl.innerText = `${window.I18n.t('taskmanager.uptime')}: ${totalUptime < 3600 ? Math.floor(totalUptime/60)+m+' '+(totalUptime%60)+s : Math.floor(totalUptime/3600)+h+' '+Math.floor((totalUptime%3600)/60)+m}`;
         };
         const killAllBtn = container.querySelector('.tm-kill-all-btn');
         killAllBtn.onclick = () => {

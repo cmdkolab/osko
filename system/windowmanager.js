@@ -145,7 +145,7 @@
             state.windowStack.forEach((winId, index) => {
                 const w = state.windows.find(win => win.id === winId);
                 if (w) {
-                    w.element.style.zIndex = baseZ + index;
+                    w.element.style.zIndex = baseZ + (index * 2);
                 }
             });
             WebOS.updateTaskbar();
@@ -218,8 +218,8 @@
                 const dy = initialY - currentY;
                 initialX = currentX;
                 initialY = currentY;
-                const top = Math.max(0, Math.min(state.viewport.h - this.CONST.TASKBAR_HEIGHT, el.offsetTop - dy));
-                const left = Math.max(-el.offsetWidth + 40, Math.min(state.viewport.w - 40, el.offsetLeft - dx));
+                const top = Math.max(0, Math.min(state.viewport.h - this.CONST.TASKBAR_HEIGHT - 40, el.offsetTop - dy));
+                const left = Math.max(-el.offsetWidth + 80, Math.min(state.viewport.w - 80, el.offsetLeft - dx));
                 el.style.top = top + "px";
                 el.style.left = left + "px";
                 const edge = this.CONST.SNAP_EDGE;
@@ -266,7 +266,7 @@
                     const snap = preview.dataset.snap;
                     const win = state.windows.find(w => w.element === el);
                     const th = this.CONST.TASKBAR_HEIGHT;
-                    if (win && win.state !== 'maximized' && snap !== 'top') {
+                    if (win && win.state !== 'maximized' && !el.classList.contains('window-snapped')) {
                         win.oldWidth = el.style.width;
                         win.oldHeight = el.style.height;
                         win.oldTop = el.style.top;

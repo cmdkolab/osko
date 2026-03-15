@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "notes",
     get name() { return window.I18n.t('notes.title'); },
     icon: "📝",
-    version: "4.0.1",
+    version: "4.1.0",
     manifest: {
         get name() { return window.I18n.t('notes.title'); },
         icon: "📝",
@@ -73,7 +73,9 @@ WebOS.registerApp({
         container.querySelector('.wrap-btn').onclick = (e) => {
             wrapped = !wrapped;
             textarea.style.whiteSpace = wrapped ? 'pre-wrap' : 'pre';
+            textarea.style.overflowX = wrapped ? 'hidden' : 'auto';
             e.target.classList.toggle('active', !wrapped);
+            this.api.notifications.show({ title: window.I18n.t('notes.title'), message: `${window.I18n.t('notes.wrap')}: ${wrapped ? window.I18n.t('settings.sound_on') : window.I18n.t('settings.sound_off')}` });
         };
         textarea.onkeydown = (e) => {
             if (e.key === 'Tab') {

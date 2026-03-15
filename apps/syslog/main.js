@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "syslog",
     get name() { return window.I18n.t('syslog.title'); },
     icon: "📜",
-    version: "4.0.1",
+    version: "4.1.0",
     manifest: {
         get name() { return window.I18n.t('syslog.title'); },
         icon: "📜",
@@ -33,7 +33,7 @@ WebOS.registerApp({
                     </div>
                     <div class="syslog-viewer"></div>
                     <div class="syslog-status">
-                         <span class="log-count">0 lines</span>
+                         <span class="log-count">0 ${window.I18n.t('syslog.lines')}</span>
                     </div>
                 </div>
             `;
@@ -108,7 +108,7 @@ WebOS.registerApp({
         this.viewer.appendChild(fragment);
         this.viewer.scrollTop = this.viewer.scrollHeight;
         const status = this.container.querySelector('.log-count');
-        if (status) status.innerText = `${visibleCount} / ${lines.length} lines`;
+        if (status) status.innerText = `${visibleCount} / ${lines.length} ${window.I18n.t('syslog.lines')}`;
     },
     highlight(msg) {
         if (!this.searchQuery) return msg;

@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "terminal",
     get name() { return window.I18n.t('terminal.title'); },
     icon: "🐚",
-    version: "4.0.1",
+    version: "4.1.0",
     manifest: {
         get name() { return window.I18n.t('terminal.title'); },
         icon: "🐚",
@@ -166,7 +166,7 @@ WebOS.registerApp({
                 } catch (e) { this.print(`ps: ${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
                 break;
             case 'play':
-                if (!args[0]) { this.print("Dostępne dźwięki: startup, click, error, notify"); break; }
+                if (!args[0]) { this.print(window.I18n.t('terminal.sounds')); break; }
                 this.api.audio.play(args[0]);
                 break;
             case 'edit':

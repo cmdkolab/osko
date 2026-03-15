@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "about",
     get name() { return window.I18n.t('about.title'); },
     icon: "ℹ️",
-    version: "4.0.1",
+    version: "4.1.0",
     manifest: {
         get name() { return window.I18n.t('about.title'); },
         icon: "ℹ️",
@@ -29,8 +29,8 @@ WebOS.registerApp({
                             <span class="detail-value about-uptime">${api.system.getUptime()}</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Kernel:</span>
-                            <span class="detail-value">V8 / WebOS Core</span>
+                            <span class="detail-label">${window.I18n.t('about.kernel')}:</span>
+                            <span class="detail-value">V8 / OS(KO) Core</span>
                         </div>
                     </div>
                 </div>

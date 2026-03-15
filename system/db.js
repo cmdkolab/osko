@@ -5,16 +5,21 @@
         _db: null,
         _memory: new Map(),
         _isFallback: false,
+        _isReady: false,
+        _readyPromise: null,
         init() {
-            return new Promise((resolve) => {
+            if (this._readyPromise) return this._readyPromise;
+            this._readyPromise = new Promise((resolve) => {
                 if (!window.indexedDB) {
                     this._isFallback = true;
+                    this._isReady = true;
                     console.warn('[DBWrapper] IndexedDB not supported. Switching to in-memory storage.');
                     return resolve();
                 }
                 const request = indexedDB.open(this.dbName, this.version);
                 request.onerror = (e) => {
                     this._isFallback = true;
+                    this._isReady = true;
                     e.preventDefault();
                     SysLog.log('WARN', 'IndexedDB access denied. Falling back to memory.', 'DBWrapper', { error: e.target.error?.message });
                     resolve();
@@ -24,10 +29,12 @@
                 };
                 request.onsuccess = (e) => {
                     this._db = e.target.result;
+                    this._isReady = true;
                     SysLog.log('DEBUG', 'Database connection established.', 'DBWrapper');
                     this._db.onversionchange = () => {
                         this._db.close();
                         this._db = null;
+                        this._isReady = false;
                         WebOS.ui.showDialog({
                             message: window.I18n.t('dialog.db_upgrade'),
                             type: 'alert',
@@ -44,6 +51,11 @@
                     }
                 };
             });
+            return this._readyPromise;
+        },
+        async waitReady() {
+            if (this._isReady) return;
+            await this.init();
         },
         async get(key) {
             if (this._isFallback) return this._memory.get(key) ?? null;

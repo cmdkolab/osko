@@ -7,7 +7,7 @@ WebOS.registerApp({
         icon: "🧮",
         permissions: []
     },
-    version: "4.0.1",
+    version: "4.1.0",
     width: "320px",
     height: "480px",
     async mount(container, api) {
@@ -102,7 +102,7 @@ WebOS.registerApp({
                 this.shouldReset = true;
                 this.openParens = 0;
             } catch (e) {
-                this.current = 'Error';
+                this.current = window.I18n.t('calculator.error');
                 this.history = '';
                 this.shouldReset = true;
             }
@@ -111,7 +111,7 @@ WebOS.registerApp({
         container.querySelectorAll('.calc-btn').forEach(btn => {
             btn.onclick = () => {
                 const val = btn.dataset.val;
-                if (this.current === 'Error') { this.current = '0'; this.shouldReset = false; }
+                if (this.current === window.I18n.t('calculator.error')) { this.current = '0'; this.shouldReset = false; }
                 if (val === 'C') {
                     this.current = '0'; this.history = ''; this.openParens = 0;
                 } else if (val === '=') {

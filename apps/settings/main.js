@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "settings",
     get name() { return window.I18n.t('settings.title'); },
     icon: "⚙️",
-    version: "4.0.1",
+    version: "4.1.0",
     manifest: {
         get name() { return window.I18n.t('settings.title'); },
         icon: "⚙️",
@@ -15,12 +15,12 @@ WebOS.registerApp({
         this.api = api;
         const render = async () => {
             const presets = [
-                { name: 'Default', val: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)' },
-                { name: 'Sunset', val: 'linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%)' },
-                { name: 'Ocean', val: 'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)' },
-                { name: 'Midnight', val: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)' },
-                { name: 'Emerald', val: 'linear-gradient(135deg, #1D976C 0%, #93F9B9 100%)' },
-                { name: 'Cyberpunk', val: 'linear-gradient(135deg, #000428 0%, #004e92 100%)' }
+                { name: 'settings.preset_default', val: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)' },
+                { name: 'settings.preset_sunset', val: 'linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%)' },
+                { name: 'settings.preset_ocean', val: 'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)' },
+                { name: 'settings.preset_midnight', val: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)' },
+                { name: 'settings.preset_emerald', val: 'linear-gradient(135deg, #1D976C 0%, #93F9B9 100%)' },
+                { name: 'settings.preset_cyberpunk', val: 'linear-gradient(135deg, #000428 0%, #004e92 100%)' }
             ];
             const currentWallpaper = await api.fs.read('/home/user/settings/wallpaper.txt');
             const currentTheme = (await api.fs.read('/home/user/settings/theme.txt')) || 'default';
@@ -41,7 +41,7 @@ WebOS.registerApp({
                     <div class="settings-section">
                         <h3>${window.I18n.t('settings.tab_personalization')}</h3>
                         <div class="color-presets">
-                            ${presets.map(p => `<div class="preset-btn ${currentWallpaper === p.val ? 'active' : ''}" data-val="${p.val}" title="${p.name}" style="background: ${p.val};"></div>`).join('')}
+                            ${presets.map(p => `<div class="preset-btn ${currentWallpaper === p.val ? 'active' : ''}" data-val="${p.val}" title="${window.I18n.t(p.name)}" style="background: ${p.val};"></div>`).join('')}
                         </div>
                     </div>
                     <div class="settings-section">
@@ -60,6 +60,7 @@ WebOS.registerApp({
                     </div>
                     <div class="settings-section">
                         <h3>${window.I18n.t('settings.autostart')}</h3>
+                        <p class="section-desc">${window.I18n.t('settings.autostart_desc')}</p>
                         <div class="autostart-list"></div>
                     </div>
                     <div class="settings-section danger-zone">

@@ -40,6 +40,22 @@
     }
     function _setupErrorHandlers() {
         let _lastErr = null;
+
+        const localizeStatic = () => {
+            const bootStatus = document.querySelector('.boot-status');
+            if (bootStatus) bootStatus.innerText = I18n.t('system.loading');
+            const searchBtn = document.getElementById('search-btn');
+            if (searchBtn) searchBtn.title = I18n.t('system.search_tooltip');
+            const switcherBtn = document.getElementById('switcher-btn');
+            if (switcherBtn) switcherBtn.title = I18n.t('system.switcher_tooltip');
+            const hddUsage = document.getElementById('hdd-usage');
+            if (hddUsage) hddUsage.title = I18n.t('system.hdd_tooltip');
+        };
+        localizeStatic();
+        window.addEventListener('i18n:changed', localizeStatic);
+
+        SysLog.log('INFO', 'Initializing WebOS Core...', 'Kernel');
+
         window.onerror = (msg, url, line, col, error) => {
             SysLog.log('ERR', { message: msg, line, column: col, url, error: error?.toString() }, 'GlobalHandler');
             if (msg !== _lastErr) {
