@@ -1,27 +1,27 @@
 @font-face {
     font-family: 'Outfit';
-    src: url('assets/fonts/outfit-v11-latin-300.woff2') format('woff2');
+    src: url('assets/fonts/v1-1.woff2') format('woff2');
     font-weight: 300;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Outfit';
-    src: url('assets/fonts/outfit-v11-latin-regular.woff2') format('woff2');
+    src: url('assets/fonts/v1-4.woff2') format('woff2');
     font-weight: 400;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Outfit';
-    src: url('assets/fonts/outfit-v11-latin-500.woff2') format('woff2');
+    src: url('assets/fonts/v1-2.woff2') format('woff2');
     font-weight: 500;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Outfit';
-    src: url('assets/fonts/outfit-v11-latin-600.woff2') format('woff2');
+    src: url('assets/fonts/v1-3.woff2') format('woff2');
     font-weight: 600;
     font-style: normal;
 }

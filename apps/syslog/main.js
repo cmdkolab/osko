@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "syslog",
     get name() { return window.I18n.t('syslog.title'); },
     icon: "📜",
-    version: "4.0.0",
+    version: "4.0.1",
     manifest: {
         get name() { return window.I18n.t('syslog.title'); },
         icon: "📜",

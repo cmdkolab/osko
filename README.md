@@ -4,7 +4,7 @@
 
 # 🚀 OS(KO) - Browser OS
 
-![Version](https://img.shields.io/badge/version-4.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-4.0.1-blue.svg)
 ![Vanilla JS](https://img.shields.io/badge/Vanilla-Javascript-yellow)
 ![Local](https://img.shields.io/badge/Runs-Locally-success)
 
@@ -58,9 +58,13 @@ Contributions, issues, and feature requests are always welcome! Feel free to che
 When contributing to OSKO or making modifications, please adhere to the following versioning rules:
 
 1. **System Core Updates:** Whenever you make changes to any core system file (like `/system/*.js` or `index.html`), ensure you increment the global OSKO version number.
-    - Update the version badge at the top of this `README.md` file (e.g., from `version-3.5.0` to `version-3.5.1`).
-2. **Built-in Application Updates:** If your changes cover a specific built-in application inside the `/apps/` directory, bump the application's local version property within its respective `main.js` file (e.g., `version: "2.3.1"` to `version: "2.3.2"`). 
-
+    - Small fixes: Increment the last digit (e.g., 4.0.0 -> 4.0.1).
+    - Major changes: Increment the middle or first digit (e.g., 4.0.0 -> 4.1.0 or 5.0.0).
+    - Remember to update the version badge at the top of this file.
+2. **Built-in Application Updates:** Every change to an application (inside `/apps/`) **must** be accompanied by a version bump in its `main.js` file.
+    - **Independent Versioning**: App versions are independent of the system core version.
+    - Small fixes = small increments (last digit).
+    - Major features = large increments (first or middle digit).
 This helps to maintain a clear trajectory of updates for both the system kernel and its utilities.
 
 ## 📄 License

@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "terminal",
     get name() { return window.I18n.t('terminal.title'); },
     icon: "🐚",
-    version: "4.0.0",
+    version: "4.0.1",
     manifest: {
         get name() { return window.I18n.t('terminal.title'); },
         icon: "🐚",
@@ -29,7 +29,7 @@ WebOS.registerApp({
         this.input = container.querySelector('.terminal-input');
         this.prompt = container.querySelector('.terminal-prompt');
         this.updatePrompt();
-        this.print(`OS(KO) ${window.I18n.t('terminal.title')} v4.0.0`);
+        this.print(`OS(KO) ${window.I18n.t('terminal.title')} v4.0.1`);
         this.print(window.I18n.t('terminal.welcome'));
         this.input.onkeydown = (e) => {
             if (e.key === 'Enter') {
