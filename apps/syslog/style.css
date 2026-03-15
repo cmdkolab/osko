@@ -2,53 +2,104 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    gap: 10px;
-    padding: 10px;
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
+    font-size: 12px;
+    color: var(--text-color);
 }
 
 .syslog-toolbar {
     display: flex;
-    gap: 10px;
-    padding: 5px;
+    justify-content: space-between;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.toolbar-left, .toolbar-right {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.syslog-app .sys-btn {
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    color: var(--text-color);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.syslog-app .sys-btn:hover { background: rgba(255, 255, 255, 0.1); }
+.syslog-app .sys-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.syslog-app .sys-btn.danger:hover { background: #ff3b30; border-color: #ff3b30; color: #fff; }
+
+.syslog-search {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    color: var(--text-color);
+    font-size: 11px;
+    width: 150px;
 }
 
 .syslog-viewer {
     flex: 1;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
-    padding: 15px;
-    font-family: 'Cascadia Code', monospace;
-    font-size: 11px;
-    color: #d1d5db;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    line-height: 1.5;
-}
-
-.syslog-container {
+    overflow: auto;
     padding: 10px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 12px;
-    color: #a7f3d0;
-    white-space: pre-wrap;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 11px;
+    line-height: 1.2;
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .log-entry {
-    margin-bottom: 4px;
+    margin-bottom: 0px;
+    white-space: nowrap;
+    padding: 1px 4px;
+    border-radius: 2px;
 }
 
-.log-time {
-    color: #94a3b8;
+.log-entry:hover { background: rgba(255, 255, 255, 0.03); }
+
+.log-time { color: #94a3b8; opacity: 0.7; }
+.log-session { color: #a855f7; opacity: 0.8; }
+.log-level { font-weight: 800; }
+.log-source { color: #10b981; }
+.log-msg { color: #e2e8f0; }
+
+.level-err .log-level { color: #f87171; }
+.level-err { background: rgba(248, 113, 113, 0.05); }
+.level-warn .log-level { color: #fbbf24; }
+.level-info .log-level { color: #3b82f6; }
+
+.log-empty {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    opacity: 0.5;
+    font-style: italic;
 }
 
-.log-level-err {
-    color: #f87171;
+.syslog-status {
+    padding: 4px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    font-size: 10px;
+    opacity: 0.5;
+    text-align: right;
+    border-top: 1px solid var(--glass-border);
 }
 
-.log-level-info {
-    color: #60a5fa;
+mark {
+    background: var(--accent);
+    color: #fff;
+    padding: 0 2px;
+    border-radius: 2px;
 }

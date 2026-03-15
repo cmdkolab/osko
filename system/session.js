@@ -8,7 +8,7 @@
             PersistenceManager.set('SYS:LOCKED', true);
             document.body.classList.add('system-locked');
             this.showLockScreen();
-            SysLog.log('INFO', 'System locked');
+            SysLog.log('INFO', 'System locked', 'SessionManager');
         },
         async unlock() {
             state.isLocked = false;
@@ -20,18 +20,21 @@
                 document.removeEventListener('keydown', this._lockKeydown);
                 this._lockKeydown = null;
             }
-            SysLog.log('INFO', 'System unlocked');
+            SysLog.log('INFO', 'System unlocked', 'SessionManager');
             if (state.deferredRestoration) {
                 WebOS.flushDeferredRestoration();
             }
         },
         async logout() {
-            SysLog.log('INFO', 'User logout initiated');
+            SysLog.log('INFO', 'User logout initiated', 'SessionManager');
             await WebOS.killAll();
             await VFS.saveImmediate();
             state.isLocked = true;
             document.body.classList.add('system-locked');
             location.reload();
+        },
+        isLocked() {
+            return state.isLocked;
         },
         showLockScreen() {
             if (document.getElementById('lock-screen')) return;
@@ -41,7 +44,7 @@
                 <div class="lock-panel">
                     <div class="lock-avatar">👤</div>
                     <div class="lock-user">OS(KO)</div>
-                    <button class="lock-btn">Odblokuj</button>
+                    <button class="lock-btn">${window.I18n.t('system.unlock')}</button>
                 </div>
             `;
             document.body.appendChild(ls);

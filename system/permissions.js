@@ -6,21 +6,22 @@
         createScopedAPI(appDef) {
             const appId = appDef.id;
             const manifest = appDef.manifest || {};
+            let _procInstance = null;
+            const _getProc = () => {
+                if (_procInstance && state.processes.includes(_procInstance)) return _procInstance;
+                _procInstance = state.processes.find(p => p.appId === appId);
+                return _procInstance;
+            };
             const check = (perm) => {
                 const granted = this.check(manifest, perm);
                 if (!granted) {
                     Notifications.show({
                         title: 'Security',
-                        message: `App "${appDef.name}" tried to use "${perm}" without permission.`
+                        message: `App "${appDef.name}" tried to use "${perm}" without permission.`,
+                        type: 'warning'
                     });
                 }
                 return granted;
-            };
-            let _cachedProc = null;
-            const _getProc = () => {
-                if (_cachedProc && state.processes.includes(_cachedProc)) return _cachedProc;
-                _cachedProc = state.processes.find(p => p.appId === appId);
-                return _cachedProc;
             };
             const _untrack = (handle) => {
                 const proc = _getProc();
@@ -128,6 +129,7 @@
                         };
                     },
                     getProcesses: () => {
+                        if (!check('system.manage')) return [];
                         return state.processes.map(p => {
                             const win = state.windows.find(w => w.id === p.windowId);
                             const nodeCount = win ? win.element.getElementsByTagName('*').length : 0;
@@ -140,7 +142,9 @@
                             return {
                                 pid: p.pid,
                                 name: p.appDef.name,
+                                icon: p.appDef.icon,
                                 appId: p.appId,
+                                startTime: p.startTime,
                                 uptime: `${uptime}s`,
                                 storage: `${storageStr} / ${limitStr}`,
                                 nodes: nodeCount
@@ -155,10 +159,10 @@
                         }));
                     },
                     showContextMenu: (e, items) => ContextMenu.show(e, items),
-                    lock: () => SessionManager.lock(),
+                    lock: () => check('system.session') ? SessionManager.lock() : null,
                     getAssociation: (ext) => VFS.read(`/sys/associations/${ext}`, 'system'),
-                    setTheme: (name) => ThemeEngine.setTheme(name),
-                    setWallpaper: (val) => ThemeEngine.setWallpaper(val),
+                    setTheme: (name) => check('system.ui') ? ThemeEngine.setTheme(name) : null,
+                    setWallpaper: (val) => check('system.ui') ? ThemeEngine.setWallpaper(val) : null,
                     killApp: async (targetAppId) => {
                         if (check('system.manage')) {
                             if (targetAppId !== appId) {

@@ -7,55 +7,61 @@ WebOS.registerApp({
         icon: "🧮",
         permissions: []
     },
-    version: "2.3.1",
+    version: "4.0.0",
     width: "320px",
-    height: "460px",
-    mount(container, api) {
+    height: "480px",
+    async mount(container, api) {
         this.container = container;
         this.api = api;
-        container.innerHTML = `
-            <div class="calc-app">
-                <div class="calc-display">
-                    <div class="calc-history"></div>
-                    <div class="calc-current">0</div>
+        this.current = '0';
+        this.history = '';
+        this.shouldReset = false;
+        this.openParens = 0;
+        const render = () => {
+            container.innerHTML = `
+                <div class="calc-app" tabindex="0">
+                    <div class="calc-display">
+                        <div class="calc-history">${this.history}</div>
+                        <div class="calc-current">${this.current}</div>
+                    </div>
+                    <div class="calc-grid">
+                        <button class="calc-btn clear" data-val="C">C</button>
+                        <button class="calc-btn op" data-val="()">()</button>
+                        <button class="calc-btn op" data-val="%">%</button>
+                        <button class="calc-btn op" data-val="/">/</button>
+                        <button class="calc-btn num" data-val="7">7</button>
+                        <button class="calc-btn num" data-val="8">8</button>
+                        <button class="calc-btn num" data-val="9">9</button>
+                        <button class="calc-btn op" data-val="*">×</button>
+                        <button class="calc-btn num" data-val="4">4</button>
+                        <button class="calc-btn num" data-val="5">5</button>
+                        <button class="calc-btn num" data-val="6">6</button>
+                        <button class="calc-btn op" data-val="-">−</button>
+                        <button class="calc-btn num" data-val="1">1</button>
+                        <button class="calc-btn num" data-val="2">2</button>
+                        <button class="calc-btn num" data-val="3">3</button>
+                        <button class="calc-btn op" data-val="+">+</button>
+                        <button class="calc-btn num" data-val="0" style="grid-column: span 2">0</button>
+                        <button class="calc-btn num" data-val=".">.</button>
+                        <button class="calc-btn eq" data-val="=">=</button>
+                    </div>
                 </div>
-                <div class="calc-grid">
-                    <button class="calc-btn clear" data-val="C">C</button>
-                    <button class="calc-btn op" data-val="()">()</button>
-                    <button class="calc-btn op" data-val="%">%</button>
-                    <button class="calc-btn op" data-val="/">/</button>
-
-                    <button class="calc-btn num" data-val="7">7</button>
-                    <button class="calc-btn num" data-val="8">8</button>
-                    <button class="calc-btn num" data-val="9">9</button>
-                    <button class="calc-btn op" data-val="*">×</button>
-
-                    <button class="calc-btn num" data-val="4">4</button>
-                    <button class="calc-btn num" data-val="5">5</button>
-                    <button class="calc-btn num" data-val="6">6</button>
-                    <button class="calc-btn op" data-val="-">−</button>
-
-                    <button class="calc-btn num" data-val="1">1</button>
-                    <button class="calc-btn num" data-val="2">2</button>
-                    <button class="calc-btn num" data-val="3">3</button>
-                    <button class="calc-btn op" data-val="+">+</button>
-
-                    <button class="calc-btn num" data-val="0" style="grid-column: span 2">0</button>
-                    <button class="calc-btn num" data-val=".">.</button>
-                    <button class="calc-btn eq" data-val="=">=</button>
-                </div>
-            </div>
-        `;
-        const historyEl = container.querySelector('.calc-history');
-        const currentEl = container.querySelector('.calc-current');
-        let current = '0', history = '', shouldReset = false;
-        let openParens = 0;
-
-        const updateDisplay = () => {
-            currentEl.innerText = current;
-            historyEl.innerText = history;
+            `;
+            this.setupEvents(container);
         };
-
+        this.render = render;
+        render();
+        this._i18nListener = () => render();
+        window.addEventListener('i18n:changed', this._i18nListener);
+        setTimeout(() => container.querySelector('.calc-app')?.focus(), 100);
+    },
+    setupEvents(container) {
+        const currentEl = container.querySelector('.calc-current');
+        const historyEl = container.querySelector('.calc-history');
+        const updateDisplay = () => {
+            currentEl.innerText = this.current;
+            historyEl.innerText = this.history;
+        };
         const safeEval = (expr) => {
             const tokens = expr.match(/(?:\d+\.\d+|\d+|\+|\-|\*|\/|%|\(|\))/g) || [];
             const output = [], ops = [];
@@ -83,90 +89,85 @@ WebOS.registerApp({
             }
             return stack[0];
         };
-
         const calculate = () => {
             try {
-                let expr = current.replace(/×/g, '*').replace(/−/g, '-');
-                while (openParens > 0) {
-                    expr += ')';
-                    openParens--;
-                }
+                let expr = this.current.replace(/×/g, '*').replace(/−/g, '-');
+                let count = this.openParens;
+                while (count > 0) { expr += ')'; count--; }
                 expr = expr.replace(/(^|\()\-(\d+\.\d+|\d+)/g, '$1(0-$2)');
                 const result = safeEval(expr);
                 if (!isFinite(result) || isNaN(result)) throw new Error('Math Error');
-                history = current + ' =';
-                current = String(Math.round(result * 100000000) / 100000000);
+                this.history = this.current + ' =';
+                this.current = String(Number(result.toFixed(8)));
+                this.shouldReset = true;
+                this.openParens = 0;
             } catch (e) {
-                current = 'Error';
-                history = '';
+                this.current = 'Error';
+                this.history = '';
+                this.shouldReset = true;
             }
-            shouldReset = true;
-            openParens = 0;
             updateDisplay();
         };
-
         container.querySelectorAll('.calc-btn').forEach(btn => {
-            btn.setAttribute('tabindex', '-1'); // Prevent tab focus
-            btn.onclick = (e) => {
-                // Return focus to the container if user clicked with mouse
-                // to maintain keyboard listener
-                container.focus();
-
+            btn.onclick = () => {
                 const val = btn.dataset.val;
-                if (current === 'Error') { current = '0'; shouldReset = false; }
+                if (this.current === 'Error') { this.current = '0'; this.shouldReset = false; }
                 if (val === 'C') {
-                    current = '0'; history = ''; openParens = 0;
+                    this.current = '0'; this.history = ''; this.openParens = 0;
                 } else if (val === '=') {
                     calculate();
                 } else if (val === '()') {
-                    if (current === '0' || shouldReset) { current = '('; openParens++; shouldReset = false; }
-                    else if (['+', '-', '*', '/'].includes(current.slice(-1))) { current += '('; openParens++; }
-                    else if (openParens > 0) { current += ')'; openParens--; }
-                    else { current += '*('; openParens++; }
+                    if (this.current === '0' || this.shouldReset) { this.current = '('; this.openParens = 1; this.shouldReset = false; }
+                    else if (['+', '-', '*', '/'].includes(this.current.slice(-1))) { this.current += '('; this.openParens++; }
+                    else if (this.openParens > 0) { this.current += ')'; this.openParens--; }
+                    else { this.current += '×('; this.openParens++; }
                 } else if (['+', '-', '*', '/'].includes(val)) {
-                    if (shouldReset) shouldReset = false;
-                    const last = current.slice(-1);
-                    if (['+', '-', '*', '/'].includes(last)) current = current.slice(0, -1) + val;
-                    else current += val;
+                    if (this.shouldReset) this.shouldReset = false;
+                    const last = this.current.slice(-1);
+                    if (['+', '-', '*', '/'].includes(last)) this.current = this.current.slice(0, -1) + val;
+                    else this.current += val;
+                } else if (val === '%') {
+                    this.current = String(parseFloat(this.current) / 100);
                 } else {
-                    if (shouldReset) { current = val; shouldReset = false; }
-                    else if (current === '0') current = val;
-                    else current += val;
+                    if (this.shouldReset) { this.current = val; this.shouldReset = false; }
+                    else if (this.current === '0') this.current = val;
+                    else this.current += val;
                 }
                 updateDisplay();
+                container.querySelector('.calc-app')?.focus();
             };
         });
-
         const keyMap = {
             '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
             '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
-            '.': '.', ',': '.',
-            '+': '+', '-': '-', '*': '*', '/': '/', '%': '%',
-            '(': '()', ')': '()',
-            'Enter': '=', '=': '=',
-            'Escape': 'C', 'Backspace': 'C', 'Delete': 'C'
+            '.': '.', ',': '.', '+': '+', '-': '-', '*': '*', '/': '/',
+            '%': '%', '(': '()', ')': '()', 'Enter': '=', '=': '=',
+            'Escape': 'C', 'Backspace': 'Backspace'
         };
-
-        // Attach global keydown to the container so that focus within app works
-        container.tabIndex = 0; // make focusable
-        container.style.outline = 'none'; // hide focus ring
-        container.onkeydown = (e) => {
-            if (keyMap[e.key]) {
-                e.preventDefault();
-                const v = keyMap[e.key];
-                const btn = container.querySelector(`.calc-btn[data-val="${v}"]`);
-                if (btn) {
-                    btn.classList.add('active');
-                    setTimeout(() => btn.classList.remove('active'), 100);
-                    btn.click();
+        const appEl = container.querySelector('.calc-app');
+        if (appEl) {
+            appEl.onkeydown = (e) => {
+                if (e.key === 'Backspace') {
+                    e.preventDefault();
+                    if (this.current.length > 1) this.current = this.current.slice(0, -1);
+                    else this.current = '0';
+                    updateDisplay();
+                    return;
                 }
-            }
-        };
-        // Auto-focus on mount
-        setTimeout(() => container.focus(), 100);
+                if (keyMap[e.key]) {
+                    e.preventDefault();
+                    const v = keyMap[e.key];
+                    const btn = container.querySelector(`.calc-btn[data-val="${v}"]`);
+                    if (btn) {
+                        btn.classList.add('active');
+                        setTimeout(() => btn.classList.remove('active'), 100);
+                        btn.click();
+                    }
+                }
+            };
+        }
     },
     unmount() {
-        this.container = null;
-        this.api = null;
+        window.removeEventListener('i18n:changed', this._i18nListener);
     }
 });

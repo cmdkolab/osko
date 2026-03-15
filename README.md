@@ -4,7 +4,7 @@
 
 # 🚀 OS(KO) - Browser OS
 
-![Version](https://img.shields.io/badge/version-3.5.0-blue.svg)
+![Version](https://img.shields.io/badge/version-4.0.0-blue.svg)
 ![Vanilla JS](https://img.shields.io/badge/Vanilla-Javascript-yellow)
 ![Local](https://img.shields.io/badge/Runs-Locally-success)
 
@@ -36,7 +36,8 @@ OSKO natively ships with a core suite of productive applications:
 - **HTML5 & Vanilla CSS3** (Custom UI system without external UI libraries, utilizing Glassmorphism).
 - **Vanilla JavaScript (ES6+)** (No React, Vue, or Angular — purely native APIs for maximum speed).
 - **IndexedDB** & **LocalStorage** (For blazing-fast, strictly local data persistency).
-- *Zero Build Steps. Zero npm Installs.*
+- *Zero Build Steps for usage. Zero npm Installs.*
+- **Bash build script** (`build.sh` concatenates system core scripts into `osko.min.js` and all application stylesheets into `osko.min.css` for faster local loading and less HTTP requests).
 
 ## 🚀 Getting Started
 
@@ -46,10 +47,21 @@ Running OSKO is incredibly simple because it requires exactly **zero** backend s
 2. Open `index.html` in any modern web browser.
 3. Enjoy your new browser-based OS!
 
-> **Note**: For the virtual file system to persist your files and settings between reloads, make sure your browser allows local storage APIs (IndexedDB) execution.
+> **Developer Note:** If you want to modify core system files in `/system` directory or any `.css` stylesheets, you must run `./build.sh` script to merge them into `osko.min.js` and `osko.min.css` files which are loaded by the `index.html`. 
+
+> **Persistence Note**: For the virtual file system to persist your files and settings between reloads, make sure your browser allows local storage APIs (IndexedDB) execution.
 
 ## 🤝 Contributing
 Contributions, issues, and feature requests are always welcome! Feel free to check the issues page or submit pull requests.
+
+## 🏷️ Versioning Guidelines
+When contributing to OSKO or making modifications, please adhere to the following versioning rules:
+
+1. **System Core Updates:** Whenever you make changes to any core system file (like `/system/*.js` or `index.html`), ensure you increment the global OSKO version number.
+    - Update the version badge at the top of this `README.md` file (e.g., from `version-3.5.0` to `version-3.5.1`).
+2. **Built-in Application Updates:** If your changes cover a specific built-in application inside the `/apps/` directory, bump the application's local version property within its respective `main.js` file (e.g., `version: "2.3.1"` to `version: "2.3.2"`). 
+
+This helps to maintain a clear trajectory of updates for both the system kernel and its utilities.
 
 ## 📄 License
 This project is open-source and available under the MIT License.

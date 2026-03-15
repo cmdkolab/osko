@@ -4,44 +4,51 @@
 <head>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="OS(KO) - Zaawansowany, lekki i w pełni klientowy system operacyjny w przeglądarce.">
+    <meta name="theme-color" content="#1e293b">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="OS(KO) - Browser OS">
+    <meta property="og:description" content="Browser-based desktop experience with window management and VFS.">
+    <meta property="og:image" content="logo.jpeg">
+
     <title>OS(KO) - Browser OS</title>
-    <link rel="stylesheet" href="style.css">
+    
+    <link rel="manifest" href="app.webmanifest">
+    <link rel="stylesheet" href="osko.min.css">
+    <link rel="icon" type="image/jpeg" href="logo.jpeg">
 </head>
 
 <body>
+    <div id="boot-screen">
+        <div class="boot-content">
+            <img src="logo.jpeg" alt="OSKO Logo" class="boot-logo">
+            <div class="boot-loader">
+                <div class="loader-bar"></div>
+            </div>
+            <p class="boot-status">Wczytywanie systemu...</p>
+        </div>
+    </div>
+
     <main id="desktop" role="main">
         <div id="desktop-icons" role="list"></div>
         <div id="window-layer"></div>
     </main>
+
     <nav id="taskbar" role="navigation">
         <div class="taskbar-blur"></div>
-        <div id="search-btn" class="search-btn" title="Szukaj (Ctrl+Space)">🔍</div>
-        <div id="switcher-btn" class="switcher-btn" title="Widok zadań (Multitasking)">+</div>
+        <button id="search-btn" class="search-btn" title="Szukaj (Ctrl+Space)" aria-label="Szukaj">🔍</button>
+        <button id="switcher-btn" class="switcher-btn" title="Widok zadań (Multitasking)" aria-label="Widok zadań">+</button>
         <div id="running-apps" role="list"></div>
         <div id="system-tray">
             <span id="hdd-usage" class="tray-item" title="Zajętość dysku">0 B</span>
-            <span id="clock" role="timer">00:00:00</span>
+            <span id="clock" role="timer" aria-label="Zegar">00:00:00</span>
         </div>
     </nav>
     <div id="notification-center" role="log" aria-live="polite"></div>
-    <script src="i18n.js"></script>
-    <script src="system/utils.js"></script>
-    <script src="system/db.js"></script>
-    <script src="system/storage.js"></script>
-    <script src="system/state.js"></script>
-    <script src="system/vfs.js"></script>
-    <script src="system/syslog.js"></script>
-    <script src="system/session.js"></script>
-    <script src="system/eventbus.js"></script>
-    <script src="system/notifications.js"></script>
-    <script src="system/audio.js"></script>
-    <script src="system/permissions.js"></script>
-    <script src="system/ui.js"></script>
-    <script src="system/windowmanager.js"></script>
-    <script src="system/theme.js"></script>
-    <script src="system/webos.js"></script>
-    <script src="system/init.js"></script>
+    <script src="osko.min.js"></script>
     <script>
         WebOS.installApp('apps/about');
         WebOS.installApp('apps/notes');

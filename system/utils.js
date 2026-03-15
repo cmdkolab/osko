@@ -1,40 +1,50 @@
-if (!window.I18n) { window.I18n = { t: (key, ...args) => { let res = key; args.forEach((a, i) => res = res.replace(`{${i}}`, a)); return res; }, current: 'en' }; }
 window.deepMerge = (target, source) => {
     for (const key in source) {
         if (key === '__proto__' || key === 'constructor') continue;
-        if (source[key] && typeof source[key] === 'object' && source[key].content === undefined) {
-            if (Array.isArray(source[key])) {
-                target[key] = [...source[key]];
+        const val = source[key];
+        if (val && typeof val === 'object' && val.content === undefined) {
+            if (Array.isArray(val)) {
+                target[key] = [...val];
             } else {
-                if (!target[key] || Array.isArray(target[key])) target[key] = {};
-                deepMerge(target[key], source[key]);
+                if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) {
+                    target[key] = {};
+                }
+                deepMerge(target[key], val);
             }
         } else {
-            target[key] = source[key];
+            target[key] = val;
         }
     }
 };
 window.deepMergeSync = (target, source) => {
     for (const key in target) {
-        if (key === '__proto__' || key === 'constructor') continue;
-        if (!(key in source)) {
+        if (!(key in source) && key !== '__proto__' && key !== 'constructor') {
             delete target[key];
         }
     }
     for (const key in source) {
         if (key === '__proto__' || key === 'constructor') continue;
-        const sourceVal = source[key];
-        if (sourceVal && typeof sourceVal === 'object' && sourceVal.content === undefined) {
-            if (Array.isArray(sourceVal)) {
-                target[key] = [...sourceVal];
+        const val = source[key];
+        if (val && typeof val === 'object' && val.content === undefined) {
+            if (Array.isArray(val)) {
+                target[key] = [...val];
             } else {
                 if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key]) || target[key].content !== undefined) {
                     target[key] = {};
                 }
-                deepMergeSync(target[key], sourceVal);
+                deepMergeSync(target[key], val);
             }
         } else {
-            target[key] = sourceVal;
+            target[key] = val;
         }
+    }
+};
+window.deepClone = (obj) => {
+    if (!obj || typeof obj !== 'object') return obj;
+    try {
+        if (typeof structuredClone === 'function') return structuredClone(obj);
+        return JSON.parse(JSON.stringify(obj));
+    } catch (e) {
+        return obj;
     }
 };

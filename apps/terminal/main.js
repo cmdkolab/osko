@@ -2,11 +2,11 @@ WebOS.registerApp({
     id: "terminal",
     get name() { return window.I18n.t('terminal.title'); },
     icon: "🐚",
-    version: "2.3.1",
+    version: "4.0.0",
     manifest: {
         get name() { return window.I18n.t('terminal.title'); },
         icon: "🐚",
-        permissions: ["fs.read", "fs.write"]
+        permissions: ["fs.read", "fs.write", "system.manage"]
     },
     width: "600px",
     height: "400px",
@@ -16,7 +16,6 @@ WebOS.registerApp({
         this.cwd = '/home/user';
         this.history = [];
         this.historyIndex = -1;
-
         container.innerHTML = `
             <div class="terminal-container">
                 <div class="terminal-output"></div>
@@ -26,15 +25,12 @@ WebOS.registerApp({
                 </div>
             </div>
         `;
-
         this.output = container.querySelector('.terminal-output');
         this.input = container.querySelector('.terminal-input');
         this.prompt = container.querySelector('.terminal-prompt');
-
         this.updatePrompt();
-        this.print(`OS(KO) ${window.I18n.t('terminal.title')} v3.5.0`);
+        this.print(`OS(KO) ${window.I18n.t('terminal.title')} v4.0.0`);
         this.print(window.I18n.t('terminal.welcome'));
-
         this.input.onkeydown = (e) => {
             if (e.key === 'Enter') {
                 const cmd = this.input.value.trim();
@@ -64,7 +60,6 @@ WebOS.registerApp({
                 e.preventDefault();
             }
         };
-
         container.onclick = () => this.input.focus();
     },
     updatePrompt() {
@@ -82,7 +77,6 @@ WebOS.registerApp({
         const parts = input.split(/\s+/);
         const cmd = parts[0].toLowerCase();
         const args = parts.slice(1);
-
         switch (cmd) {
             case 'help':
                 this.print(window.I18n.t('terminal.help'));
@@ -201,14 +195,12 @@ WebOS.registerApp({
         const parts = val.split(/\s+/);
         const last = parts[parts.length - 1];
         if (!last) return;
-
         try {
             const entries = await this.api.fs.list(this.cwd);
             const files = entries.map(e => e.name);
             const apps = Object.values(WebOS.state.apps).map(a => a.id);
             const all = [...files, ...apps];
             const matches = all.filter(f => f.toLowerCase().startsWith(last.toLowerCase()));
-
             if (matches.length === 1) {
                 parts[parts.length - 1] = matches[0];
                 this.input.value = parts.join(' ');

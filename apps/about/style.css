@@ -1,62 +1,75 @@
 .about-container {
     text-align: center;
-    padding: 40px 24px 24px;
+    padding: 32px 24px;
     color: white;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    min-height: 100%;
-    gap: 12px;
+    height: 100%;
+    gap: 16px;
     box-sizing: border-box;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
 }
 
 .about-logo {
-    font-size: 72px;
-    margin-bottom: 16px;
-    margin-top: 10px;
-    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3));
-    animation: float 3s ease-in-out infinite;
+    font-size: 64px;
+    filter: drop-shadow(0 0 20px rgba(var(--accent-rgb), 0.5));
+    animation: float 4s ease-in-out infinite;
+    margin-bottom: 8px;
 }
 
 .about-title {
     margin: 0;
-    font-size: 36px;
+    font-size: 42px;
     font-weight: 800;
-    background: linear-gradient(to right, #fff, #94a3b8);
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
 .about-desc {
     margin: 0;
-    opacity: 0.9;
-    font-size: 15px;
-    line-height: 1.5;
-    max-width: 320px;
+    opacity: 0.8;
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 340px;
 }
 
 .about-details {
-    margin-top: 24px;
-    font-size: 13px;
-    opacity: 0.7;
+    margin-top: auto;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 15px;
-    width: 100%;
+    gap: 10px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.detail-label {
+    opacity: 0.5;
+    font-weight: 500;
+}
+
+.detail-value {
+    font-family: monospace;
+    color: var(--accent);
 }
 
 @keyframes float {
-
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-12px);
-    }
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(5deg); }
 }

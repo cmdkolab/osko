@@ -2,104 +2,121 @@ WebOS.registerApp({
     id: "syslog",
     get name() { return window.I18n.t('syslog.title'); },
     icon: "📜",
-    version: "2.3.1",
+    version: "4.0.0",
     manifest: {
         get name() { return window.I18n.t('syslog.title'); },
         icon: "📜",
         permissions: ["fs.read", "fs.write", "notifications"]
     },
-    width: "600px",
-    height: "400px",
-    mount(container, api) {
+    width: "700px",
+    height: "500px",
+    async mount(container, api) {
+        this.container = container;
         this.api = api;
-        container.innerHTML = `
-            <div class="syslog-app">
-                <div class="syslog-toolbar">
-                    <button class="notes-btn refresh-btn">${window.I18n.t('menu.refresh')}</button>
-                    <button class="notes-btn clear-btn">${window.I18n.t('syslog.clear')}</button>
+        this.filter = 'ALL';
+        this.searchQuery = '';
+        const renderFrame = () => {
+            container.innerHTML = `
+                <div class="syslog-app">
+                    <div class="syslog-toolbar">
+                        <div class="toolbar-left">
+                            <button class="sys-btn filter-btn active" data-filter="ALL">${window.I18n.t('syslog.filter_all')}</button>
+                            <button class="sys-btn filter-btn" data-filter="INFO">${window.I18n.t('syslog.filter_info')}</button>
+                            <button class="sys-btn filter-btn" data-filter="WARN">${window.I18n.t('syslog.filter_warn')}</button>
+                            <button class="sys-btn filter-btn" data-filter="ERR">${window.I18n.t('syslog.filter_err')}</button>
+                        </div>
+                        <div class="toolbar-right">
+                            <input type="text" class="syslog-search" placeholder="${window.I18n.t('syslog.search')}">
+                            <button class="sys-btn refresh-btn">🔄</button>
+                            <button class="sys-btn clear-btn danger">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="syslog-viewer"></div>
+                    <div class="syslog-status">
+                         <span class="log-count">0 lines</span>
+                    </div>
                 </div>
-                <div class="syslog-viewer"></div>
-            </div>
-        `;
-        const viewer = container.querySelector('.syslog-viewer');
-        const refreshBtn = container.querySelector('.refresh-btn');
-        const clearBtn = container.querySelector('.clear-btn');
-        clearBtn.onclick = () => {
-            api.ui.confirm(window.I18n.t('syslog.confirm_clear'), async (confirmed) => {
-                if (confirmed) {
-                    await api.fs.write('/var/log/syslog', '[CLEARED] ' + new Date().toLocaleString() + '\n');
-                    await refresh();
-                }
-            });
+            `;
+            this.viewer = container.querySelector('.syslog-viewer');
+            this.setupListeners(container);
+            this.refresh();
         };
-        const refresh = async () => {
-            const logs = await api.fs.read('/var/log/syslog');
-            if (!logs) {
-                viewer.innerHTML = window.I18n.t('syslog.no_logs');
-                return;
-            }
-            const lines = logs.split('\n');
-            const fragment = document.createElement('div');
-            // Optimizing: only parse the last 500 lines to avoid lagging the UI
-            const renderLines = lines.slice(-500);
-            renderLines.forEach(line => {
-                if (!line) return;
-                const entry = document.createElement('div');
-                entry.className = 'log-entry';
-
-                const match = line.match(/^\[(.*?)\] \[(.*?)\] \[([A-Z]+)\] \[(.*?)\] (.*)$/);
-                if (match) {
-                    const timeEl = document.createElement('span');
-                    timeEl.className = 'log-time';
-                    timeEl.textContent = '[' + match[1] + ']';
-
-                    const sessionEl = document.createElement('span');
-                    sessionEl.style.color = '#a855f7';
-                    sessionEl.textContent = ' [' + match[2] + ']';
-
-                    const levelEl = document.createElement('span');
-                    const level = match[3];
-                    if (level === 'ERR') levelEl.className = 'log-level-err';
-                    else if (level === 'INFO') levelEl.className = 'log-level-info';
-                    else if (level === 'WARN') levelEl.style.color = '#fbbf24';
-                    levelEl.textContent = ' [' + level + ']';
-
-                    const sourceEl = document.createElement('span');
-                    sourceEl.style.color = '#10b981';
-                    sourceEl.textContent = ' [' + match[4] + '] ';
-
-                    const msgEl = document.createElement('span');
-                    msgEl.textContent = match[5];
-
-                    entry.appendChild(timeEl);
-                    entry.appendChild(sessionEl);
-                    entry.appendChild(levelEl);
-                    entry.appendChild(sourceEl);
-                    entry.appendChild(msgEl);
-                } else if (line.startsWith('[CLEARED]')) {
-                    entry.className = 'log-entry log-level-info';
-                    entry.textContent = line;
-                } else {
-                    entry.textContent = line;
-                }
-                fragment.appendChild(entry);
-            });
-            viewer.innerHTML = '';
-            viewer.appendChild(fragment);
-            viewer.scrollTop = viewer.scrollHeight;
-        };
-        refreshBtn.onclick = () => refresh();
-        this._watcher = api.system.subscribe('vfs:changed', (e) => {
-            const path = e?.data?.path;
-            if (path === '/var/log/syslog') refresh();
+        this.renderFrame = renderFrame;
+        renderFrame();
+        this._i18nListener = () => renderFrame();
+        window.addEventListener('i18n:changed', this._i18nListener);
+    },
+    setupListeners(container) {
+        const api = this.api;
+        container.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.onclick = () => {
+                container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.filter = btn.dataset.filter;
+                this.refresh();
+            };
         });
-        refresh();
+        const searchInput = container.querySelector('.syslog-search');
+        searchInput.oninput = (e) => {
+            this.searchQuery = e.target.value.toLowerCase();
+            this.refresh();
+        };
+        container.querySelector('.refresh-btn').onclick = () => this.refresh();
+        container.querySelector('.clear-btn').onclick = () => {
+            api.ui.confirm(window.I18n.t('syslog.confirm_clear'), async (ok) => {
+                if (ok) {
+                    await api.fs.write('/var/log/syslog', `[${new Date().toISOString()}] [SYSTEM] [INFO] [Kernel] Log cleared by user\n`);
+                    this.refresh();
+                }
+            });
+        };
+        this._vfsWatcher = (e) => {
+            if (e?.data?.path === '/var/log/syslog') this.refresh();
+        };
+        api.system.subscribe('vfs:changed', this._vfsWatcher);
+    },
+    async refresh() {
+        if (!this.viewer) return;
+        const logs = await this.api.fs.read('/var/log/syslog');
+        if (!logs) {
+            this.viewer.innerHTML = `<div class="log-empty">${window.I18n.t('syslog.no_logs')}</div>`;
+            return;
+        }
+        const lines = logs.split('\n').filter(l => l.trim());
+        const fragment = document.createDocumentFragment();
+        let visibleCount = 0;
+        const renderLines = lines.slice(-1000);
+        renderLines.forEach(line => {
+            const match = line.match(/^\[(.*?)\] \[(.*?)\] \[([A-Z]+)\] \[(.*?)\] (.*)$/);
+            if (!match) return;
+            const [_, time, session, level, source, message] = match;
+            if (this.filter !== 'ALL' && level !== this.filter) return;
+            if (this.searchQuery && !line.toLowerCase().includes(this.searchQuery)) return;
+            visibleCount++;
+            const entry = document.createElement('div');
+            entry.className = `log-entry level-${level.toLowerCase()}`;
+            entry.innerHTML = `
+                <span class="log-time">[${time.includes('T') ? time.split('T')[1].split('.')[0] : time}]</span>
+                <span class="log-session">[${session.slice(0, 8)}]</span>
+                <span class="log-level">[${level}]</span>
+                <span class="log-source">[${source}]</span>
+                <span class="log-msg">${this.highlight(message)}</span>
+            `;
+            fragment.appendChild(entry);
+        });
+        this.viewer.innerHTML = '';
+        this.viewer.appendChild(fragment);
+        this.viewer.scrollTop = this.viewer.scrollHeight;
+        const status = this.container.querySelector('.log-count');
+        if (status) status.innerText = `${visibleCount} / ${lines.length} lines`;
+    },
+    highlight(msg) {
+        if (!this.searchQuery) return msg;
+        const regex = new RegExp(`(${this.searchQuery})`, 'gi');
+        return msg.replace(regex, '<mark>$1</mark>');
     },
     unmount() {
-        if (this._watcher) {
-            this.api.system.unsubscribe('vfs:changed', this._watcher);
-            this._watcher = null;
-        }
-        this.api = null;
+        if (this._vfsWatcher) this.api.system.unsubscribe('vfs:changed', this._vfsWatcher);
+        window.removeEventListener('i18n:changed', this._i18nListener);
     }
 });

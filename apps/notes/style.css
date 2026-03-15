@@ -1,56 +1,86 @@
+.notes-app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+}
+
 .notes-toolbar {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 6px;
+    gap: 12px;
+    padding: 8px 12px;
     background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
     border-bottom: 1px solid var(--glass-border);
 }
 
-.notes-btn {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    color: var(--text-color);
-    padding: 3px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s;
+.btn-group {
+    display: flex;
+    gap: 4px;
 }
 
-.notes-btn:hover {
-    background: var(--accent-color);
+.notes-app .sys-btn {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 14px;
 }
+
+.notes-app .sys-btn:hover { background: rgba(255, 255, 255, 0.12); transform: translateY(-1px); }
+.notes-app .sys-btn.active { background: var(--accent); color: #fff; }
 
 .notes-status {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     font-size: 11px;
-    opacity: 0.5;
-    margin-left: auto;
-    max-width: 150px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    opacity: 0.6;
+    padding-left: 12px;
+}
+
+.status-text {
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.stats-text {
+    font-family: monospace;
 }
 
 .notes-editor {
-    width: 100%;
-    height: calc(100% - 38px);
+    flex: 1;
     background: transparent;
     border: none;
     color: var(--text-color);
-    font-family: inherit;
+    padding: 20px;
     font-size: 14px;
+    line-height: 1.6;
+    font-family: 'Inter', sans-serif;
     resize: none;
     outline: none;
-    white-space: pre-wrap;
-    overflow-x: auto;
-    padding: 12px;
-    line-height: 1.6;
+    overflow-y: auto;
 }
 
 .notes-editor::placeholder {
-    color: currentColor;
     opacity: 0.3;
 }
+
+/* Custom scrollbar for the dark editor */
+.notes-editor::-webkit-scrollbar { width: 8px; }
+.notes-editor::-webkit-scrollbar-track { background: transparent; }
+.notes-editor::-webkit-scrollbar-thumb { 
+    background: rgba(255, 255, 255, 0.1); 
+    border-radius: 10px;
+}
+.notes-editor::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }

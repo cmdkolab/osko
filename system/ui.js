@@ -1,6 +1,8 @@
     window.ContextMenu = {
         _activeListener: null,
+        _keyListener: null,
         _timeout: null,
+        _selectedIndex: -1,
         show(e, items) {
             if (e) {
                 e.preventDefault();
@@ -8,8 +10,8 @@
             }
             this.hide();
             const menu = document.createElement('div');
-            menu.className = 'context-menu';
-            items.forEach(item => {
+            menu.className = 'context-menu glass-panel active';
+            items.forEach((item, index) => {
                 if (item.type === 'separator') {
                     const sep = document.createElement('div');
                     sep.className = 'context-menu-separator';
@@ -18,36 +20,63 @@
                 }
                 const el = document.createElement('div');
                 el.className = 'context-menu-item';
-                el.innerText = item.label;
+                el.dataset.index = index;
+                const icon = item.icon ? `<span class="menu-icon">${item.icon}</span>` : '<span class="menu-icon-placeholder"></span>';
+                el.innerHTML = `${icon}<span class="menu-label">${item.label}</span>`;
                 el.onclick = (event) => {
                     event.stopPropagation();
                     item.action();
                     this.hide();
                 };
+                el.onmouseenter = () => {
+                    this._setSelectedIndex(menu, items, index);
+                };
                 menu.appendChild(el);
             });
             document.body.appendChild(menu);
             menu.style.display = 'block';
-            menu.classList.add('active');
             const rect = menu.getBoundingClientRect();
-            const MathMax = Math.max;
-            let menuWidth = rect.width || 180;
-            let menuHeight = rect.height || (items.length * 36);
             let x = e ? e.clientX : 0;
             let y = e ? e.clientY : 0;
-            if (x + menuWidth > window.innerWidth) x = MathMax(0, window.innerWidth - menuWidth - 10);
-            if (y + menuHeight > window.innerHeight) y = MathMax(0, window.innerHeight - menuHeight - 10);
+            if (x + rect.width > window.innerWidth) x = Math.max(0, window.innerWidth - rect.width - 10);
+            if (y + rect.height > window.innerHeight) y = Math.max(0, window.innerHeight - rect.height - 10);
             menu.style.left = x + 'px';
             menu.style.top = y + 'px';
             this._activeListener = (evt) => {
                 if (!menu.contains(evt.target)) this.hide();
             };
+            this._keyListener = (evt) => {
+                if (evt.key === 'ArrowDown') {
+                    evt.preventDefault();
+                    this._setSelectedIndex(menu, items, (this._selectedIndex + 1) % items.length);
+                } else if (evt.key === 'ArrowUp') {
+                    evt.preventDefault();
+                    this._setSelectedIndex(menu, items, (this._selectedIndex - 1 + items.length) % items.length);
+                } else if (evt.key === 'Enter') {
+                    evt.preventDefault();
+                    const selected = menu.querySelector('.context-menu-item.selected');
+                    if (selected) selected.click();
+                } else if (evt.key === 'Escape') {
+                    evt.preventDefault();
+                    this.hide();
+                }
+            };
             if (this._timeout) clearTimeout(this._timeout);
             this._timeout = setTimeout(() => {
                 document.addEventListener('mousedown', this._activeListener);
                 document.addEventListener('contextmenu', this._activeListener);
+                document.addEventListener('keydown', this._keyListener);
                 this._timeout = null;
             }, 10);
+        },
+        _setSelectedIndex(menu, items, index) {
+            if (items[index] && items[index].type === 'separator') {
+                return;
+            }
+            this._selectedIndex = index;
+            menu.querySelectorAll('.context-menu-item').forEach(el => {
+                el.classList.toggle('selected', parseInt(el.dataset.index) === index);
+            });
         },
         hide() {
             if (this._timeout) {
@@ -59,7 +88,15 @@
                 document.removeEventListener('contextmenu', this._activeListener);
                 this._activeListener = null;
             }
+            if (this._keyListener) {
+                document.removeEventListener('keydown', this._keyListener);
+                this._keyListener = null;
+            }
+            this._selectedIndex = -1;
             const existings = document.querySelectorAll('.context-menu');
-            existings.forEach(existing => existing.remove());
+            existings.forEach(existing => {
+                existing.classList.remove('active');
+                setTimeout(() => existing.remove(), 150);
+            });
         }
     };

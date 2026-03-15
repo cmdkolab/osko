@@ -3,7 +3,7 @@
         storeName: 'vfs_nodes',
         version: 1,
         _db: null,
-        _memory: {},
+        _memory: new Map(),
         _isFallback: false,
         init() {
             return new Promise((resolve) => {
@@ -28,11 +28,10 @@
                     this._db.onversionchange = () => {
                         this._db.close();
                         this._db = null;
-                        console.warn('[DBWrapper] Database version changed externally, connection closed.');
                         WebOS.ui.showDialog({
-                            message: 'Baza danych została zaktualizowana w innej karcie. Aby uniknąć błędów, strona zostanie odświeżona.',
+                            message: window.I18n.t('dialog.db_upgrade'),
                             type: 'alert',
-                            acceptText: 'Odśwież teraz',
+                            acceptText: window.I18n.t('dialog.db_upgrade_btn'),
                             onAccept: () => window.location.reload()
                         });
                     };
@@ -47,7 +46,7 @@
             });
         },
         async get(key) {
-            if (this._isFallback) return this._memory[key] !== undefined ? this._memory[key] : null;
+            if (this._isFallback) return this._memory.get(key) ?? null;
             if (!this._db) throw new Error('DBWrapper: database not initialized');
             return new Promise((resolve, reject) => {
                 const tx = this._db.transaction([this.storeName], 'readonly');
@@ -61,7 +60,7 @@
         },
         async set(key, val) {
             if (this._isFallback) {
-                this._memory[key] = val;
+                this._memory.set(key, val);
                 return Promise.resolve();
             }
             if (!this._db) throw new Error('DBWrapper: database not initialized');
@@ -77,7 +76,7 @@
         },
         async remove(key) {
             if (this._isFallback) {
-                delete this._memory[key];
+                this._memory.delete(key);
                 return Promise.resolve();
             }
             if (!this._db) throw new Error('DBWrapper: database not initialized');
@@ -87,6 +86,21 @@
                 tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
                 const store = tx.objectStore(this.storeName);
                 const req = store.delete(key);
+                req.onsuccess = () => resolve();
+                req.onerror = (e) => { e.stopPropagation(); reject(req.error); };
+            });
+        },
+        async clear() {
+            if (this._isFallback) {
+                this._memory.clear();
+                return Promise.resolve();
+            }
+            if (!this._db) throw new Error('DBWrapper: database not initialized');
+            return new Promise((resolve, reject) => {
+                const tx = this._db.transaction([this.storeName], 'readwrite');
+                tx.onerror = () => reject(tx.error);
+                const store = tx.objectStore(this.storeName);
+                const req = store.clear();
                 req.onsuccess = () => resolve();
                 req.onerror = (e) => { e.stopPropagation(); reject(req.error); };
             });

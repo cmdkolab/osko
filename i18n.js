@@ -2,21 +2,33 @@ window.I18n = {
     current: localStorage.getItem('OSKO:LANG') || 'en',
     dicts: {
         en: {
-            // System UI
             'system.search_placeholder': 'Search apps and files...',
             'system.search_tooltip': 'Search (Ctrl+Space)',
             'system.switcher_tooltip': 'Task View (Multitasking)',
             'system.hdd_usage': 'Disk Usage',
-            // Context Menus
             'menu.terminate': 'Terminate',
             'menu.close_all': 'Close All',
             'menu.refresh': 'Refresh',
+            'menu.paste': 'Paste',
             'menu.lock_system': 'Lock System',
             'menu.personalize': 'Personalize',
             'menu.settings': 'Settings',
             'menu.new_note': 'New Note',
             'menu.shutdown': 'Shutdown',
-            // Dialogs
+            'system.shutdown_title': 'Shutting down...',
+            'system.shutdown_msg': 'All processes are being safely terminated.',
+            'system.shutdown_done_title': 'System Off',
+            'system.shutdown_done_msg': 'All processes terminated safely.',
+            'system.restart': 'Restart',
+            'system.install_error': 'Installation error: main.js not found in {0}',
+            'system.search_result_math': 'Calculation result',
+            'system.default_app_name': 'Application',
+            'system.launch_error': 'Failed to launch {0}',
+            'system.loading_desktop': 'Loading desktop...',
+            'system.minimize': 'Minimize',
+            'system.maximize': 'Maximize',
+            'system.close': 'Close',
+            'system.unlock': 'Unlock',
             'dialog.ok': 'OK',
             'dialog.cancel': 'Cancel',
             'dialog.close_all_confirm': 'Are you sure you want to close all applications?',
@@ -25,9 +37,16 @@ window.I18n = {
             'dialog.copy': 'Create Copy',
             'dialog.error': 'Unexpected error occurred: {0}...',
             'dialog.db_fallback': 'Your browser does not support IndexedDB or access is blocked. System will run in read-only mode.',
+            'dialog.db_upgrade': 'Database has been updated in another tab. To avoid errors, the page will be refreshed.',
+            'dialog.db_upgrade_btn': 'Refresh Now',
             'dialog.quota_exceeded': 'Storage limit for application {0} has been exceeded.',
-            // Apps
-            // Explorer
+            'explorer.empty': 'This folder is empty',
+            'explorer.set_wallpaper': 'Set as wallpaper',
+            'explorer.sort_name': 'Name',
+            'explorer.sort_size': 'Size',
+            'explorer.sort_date': 'Date',
+            'explorer.back': 'Back',
+            'explorer.sort': 'Sort',
             'explorer.title': 'Explorer',
             'explorer.new_folder': 'New Folder',
             'explorer.new_file': 'New File',
@@ -42,15 +61,12 @@ window.I18n = {
             'explorer.prompt_folder_name': 'Folder name:',
             'explorer.prompt_file_name': 'File name:',
             'explorer.prompt_rename': 'New name for {0}:',
-            // Settings
             'settings.title': 'Settings',
             'settings.tab_personalization': 'Personalization',
             'settings.tab_system': 'System',
             'settings.tab_about': 'About System',
             'settings.theme_light': 'Light',
             'settings.theme_dark': 'Dark',
-            'settings.theme_auto': 'Auto',
-            'settings.wallpaper_url': 'Wallpaper URL:',
             'settings.clear_data': 'Clear User Data',
             'settings.clear_data_confirm': 'Are you sure you want to clear all user data and restore system to factory settings?',
             'settings.language': 'Language:',
@@ -64,17 +80,16 @@ window.I18n = {
             'settings.theme_changed': 'Theme changed to:',
             'explorer.wallpaper_success': 'Wallpaper updated.',
             'explorer.wallpaper_invalid': 'This file cannot be used as wallpaper.',
-
-            // Syslog
             'syslog.title': 'Syslog',
             'syslog.clear': 'Clear',
             'syslog.confirm_clear': 'Are you sure you want to clear the logs?',
             'syslog.no_logs': 'No logs available.',
-
-            // Calculator
+            'syslog.filter_all': 'All',
+            'syslog.filter_info': 'Info',
+            'syslog.filter_warn': 'Warn',
+            'syslog.filter_err': 'Err',
+            'syslog.search': 'Search logs...',
             'calculator.title': 'Calculator',
-
-            // Task Manager
             'taskmanager.title': 'Task Manager',
             'taskmanager.app': 'Application',
             'taskmanager.status': 'Status',
@@ -82,14 +97,11 @@ window.I18n = {
             'taskmanager.dom': 'DOM',
             'taskmanager.action': 'Action',
             'taskmanager.uptime': 'Uptime',
-
-            // About
+            'taskmanager.kill': 'Kill',
             'about.title': 'OS(KO)',
             'about.desc': 'Advanced browser-based operating system.',
             'about.version': 'Version',
             'about.uptime': 'Uptime',
-
-            // Terminal
             'terminal.title': 'Terminal',
             'terminal.welcome': "Type 'help' to see a list of commands.",
             'terminal.help': 'Available commands: ls, cd, cat, edit, mkdir, rm, clear, echo, date, pwd, help, version, play, uptime, ps',
@@ -97,8 +109,9 @@ window.I18n = {
             'terminal.not_found': 'Not found',
             'terminal.read_error': 'Read error',
             'terminal.is_dir': 'Is a directory',
-
-            // Notes
+            'notes.words': 'words',
+            'notes.chars': 'chars',
+            'notes.unsaved_changes': 'Unsaved changes!',
             'notes.title': 'Notes',
             'notes.new': 'New',
             'notes.save': 'Save',
@@ -119,16 +132,29 @@ window.I18n = {
             'system.search_tooltip': 'Szukaj (Ctrl+Space)',
             'system.switcher_tooltip': 'Widok zadań (Multitasking)',
             'system.hdd_usage': 'Zajętość dysku',
-
             'menu.terminate': 'Zakończ',
             'menu.close_all': 'Zamknij wszystkie',
             'menu.refresh': 'Odśwież',
+            'menu.paste': 'Wklej',
             'menu.lock_system': 'Zablokuj system',
             'menu.personalize': 'Personalizuj',
             'menu.settings': 'Ustawienia',
             'menu.new_note': 'Nowa notatka',
             'menu.shutdown': 'Wyłącz',
-
+            'system.shutdown_title': 'Trwa wyłączanie...',
+            'system.shutdown_msg': 'Wszystkie procesy są bezpiecznie kończone.',
+            'system.shutdown_done_title': 'System wyłączony',
+            'system.shutdown_done_msg': 'Wszystkie procesy zostały zakończone bezpiecznie.',
+            'system.restart': 'Uruchom ponownie',
+            'system.install_error': 'Błąd instalacji: nie znaleziono pliku main.js w {0}',
+            'system.search_result_math': 'Wynik obliczenia',
+            'system.default_app_name': 'Aplikacja',
+            'system.launch_error': 'Błąd uruchamiania {0}',
+            'system.loading_desktop': 'Wczytywanie pulpitu...',
+            'system.minimize': 'Minimalizuj',
+            'system.maximize': 'Maksymalizuj',
+            'system.close': 'Zamknij',
+            'system.unlock': 'Odblokuj',
             'dialog.ok': 'OK',
             'dialog.cancel': 'Anuluj',
             'dialog.close_all_confirm': 'Czy na pewno chcesz zamknąć wszystkie aplikacje?',
@@ -137,8 +163,16 @@ window.I18n = {
             'dialog.copy': 'Utwórz kopię',
             'dialog.error': 'Wystąpił nieoczekiwany błąd: {0}...',
             'dialog.db_fallback': 'Twoja przeglądarka nie obsługuje IndexedDB lub dostęp został zablokowany. System będzie działać w trybie "tylko do odczytu".',
+            'dialog.db_upgrade': 'Baza danych została zaktualizowana w innej karcie. Aby uniknąć błędów, strona zostanie odświeżona.',
+            'dialog.db_upgrade_btn': 'Odśwież teraz',
             'dialog.quota_exceeded': 'Limit miejsca dla aplikacji {0} został wyczerpany.',
-
+            'explorer.empty': 'Ten folder jest pusty',
+            'explorer.set_wallpaper': 'Ustaw jako tapetę',
+            'explorer.sort_name': 'Nazwa',
+            'explorer.sort_size': 'Rozmiar',
+            'explorer.sort_date': 'Data',
+            'explorer.back': 'Wstecz',
+            'explorer.sort': 'Sortuj',
             'explorer.title': 'Eksplorator plików',
             'explorer.new_folder': 'Nowy folder',
             'explorer.new_file': 'Nowy plik',
@@ -153,15 +187,12 @@ window.I18n = {
             'explorer.prompt_folder_name': 'Nazwa folderu:',
             'explorer.prompt_file_name': 'Nazwa pliku:',
             'explorer.prompt_rename': 'Nowa nazwa dla {0}:',
-
             'settings.title': 'Ustawienia',
             'settings.tab_personalization': 'Personalizacja',
             'settings.tab_system': 'System',
             'settings.tab_about': 'O systemie',
             'settings.theme_light': 'Jasny',
             'settings.theme_dark': 'Ciemny',
-            'settings.theme_auto': 'Auto',
-            'settings.wallpaper_url': 'URL Tapety (obraz lub GIF):',
             'settings.clear_data': 'Usuń dane użytkownika',
             'settings.clear_data_confirm': 'Czy na pewno chcesz usunąć wszystkie dane użytkownika i przywrócić system do ustawień fabrycznych?',
             'settings.language': 'Język:',
@@ -175,17 +206,16 @@ window.I18n = {
             'settings.theme_changed': 'Ustawiono motyw:',
             'explorer.wallpaper_success': 'Tapeta została zaktualizowana.',
             'explorer.wallpaper_invalid': 'Ten plik nie może być tapetą.',
-
-            // Syslog
             'syslog.title': 'Logi systemowe',
             'syslog.clear': 'Wyczyść',
             'syslog.confirm_clear': 'Czy na pewno wyczyścić logi?',
             'syslog.no_logs': 'Brak logów.',
-
-            // Calculator
+            'syslog.filter_all': 'Wszystkie',
+            'syslog.filter_info': 'Info',
+            'syslog.filter_warn': 'Ostrzeżenia',
+            'syslog.filter_err': 'Błędy',
+            'syslog.search': 'Szukaj w logach...',
             'calculator.title': 'Kalkulator',
-
-            // Task Manager
             'taskmanager.title': 'Menedżer zadań',
             'taskmanager.app': 'Aplikacja',
             'taskmanager.status': 'Status',
@@ -193,14 +223,11 @@ window.I18n = {
             'taskmanager.dom': 'DOM',
             'taskmanager.action': 'Akcja',
             'taskmanager.uptime': 'Uptime',
-
-            // About
+            'taskmanager.kill': 'Zakończ',
             'about.title': 'OS(KO)',
             'about.desc': 'Zaawansowany system operacyjny w przeglądarce.',
             'about.version': 'Wersja',
             'about.uptime': 'Uptime',
-
-            // Terminal
             'terminal.title': 'Terminal',
             'terminal.welcome': "Wpisz 'help', aby uzyskać listę komend.",
             'terminal.help': 'Dostępne komendy: ls, cd, cat, edit, mkdir, rm, clear, echo, date, pwd, help, version, play, uptime, ps',
@@ -208,8 +235,9 @@ window.I18n = {
             'terminal.not_found': 'Nie znaleziono',
             'terminal.read_error': 'Błąd odczytu',
             'terminal.is_dir': 'Jest folderem',
-
-            // Notes
+            'notes.words': 'słowa',
+            'notes.chars': 'znaki',
+            'notes.unsaved_changes': 'Niezapisane zmiany!',
             'notes.title': 'Notatnik',
             'notes.new': 'Nowy',
             'notes.save': 'Zapisz',
@@ -228,10 +256,17 @@ window.I18n = {
     },
     t(key, ...args) {
         let text = this.dicts[this.current]?.[key] || this.dicts['en']?.[key] || key;
+        if (typeof text !== 'string') return key;
         args.forEach((arg, i) => {
-            text = text.replace(`{${i}}`, arg);
+            const regex = new RegExp(`\\{${i}\\}`, 'g');
+            text = text.replace(regex, arg);
         });
         return text;
+    },
+    register(lang, keys) {
+        if (!this.dicts[lang]) this.dicts[lang] = {};
+        Object.assign(this.dicts[lang], keys);
+        window.dispatchEvent(new CustomEvent('i18n:registered', { detail: { lang, keys } }));
     },
     setLanguage(lang) {
         if (this.dicts[lang]) {
