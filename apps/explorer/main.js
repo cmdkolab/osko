@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "explorer",
     get name() { return window.I18n.t('explorer.title'); },
     icon: "📂",
-    version: "4.1.13",
+    version: "4.1.14",
     manifest: {
         get name() { return window.I18n.t('explorer.title'); },
         icon: "📂",

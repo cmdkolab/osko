@@ -641,7 +641,7 @@ textarea.modern {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: url('https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=2070') center/cover;
+    background: var(--bg-default);
     z-index: var(--z-overlay);
     display: flex;
     justify-content: center;
