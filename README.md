@@ -54,17 +54,9 @@ Running OSKO is incredibly simple because it requires exactly **zero** backend s
 ## 🤝 Contributing
 Contributions, issues, and feature requests are always welcome! Feel free to check the issues page or submit pull requests.
 
-## 🏷️ Versioning Guidelines
-When contributing to OSKO or making modifications, please adhere to the following versioning rules:
-
-1. **System Core Updates:** Whenever you make changes to any core system file (like `/system/*.js` or `index.html`), ensure you increment the global OSKO version number.
-    - Small fixes: Increment the last digit (e.g., 4.0.0 -> 4.0.1).
-    - Major changes: Increment the middle or first digit (e.g., 4.0.0 -> 4.1.0 or 5.0.0).
-    - Remember to update the version badge at the top of this file.
-2. **Built-in Application Updates:** Every change to an application (inside `/apps/`) **must** be accompanied by a version bump in its `main.js` file.
-    - **Independent Versioning**: App versions are independent of the system core version.
-    - Small fixes = small increments (last digit).
-    - Major features = large increments (first or middle digit).
+- **Core**: Update global version in `README.md` (badge) and `system/storage.js` for kernel changes.
+- **Apps**: App versions are **independent** of the core. Bump version in `app/main.js` for every change.
+- **Rules**: Small fix -> `4.0.1`, Major update -> `4.1.0` or `5.0.0`.
 This helps to maintain a clear trajectory of updates for both the system kernel and its utilities.
 
 ## 📄 License
