@@ -20,8 +20,8 @@ window.WebOS = {
         script.src = `${folderPath}/main.js?v=${ts}`;
         script.async = false;
         script.onerror = () => {
-            Notifications.show({ 
-                title: 'System', 
+            Notifications.show({
+                title: window.I18n.t('system.notification_title'),
                 message: window.I18n.t('system.install_error', folderPath),
                 type: 'error'
             });
@@ -82,7 +82,7 @@ window.WebOS = {
         const mountingTimeout = setTimeout(() => {
             if (state.processes.includes(process) && !process.mounted) {
                 SysLog.log('ERR', `Mounting timeout for ${app.name}`, 'WebOS');
-                Notifications.show({ title: 'System', message: `App "${app.name}" is taking too long to load.`, type: 'error' });
+                Notifications.show({ title: window.I18n.t('system.notification_title'), message: window.I18n.t('system.app_load_timeout', app.name), type: 'error' });
                 this.killApp(appId, pid);
             }
         }, 10000);
@@ -96,8 +96,8 @@ window.WebOS = {
             clearTimeout(mountingTimeout);
             console.error(`[Kernel] Failed to mount app "${app.name}":`, e);
             SysLog.log('ERR', `Mount error in ${app.name}`, 'WebOS', { appId, pid, error: e.message });
-            Notifications.show({ 
-                title: 'System', 
+            Notifications.show({
+                title: window.I18n.t('system.notification_title'),
                 message: window.I18n.t('system.launch_error', app.name),
                 type: 'error'
             });
@@ -313,7 +313,7 @@ window.WebOS = {
         state.processes.forEach(proc => {
             let item = this._taskbarCache[proc.pid];
             const isActive = state.focusedWindow === proc.windowId;
-            const name = proc.appDef.name || (proc.appDef.manifest && proc.appDef.manifest.name) || 'App';
+            const name = proc.appDef.name || (proc.appDef.manifest && proc.appDef.manifest.name) || window.I18n.t('system.default_app_name');
             const icon = proc.appDef.icon || (proc.appDef.manifest && proc.appDef.manifest.icon) || '❓';
             if (!item) {
                 item = document.createElement('div');
@@ -638,7 +638,7 @@ window.WebOS = {
             const winEl = document.getElementById(proc.windowId);
             if (winEl) {
                 const titleEl = winEl.querySelector('.window-title');
-                if (titleEl) titleEl.innerText = proc.appDef.name || (proc.appDef.manifest && proc.appDef.manifest.name) || 'App';
+                if (titleEl) titleEl.innerText = proc.appDef.name || (proc.appDef.manifest && proc.appDef.manifest.name) || window.I18n.t('system.default_app_name');
             }
         });
     },

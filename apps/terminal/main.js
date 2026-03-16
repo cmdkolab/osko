@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "terminal",
     get name() { return window.I18n.t('terminal.title'); },
     icon: "🐚",
-    version: "4.1.14",
+    version: "4.1.19",
     manifest: {
         get name() { return window.I18n.t('terminal.title'); },
         icon: "🐚",
@@ -121,7 +121,7 @@ WebOS.registerApp({
                 }
                 break;
             case 'cat':
-                if (!args[0]) { this.print("cat <file>"); break; }
+                if (!args[0]) { this.print(window.I18n.t('terminal.usage_cat')); break; }
                 try {
                     const target = args[0];
                     const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
@@ -139,7 +139,7 @@ WebOS.registerApp({
                 } catch (e) { this.print(`cat: ${args[0]}: ${window.I18n.t('terminal.read_error')}`, 'error'); }
                 break;
             case 'mkdir':
-                if (!args[0]) { this.print("mkdir <dir>"); break; }
+                if (!args[0]) { this.print(window.I18n.t('terminal.usage_mkdir')); break; }
                 try {
                     const target = args[0];
                     const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
@@ -147,7 +147,7 @@ WebOS.registerApp({
                 } catch (e) { this.print(`mkdir: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
                 break;
             case 'rm':
-                if (!args[0]) { this.print("rm <file/dir>"); break; }
+                if (!args[0]) { this.print(window.I18n.t('terminal.usage_rm')); break; }
                 try {
                     const target = args[0];
                     const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
@@ -166,58 +166,34 @@ WebOS.registerApp({
             case 'ps':
                 try {
                     const procs = await this.api.system.getProcesses();
-                    this.print(`${'PID'.padEnd(6)}${'STORAGE'.padEnd(12)}${'UPTIME'.padEnd(10)}${window.I18n.t('taskmanager.status').padEnd(12)}${window.I18n.t('taskmanager.app')}`, 'echo');
+                    this.print(`${window.I18n.t('taskmanager.pid').padEnd(6)}${window.I18n.t('taskmanager.storage').padEnd(12)}${window.I18n.t('taskmanager.uptime').padEnd(10)}${window.I18n.t('taskmanager.status').padEnd(12)}${window.I18n.t('taskmanager.app')}`, 'echo');
                     procs.forEach(p => {
                         const pidStr = String(p.pid).padEnd(6);
                         const storage = (this.api.system.storage.calculateUsage(p.appId) / 1024).toFixed(1) + ' KB';
                         const storageStr = storage.padEnd(12);
                         const uptime = Math.floor((Date.now() - p.startTime) / 1000);
                         const uptimeStr = (uptime + 's').padEnd(10);
-                        const statusStr = 'Running'.padEnd(12);
+                        const statusStr = window.I18n.t('taskmanager.running').padEnd(12);
                         this.print(`${pidStr}${storageStr}${uptimeStr}${statusStr}${p.name || p.appId}`);
                     });
                 } catch (e) { this.print(`ps: ${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
                 break;
-            case 'du':
-                try {
-                    const target = args[0] || this.cwd;
-                    const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
-                    const stats = await this.api.fs.stat(path);
-                    if (!stats) {
-                        this.print(`du: ${target}: ${window.I18n.t('terminal.not_found')}`, 'error');
-                        break;
-                    }
-                    const calculateSize = async (p) => {
-                        const s = await this.api.fs.stat(p);
-                        if (s.type === 'file') return s.size;
-                        const entries = await this.api.fs.list(p);
-                        let total = 0;
-                        for (const e of entries) {
-                            total += await calculateSize(this.api.fs.join(p, e.name));
-                        }
-                        return total;
-                    };
-                    const totalSize = await calculateSize(path);
-                    const formattedSize = totalSize < 1024 ? totalSize + ' B' : (totalSize / 1024).toFixed(1) + ' KB';
-                    this.print(window.I18n.t('terminal.du_total', path, formattedSize));
-                } catch (e) { this.print(`du: ${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
-                break;
             case 'system':
                 this.print(`OS(KO) Kernel v${this.api.system.VERSION}`, 'echo');
-                this.print(`Uptime: ${this.api.system.getUptime()}`);
+                this.print(`${window.I18n.t('about.uptime')}: ${this.api.system.getUptime()}`);
                 const totalUsage = this.api.system.storage.getTotalUsage();
                 const quota = 10 * 1024 * 1024;
                 const percent = ((totalUsage / quota) * 100).toFixed(1);
-                this.print(`VFS Usage: ${(totalUsage / 1024 / 1024).toFixed(2)} MB / 10.00 MB (${percent}%)`);
-                this.print(`Resolution: ${window.innerWidth}x${window.innerHeight}`);
-                this.print(`Language: ${window.I18n.current.toUpperCase()}`);
+                this.print(`${window.I18n.t('terminal.vfs_usage')}: ${(totalUsage / 1024 / 1024).toFixed(2)} MB / 10.00 MB (${percent}%)`);
+                this.print(`${window.I18n.t('terminal.resolution')}: ${window.innerWidth}x${window.innerHeight}`);
+                this.print(`${window.I18n.t('terminal.language')}: ${window.I18n.current.toUpperCase()}`);
                 break;
             case 'play':
                 if (!args[0]) { this.print(window.I18n.t('terminal.sounds')); break; }
                 this.api.audio.play(args[0]);
                 break;
             case 'edit':
-                if (!args[0]) { this.print("edit <file>"); break; }
+                if (!args[0]) { this.print(window.I18n.t('terminal.usage_edit')); break; }
                 try {
                     const target = args[0];
                     const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
@@ -244,7 +220,7 @@ WebOS.registerApp({
         if (!last && parts.length > 1) return;
         
         try {
-            const commands = ['ls', 'cd', 'cat', 'edit', 'mkdir', 'rm', 'clear', 'echo', 'date', 'pwd', 'help', 'version', 'play', 'uptime', 'ps', 'du', 'system'];
+            const commands = ['ls', 'cd', 'cat', 'edit', 'mkdir', 'rm', 'clear', 'echo', 'date', 'pwd', 'help', 'version', 'play', 'uptime', 'ps', 'system'];
             const entries = await this.api.fs.list(this.cwd);
             const files = entries ? entries.map(e => e.name) : [];
             const apps = Object.values(WebOS.state.apps).map(a => a.id);

@@ -48,10 +48,10 @@
             this._keyListener = (evt) => {
                 if (evt.key === 'ArrowDown') {
                     evt.preventDefault();
-                    this._setSelectedIndex(menu, items, (this._selectedIndex + 1) % items.length);
+                    this._setSelectedIndex(menu, items, this._nextSelectableIndex(items, this._selectedIndex, 1));
                 } else if (evt.key === 'ArrowUp') {
                     evt.preventDefault();
-                    this._setSelectedIndex(menu, items, (this._selectedIndex - 1 + items.length) % items.length);
+                    this._setSelectedIndex(menu, items, this._nextSelectableIndex(items, this._selectedIndex, -1));
                 } else if (evt.key === 'Enter') {
                     evt.preventDefault();
                     const selected = menu.querySelector('.context-menu-item.selected');
@@ -68,6 +68,15 @@
                 document.addEventListener('keydown', this._keyListener);
                 this._timeout = null;
             }, 10);
+        },
+        _nextSelectableIndex(items, current, direction) {
+            const indices = items.map((_, i) => i).filter(i => items[i].type !== 'separator');
+            if (indices.length === 0) return -1;
+            if (current === -1) return direction === 1 ? indices[0] : indices[indices.length - 1];
+            const pos = indices.indexOf(current);
+            if (pos === -1) return direction === 1 ? indices[0] : indices[indices.length - 1];
+            const nextPos = direction === 1 ? (pos + 1) % indices.length : (pos - 1 + indices.length) % indices.length;
+            return indices[nextPos];
         },
         _setSelectedIndex(menu, items, index) {
             if (items[index] && items[index].type === 'separator') {

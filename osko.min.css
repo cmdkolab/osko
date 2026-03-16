@@ -30,6 +30,7 @@
 
     --bg-default: linear-gradient(135deg, #1e293b 0%, #334155 100%);
     --accent: #3b82f6;
+    --accent-rgb: 59, 130, 246;
     --accent-color: var(--accent);
     --accent-hover: #60a5fa;
     --text-color: #ffffff;
@@ -43,6 +44,11 @@
     --glass-blur: blur(35px) saturate(180%);
     --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4);
     --glass-shadow-focused: 0 25px 60px -15px rgba(0, 0, 0, 0.6);
+    --bg-glass: rgba(255, 255, 255, 0.06);
+    --window-border: 1px solid var(--glass-border);
+    --window-shadow: var(--glass-shadow);
+    --window-shadow-focused: var(--glass-shadow-focused);
+    --transition: var(--transition-fast);
 
     --font-main: 'Outfit', sans-serif;
     --radius-lg: 18px;
@@ -154,6 +160,11 @@ body {
     background: var(--glass-bg-accent);
     border: 1px solid var(--glass-border-accent);
     box-shadow: 0 0 10px var(--glass-border-accent);
+}
+
+.desktop-icon:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 .desktop-icon .icon {
@@ -299,6 +310,11 @@ body {
     background: #ff4757;
 }
 
+.control-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
 .window-resizer {
     position: absolute;
     right: 0;
@@ -365,6 +381,12 @@ body {
     transform: scale(1.1);
 }
 
+.switcher-btn:focus-visible,
+.search-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
 .taskbar-blur {
     position: absolute;
     top: 0;
@@ -426,6 +448,11 @@ body {
     background: var(--accent);
     border-radius: 4px;
     box-shadow: 0 0 8px var(--accent);
+}
+
+.taskbar-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 #system-tray {
@@ -629,10 +656,16 @@ textarea.modern {
     color: var(--text-color);
 }
 
-.context-menu-item:hover {
+.context-menu-item:hover,
+.context-menu-item.selected {
     background: var(--accent-color);
     color: white;
     transform: translateX(4px);
+}
+
+.context-menu-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
 }
 
 #lock-screen {
@@ -939,6 +972,11 @@ body.system-locked #desktop {
 
 .dialog-btn:hover {
     background: rgba(255, 255, 255, 0.1);
+}
+
+.dialog-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 .dialog-btn.primary {
@@ -1672,9 +1710,9 @@ body.system-locked #desktop {
 .calc-current {
     font-size: 28px;
     font-weight: 300;
-    color: #fff;
+    color: var(--text-color);
     word-break: break-all;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-main);
 }
 
 .calc-grid {
@@ -1706,8 +1744,7 @@ body.system-locked #desktop {
 
 .calc-btn:active, .calc-btn.active {
     background: rgba(255, 255, 255, 0.2);
-    transform: translateY(1px);
-    scale: 0.95;
+    transform: translateY(1px) scale(0.98);
 }
 
 .calc-btn.op {
@@ -1957,7 +1994,7 @@ body.system-locked #desktop {
     padding: 20px;
     font-size: 14px;
     line-height: 1.6;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-main);
     resize: none;
     outline: none;
     overflow-y: auto;
@@ -2042,7 +2079,7 @@ body.system-locked #desktop {
 }
 
 .preset-btn:hover { transform: scale(1.1); }
-.preset-btn.active { border-color: var(--accent); scale: 0.95; }
+.preset-btn.active { border-color: var(--accent); transform: scale(0.95); }
 
 .input-group {
     display: flex;
@@ -2416,6 +2453,11 @@ mark {
     font-family: inherit;
     font-size: inherit;
     outline: none;
+}
+
+.terminal-input:focus {
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4);
+    border-radius: 4px;
 }
 
 .terminal-echo {

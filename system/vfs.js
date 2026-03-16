@@ -229,7 +229,7 @@
                 if (owner !== 'system') {
                     const currentUsage = this._usage[owner] || 0;
                     if (currentUsage + usageDelta > this.QUOTA_PER_APP) {
-                        Notifications.show({ title: 'System', message: window.I18n.t('dialog.quota_exceeded', owner) });
+                        Notifications.show({ title: window.I18n.t('system.notification_title'), message: window.I18n.t('dialog.quota_exceeded', owner) });
                         return false;
                     }
                 }
@@ -460,6 +460,15 @@
                 this._notifyWatchers(dstPath);
                 return true;
             });
+        },
+        stat(path, appId, manifest) {
+            path = this.join(path);
+            if (!this.checkAccess(path, appId, 'r', manifest)) return null;
+            const node = this._resolveInternal(path);
+            if (node === null || node === undefined) return null;
+            if (typeof node === 'object' && node.content !== undefined)
+                return { type: 'file', size: node.size || 0, mtime: node.mtime || 0 };
+            return { type: 'dir', mtime: node.mtime || 0 };
         },
         exists(path) {
             return this._resolveInternal(path) !== null;

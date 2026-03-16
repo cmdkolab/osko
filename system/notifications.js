@@ -27,7 +27,7 @@ window.Notifications = {
         content.className = 'toast-content';
         const titleEl = document.createElement('div');
         titleEl.className = 'toast-title';
-        titleEl.innerText = options.title || 'System';
+        titleEl.innerText = options.title || (window.I18n && window.I18n.t('system.notification_title')) || 'System';
         const bodyEl = document.createElement('div');
         bodyEl.className = 'toast-body';
         bodyEl.innerText = options.message || '';
@@ -38,7 +38,7 @@ window.Notifications = {
         if (options.action && options.action.callback) {
             const actionBtn = document.createElement('button');
             actionBtn.className = 'toast-action';
-            actionBtn.innerText = options.action.label || 'OK';
+            actionBtn.innerText = options.action.label || (window.I18n && window.I18n.t('dialog.ok')) || 'OK';
             actionBtn.onclick = (e) => {
                 e.stopPropagation();
                 options.action.callback();

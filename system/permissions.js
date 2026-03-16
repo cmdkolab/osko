@@ -44,7 +44,9 @@
                     storage: {
                         get: (key) => PersistenceManager.get(key),
                         set: (key, value) => PersistenceManager.set(key, value),
-                        remove: (key) => PersistenceManager.remove(key)
+                        remove: (key) => PersistenceManager.remove(key),
+                        calculateUsage: (appId) => VFS.calculateUsage(appId),
+                        getTotalUsage: () => VFS.getTotalUsage()
                     },
                     getUptime: () => {
                         const seconds = Math.floor((Date.now() - PersistenceManager.START_TIME) / 1000);
@@ -184,6 +186,7 @@
                     read(path) { return check('fs.read') ? VFS.read(path, appId, manifest) : null; },
                     async write(path, data) { return check('fs.write') ? await VFS.write(path, data, appId, manifest) : null; },
                     list(path) { return check('fs.read') ? VFS.list(path, appId, manifest) : []; },
+                    stat(path) { return check('fs.read') ? VFS.stat(path, appId, manifest) : null; },
                     async mkdir(path) { return check('fs.write') ? await VFS.mkdir(path, appId, manifest) : null; },
                     async remove(path) { return check('fs.write') ? await VFS.remove(path, appId, manifest) : null; },
                     async rename(oldPath, newPath) { return check('fs.write') ? await VFS.rename(oldPath, newPath, appId, manifest) : null; },

@@ -50,11 +50,13 @@
             const bootStatus = document.querySelector('.boot-status');
             if (bootStatus) bootStatus.innerText = I18n.t('system.loading');
             const searchBtn = document.getElementById('search-btn');
-            if (searchBtn) searchBtn.title = I18n.t('system.search_tooltip');
+            if (searchBtn) { searchBtn.title = I18n.t('system.search_tooltip'); searchBtn.setAttribute('aria-label', I18n.t('system.search_tooltip')); }
             const switcherBtn = document.getElementById('switcher-btn');
-            if (switcherBtn) switcherBtn.title = I18n.t('system.switcher_tooltip');
+            if (switcherBtn) { switcherBtn.title = I18n.t('system.switcher_tooltip'); switcherBtn.setAttribute('aria-label', I18n.t('system.switcher_tooltip')); }
             const hddUsage = document.getElementById('hdd-usage');
-            if (hddUsage) hddUsage.title = I18n.t('system.hdd_tooltip');
+            if (hddUsage) { hddUsage.title = I18n.t('system.hdd_usage'); hddUsage.setAttribute('aria-label', I18n.t('system.hdd_usage')); }
+            const clockEl = document.getElementById('clock');
+            if (clockEl) clockEl.setAttribute('aria-label', I18n.t('system.clock_aria'));
         };
         localizeStatic();
         window.addEventListener('i18n:changed', localizeStatic);
@@ -64,7 +66,7 @@
         window.onerror = (msg, url, line, col, error) => {
             SysLog.log('ERR', { message: msg, line, column: col, url, error: error?.toString() }, 'GlobalHandler');
             if (msg !== _lastErr) {
-                Notifications.show({ title: 'System Error', message: window.I18n.t('dialog.error', String(msg).slice(0, 50)), type: 'error' });
+                Notifications.show({ title: window.I18n.t('system.error_title'), message: window.I18n.t('dialog.error', String(msg).slice(0, 50)), type: 'error' });
                 _lastErr = msg;
                 setTimeout(() => { if (_lastErr === msg) _lastErr = null; }, 5000);
             }
@@ -73,7 +75,7 @@
             const reason = event.reason?.toString() || 'Unknown Reason';
             SysLog.log('ERR', `Unhandled Rejection: ${reason}`, 'GlobalHandler');
             if (reason !== _lastErr) {
-                Notifications.show({ title: 'Critical Error', message: `Unhandled Promise: ${String(reason).slice(0, 50)}...`, type: 'error' });
+                Notifications.show({ title: window.I18n.t('system.critical_error'), message: `Unhandled Promise: ${String(reason).slice(0, 50)}...`, type: 'error' });
                 _lastErr = reason;
                 setTimeout(() => { if (_lastErr === reason) _lastErr = null; }, 5000);
             }
@@ -106,10 +108,12 @@
         const updateTooltips = () => {
             binds.forEach(b => {
                 const el = document.getElementById(b.id);
-                if (el && b.tooltip) el.title = window.I18n.t(b.tooltip);
+                if (el && b.tooltip) { el.title = window.I18n.t(b.tooltip); el.setAttribute('aria-label', window.I18n.t(b.tooltip)); }
             });
             const hddUsage = document.getElementById('hdd-usage');
-            if (hddUsage) hddUsage.title = window.I18n.t('system.hdd_usage');
+            if (hddUsage) { hddUsage.title = window.I18n.t('system.hdd_usage'); hddUsage.setAttribute('aria-label', window.I18n.t('system.hdd_usage')); }
+            const clockEl = document.getElementById('clock');
+            if (clockEl) clockEl.setAttribute('aria-label', window.I18n.t('system.clock_aria'));
         };
         updateTooltips();
         window.addEventListener('i18n:changed', () => {

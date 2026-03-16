@@ -36,7 +36,7 @@
                 <div class="window-content"></div>
                 <div class="window-resizer"></div>
             `;
-            winEl.querySelector('.window-title').textContent = `${options.icon || ''} ${options.title || 'App'}`;
+            winEl.querySelector('.window-title').textContent = `${options.icon || ''} ${options.title || window.I18n.t('system.default_app_name')}`;
             document.getElementById('window-layer').appendChild(winEl);
             const win = { id, element: winEl, appId, state: 'normal' };
             state.windows.push(win);

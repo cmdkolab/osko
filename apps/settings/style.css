@@ -64,7 +64,7 @@
 }
 
 .preset-btn:hover { transform: scale(1.1); }
-.preset-btn.active { border-color: var(--accent); scale: 0.95; }
+.preset-btn.active { border-color: var(--accent); transform: scale(0.95); }
 
 .input-group {
     display: flex;

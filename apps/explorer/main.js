@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "explorer",
     get name() { return window.I18n.t('explorer.title'); },
     icon: "📂",
-    version: "4.1.14",
+    version: "4.1.17",
     manifest: {
         get name() { return window.I18n.t('explorer.title'); },
         icon: "📂",
@@ -60,9 +60,9 @@ WebOS.registerApp({
         };
         container.querySelector('.sort-btn').onclick = (e) => {
             this.api.system.showContextMenu(e, [
-                { label: `${window.I18n.t('explorer.sort_name')} ${this.sortBy === 'name' ? '✓' : ''}`, action: () => { this.sortBy = 'name'; this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } },
-                { label: `${window.I18n.t('explorer.sort_size')} ${this.sortBy === 'size' ? '✓' : ''}`, action: () => { this.sortBy = 'size'; this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } },
-                { label: `${window.I18n.t('explorer.sort_date')} ${this.sortBy === 'date' ? '✓' : ''}`, action: () => { this.sortBy = 'date'; this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } }
+                { label: `${window.I18n.t('explorer.sort_name')} ${this.sortBy === 'name' ? '✓' : ''}`, action: async () => { this.sortBy = 'name'; await this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } },
+                { label: `${window.I18n.t('explorer.sort_size')} ${this.sortBy === 'size' ? '✓' : ''}`, action: async () => { this.sortBy = 'size'; await this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } },
+                { label: `${window.I18n.t('explorer.sort_date')} ${this.sortBy === 'date' ? '✓' : ''}`, action: async () => { this.sortBy = 'date'; await this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } }
             ]);
         };
         const search = container.querySelector('.explorer-search');
@@ -167,7 +167,7 @@ WebOS.registerApp({
     copyFile(item) {
         const fullPath = this.api.fs.join(this.currentPath, item.name);
         this.api.system.setClipboard({ type: 'file', path: fullPath, name: item.name });
-        this.api.notifications.show({ title: 'Explorer', message: window.I18n.t('explorer.copied', item.name) });
+        this.api.notifications.show({ title: window.I18n.t('explorer.title'), message: window.I18n.t('explorer.copied', item.name) });
     },
     async pasteFile() {
         const clip = this.api.system.getClipboard();

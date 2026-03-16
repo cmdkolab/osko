@@ -34,9 +34,9 @@
 .calc-current {
     font-size: 28px;
     font-weight: 300;
-    color: #fff;
+    color: var(--text-color);
     word-break: break-all;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-main);
 }
 
 .calc-grid {
@@ -68,8 +68,7 @@
 
 .calc-btn:active, .calc-btn.active {
     background: rgba(255, 255, 255, 0.2);
-    transform: translateY(1px);
-    scale: 0.95;
+    transform: translateY(1px) scale(0.98);
 }
 
 .calc-btn.op {

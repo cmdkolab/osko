@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "settings",
     get name() { return window.I18n.t('settings.title'); },
     icon: "⚙️",
-    version: "4.1.14",
+    version: "4.1.17",
     manifest: {
         get name() { return window.I18n.t('settings.title'); },
         icon: "⚙️",
@@ -34,8 +34,8 @@ WebOS.registerApp({
                     <div class="settings-section">
                         <h3>${window.I18n.t('settings.language')}</h3>
                         <div class="toggle-group">
-                            <button class="lang-btn ${window.I18n.current === 'en' ? 'active' : ''}" data-lang="en">English</button>
-                            <button class="lang-btn ${window.I18n.current === 'pl' ? 'active' : ''}" data-lang="pl">Polski</button>
+                            <button class="lang-btn ${window.I18n.current === 'en' ? 'active' : ''}" data-lang="en">${window.I18n.t('settings.lang_en')}</button>
+                            <button class="lang-btn ${window.I18n.current === 'pl' ? 'active' : ''}" data-lang="pl">${window.I18n.t('settings.lang_pl')}</button>
                         </div>
                     </div>
                     <div class="settings-section">

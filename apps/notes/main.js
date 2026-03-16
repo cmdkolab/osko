@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "notes",
     get name() { return window.I18n.t('notes.title'); },
     icon: "📝",
-    version: "4.1.14",
+    version: "4.1.18",
     manifest: {
         get name() { return window.I18n.t('notes.title'); },
         icon: "📝",
@@ -104,9 +104,11 @@ WebOS.registerApp({
             textarea.value = content;
             this.currentPath = path;
             status.innerText = this.api.fs.basename(path);
-            this.api.window.setTitle(`Notes - ${status.innerText}`);
+            this.api.window.setTitle(`${window.I18n.t('notes.title')} - ${status.innerText}`);
             this.updateStats();
             this.container.querySelector('.notes-editor').focus();
+        } else {
+            this.api.notifications.show({ title: window.I18n.t('notes.title'), message: window.I18n.t('notes.open_error'), type: 'error' });
         }
     },
     async saveFile() {
@@ -122,13 +124,13 @@ WebOS.registerApp({
         const textarea = this.container.querySelector('.notes-editor');
         await this.api.fs.write(this.currentPath, textarea.value);
         this.container.querySelector('.status-text').innerText = this.api.fs.basename(this.currentPath);
-        this.api.window.setTitle(`Notes - ${this.api.fs.basename(this.currentPath)}`);
+        this.api.window.setTitle(`${window.I18n.t('notes.title')} - ${this.api.fs.basename(this.currentPath)}`);
     },
     newFile() {
         this.currentPath = null;
         this.container.querySelector('.notes-editor').value = '';
         this.container.querySelector('.status-text').innerText = window.I18n.t('notes.new_file');
-        this.api.window.setTitle(`Notes - ${window.I18n.t('notes.new_file')}`);
+        this.api.window.setTitle(`${window.I18n.t('notes.title')} - ${window.I18n.t('notes.new_file')}`);
     },
     exportFile() {
         const text = this.container.querySelector('.notes-editor').value;

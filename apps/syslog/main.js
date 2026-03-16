@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "syslog",
     get name() { return window.I18n.t('syslog.title'); },
     icon: "📜",
-    version: "4.1.14",
+    version: "4.1.16",
     manifest: {
         get name() { return window.I18n.t('syslog.title'); },
         icon: "📜",
@@ -127,7 +127,7 @@ WebOS.registerApp({
             `;
             entry.onclick = () => {
                 this.api.system.setClipboard(line);
-                this.api.notifications.show({ title: 'Syslog', message: 'Log entry copied to clipboard' });
+                this.api.notifications.show({ title: window.I18n.t('syslog.title'), message: window.I18n.t('syslog.copied_to_clipboard') });
             };
             fragment.appendChild(entry);
         });

@@ -41,6 +41,11 @@
     outline: none;
 }
 
+.terminal-input:focus {
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4);
+    border-radius: 4px;
+}
+
 .terminal-echo {
     color: #94a3b8;
     margin-top: 10px;

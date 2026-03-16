@@ -67,7 +67,7 @@
     padding: 20px;
     font-size: 14px;
     line-height: 1.6;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-main);
     resize: none;
     outline: none;
     overflow-y: auto;

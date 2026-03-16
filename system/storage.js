@@ -3,7 +3,7 @@ window.PersistenceManager = {
     SYSTEM_DIR: '/sys',
     TEMP_DIR: '/tmp',
     START_TIME: Date.now(),
-    VERSION: '4.1.12',
+    VERSION: '4.1.21',
     async get(key) {
         try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
     },
