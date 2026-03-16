@@ -104,7 +104,6 @@ WebOS.registerApp({
             sourceSelect.value = currentSource;
             sourceSelect.onchange = () => this.refresh();
         }
-
         const fragment = document.createDocumentFragment();
         let visibleCount = 0;
         const renderLines = lines.slice(-1000);

@@ -218,20 +218,17 @@ WebOS.registerApp({
         const parts = val.split(/\s+/);
         const last = parts[parts.length - 1];
         if (!last && parts.length > 1) return;
-        
         try {
             const commands = ['ls', 'cd', 'cat', 'edit', 'mkdir', 'rm', 'clear', 'echo', 'date', 'pwd', 'help', 'version', 'play', 'uptime', 'ps', 'system'];
             const entries = await this.api.fs.list(this.cwd);
             const files = entries ? entries.map(e => e.name) : [];
             const apps = Object.values(WebOS.state.apps).map(a => a.id);
-            
             let candidates = [];
             if (parts.length <= 1) {
                 candidates = [...commands, ...apps];
             } else {
                 candidates = [...files, ...apps];
             }
-
             const matches = candidates.filter(f => f.toLowerCase().startsWith(last.toLowerCase()));
             if (matches.length === 1) {
                 parts[parts.length - 1] = matches[0];

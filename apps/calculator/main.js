@@ -147,9 +147,6 @@ WebOS.registerApp({
             'Escape': 'C', 'Backspace': 'Backspace'
         };
         const appEl = container.querySelector('.calc-app');
-        
-
-
         if (appEl) {
             appEl.onkeydown = (e) => {
                 if (e.key === 'Backspace') {

@@ -45,15 +45,12 @@ WebOS.registerApp({
         const sysUptimeEl = container.querySelector('.tm-sys-uptime');
         const storageValueEl = container.querySelector('.tm-storage-value');
         const storageFillEl = container.querySelector('.tm-storage-fill');
-
         const refresh = async () => {
             const processes = await api.system.getProcesses();
             const activePids = new Set(processes.map(p => p.pid));
-            
             Array.from(list.children).forEach(row => {
                 if (!activePids.has(Number(row.dataset.pid))) row.remove();
             });
-
             processes.forEach(p => {
                 let row = list.querySelector(`.tm-row[data-pid="${p.pid}"]`);
                 if (!row) {
@@ -89,17 +86,14 @@ WebOS.registerApp({
                 const s = window.I18n.t('taskmanager.unit_s');
                 const m = window.I18n.t('taskmanager.unit_m');
                 uptimeEl.innerText = uptime < 60 ? `${uptime}${s}` : `${Math.floor(uptime/60)}${m} ${uptime%60}${s}`;
-                
                 const appUsage = api.system.storage.calculateUsage ? api.system.storage.calculateUsage(p.appId) : 0;
                 memEl.innerText = (appUsage / 1024).toFixed(1) + ' KB';
             });
-
             const totalUptime = Math.floor((Date.now() - (api.system.START_TIME || Date.now())) / 1000);
             const s = window.I18n.t('taskmanager.unit_s');
             const m = window.I18n.t('taskmanager.unit_m');
             const h = window.I18n.t('taskmanager.unit_h');
             sysUptimeEl.innerText = `${window.I18n.t('taskmanager.uptime')}: ${totalUptime < 3600 ? Math.floor(totalUptime/60)+m+' '+(totalUptime%60)+s : Math.floor(totalUptime/3600)+h+' '+Math.floor((totalUptime%3600)/60)+m}`;
-
             const totalUsage = api.system.storage.getTotalUsage ? api.system.storage.getTotalUsage() : 0;
             const quota = 10 * 1024 * 1024;
             const percent = Math.min(100, (totalUsage / quota) * 100);

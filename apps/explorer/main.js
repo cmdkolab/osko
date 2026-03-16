@@ -187,7 +187,6 @@ WebOS.registerApp({
                     callback: resolve
                 });
             });
-
             if (conflictChoice === 'cancel') return;
             if (conflictChoice === 'keep') {
                 const parts = destName.split('.');

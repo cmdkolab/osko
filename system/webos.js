@@ -72,13 +72,11 @@ window.WebOS = {
             windowId: winHandle.id,
             api,
             appDef: app,
-            instance: app, 
+            instance: app,
             params,
             startTime: Date.now()
         };
         state.processes.push(process);
-        
-
         const mountingTimeout = setTimeout(() => {
             if (state.processes.includes(process) && !process.mounted) {
                 SysLog.log('ERR', `Mounting timeout for ${app.name}`, 'WebOS');
@@ -86,7 +84,6 @@ window.WebOS = {
                 this.killApp(appId, pid);
             }
         }, 10000);
-
         try {
             SysLog.log('INFO', `Mounting App: ${app.name}`, 'WebOS', { appId, pid });
             await app.mount(winHandle.container, api, params);
@@ -648,7 +645,6 @@ window.WebOS = {
         const icons = Array.from(container.querySelectorAll('.desktop-icon'));
         const grid = this.CONST.DESKTOP_GRID;
         const columns = Math.floor(container.clientWidth / grid.CELL_W) || 1;
-        
         icons.forEach((icon, index) => {
             const appId = icon.dataset.id;
             if (!this._desktopPositions[appId]) {
@@ -660,7 +656,6 @@ window.WebOS = {
         });
     }
 };
-
 window.addEventListener('resize', () => {
     WebOS.repositionDesktopIcons();
 });

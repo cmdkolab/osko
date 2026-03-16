@@ -34,7 +34,6 @@
             setTimeout(() => {
                 const bootScreen = document.getElementById('boot-screen');
                 if (bootScreen) bootScreen.classList.add('hidden');
-                
                 document.querySelectorAll('.desktop-icon').forEach((icon, i) => {
                     setTimeout(() => icon.classList.add('show'), 100 + (i * 60));
                 });
@@ -45,7 +44,6 @@
     }
     function _setupErrorHandlers() {
         let _lastErr = null;
-
         const localizeStatic = () => {
             const bootStatus = document.querySelector('.boot-status');
             if (bootStatus) bootStatus.innerText = I18n.t('system.loading');
@@ -60,9 +58,7 @@
         };
         localizeStatic();
         window.addEventListener('i18n:changed', localizeStatic);
-
         SysLog.log('INFO', 'Initializing WebOS Core...', 'Kernel');
-
         window.onerror = (msg, url, line, col, error) => {
             SysLog.log('ERR', { message: msg, line, column: col, url, error: error?.toString() }, 'GlobalHandler');
             if (msg !== _lastErr) {
@@ -93,7 +89,6 @@
             'apps/terminal'
         ];
         apps.forEach(app => WebOS.installApp(app));
-
         const binds = [
             { id: 'search-btn', tooltip: 'system.search_tooltip', action: () => WebOS.ui.toggleSearch() },
             { id: 'switcher-btn', tooltip: 'system.switcher_tooltip', action: () => WebOS.ui.toggleSwitcher() },
@@ -104,7 +99,6 @@
             if (!el) return;
             el.onclick = b.action;
         });
-        
         const updateTooltips = () => {
             binds.forEach(b => {
                 const el = document.getElementById(b.id);

@@ -59,7 +59,6 @@ WebOS.registerApp({
     setupEvents(container) {
         const textarea = container.querySelector('.notes-editor');
         const status = container.querySelector('.status-text');
-        
         textarea.oninput = () => {
             this.updateStats();
             status.innerText = `* ${window.I18n.t('notes.unsaved_changes')}`;
