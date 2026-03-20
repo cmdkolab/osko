@@ -639,35 +639,28 @@ textarea.modern {
 }
 .lock-input-group {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-}
-#lock-password {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
-    padding: 10px 25px;
-    color: white;
-    width: 250px;
-    text-align: center;
-    backdrop-filter: blur(10px);
-    outline: none;
+    justify-content: center;
+    margin-top: 20px;
 }
 #unlock-btn {
-    background: var(--accent);
+    background: var(--accent-color);
     color: white;
     border: none;
-    border-radius: 20px;
-    padding: 10px 40px;
-    font-weight: 700;
+    border-radius: 25px;
+    padding: 12px 40px;
+    font-size: 18px;
+    font-weight: 600;
     cursor: pointer;
-    transition: 0.3s;
-    box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 #unlock-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.4);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    filter: brightness(1.1);
+}
+#unlock-btn:active {
+    transform: translateY(0);
 }
 #lock-screen::before {
     content: '';

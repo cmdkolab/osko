@@ -7,8 +7,9 @@
             SessionManager.init(),
             ThemeEngine.init(),
             WebOS._loadDesktopPositions(),
-            _setupLockScreen()
+            _setupUIInteractives()
         ]);
+        _setupLockScreen();
         AudioEngine.play('startup');
         if (DBWrapper._isFallback) {
             WebOS.ui.showDialog({
@@ -26,7 +27,6 @@
         } else {
             await WebOS.restoreState();
         }
-        _setupUIInteractives();
         _setupDesktopEvents();
         _setupGlobalEvents();
         _setupKeyboardShortcuts();

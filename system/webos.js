@@ -14,19 +14,20 @@ window.WebOS = {
         }
     },
     installApp(folderPath) {
-        SysLog.log('DEBUG', `Installing app from ${folderPath}...`, 'WebOS');
-        const ts = Date.now();
-        const script = document.createElement('script');
-        script.src = `${folderPath}/main.js?v=${ts}`;
-        script.async = false;
-        script.onerror = () => {
-            Notifications.show({
-                title: window.I18n.t('system.notification_title'),
-                message: window.I18n.t('system.install_error', folderPath),
-                type: 'error'
-            });
-        };
-        document.body.appendChild(script);
+        return new Promise((resolve, reject) => {
+            SysLog.log('DEBUG', `Installing app from ${folderPath}...`, 'WebOS');
+            const ts = Date.now();
+            const script = document.createElement('script');
+            script.src = `${folderPath}/main.js?v=${ts}`;
+            script.async = false;
+            script.onload = () => resolve();
+            script.onerror = () => {
+                const errMsg = `Failed to load app from ${folderPath}`;
+                Notifications.show({ title: window.I18n.t('system.notification_title'), message: errMsg, type: 'error' });
+                reject(new Error(errMsg));
+            };
+            document.body.appendChild(script);
+        });
     },
     registerApp(appDef) {
         SysLog.log('DEBUG', `Registering App: ${appDef.id}`, 'WebOS');
@@ -39,10 +40,13 @@ window.WebOS = {
             this.createDesktopIcon(state.apps[appDef.id]);
         }
     },
-    async launchApp(appId, params = {}) {
-        if (state.isLocked) return;
+    async launchApp(appId, params = {}, internal = false) {
+        if (state.isLocked && !internal) return;
         const app = state.apps[appId];
-        if (!app) return;
+        if (!app) {
+            SysLog.log('WARN', `Launch failed: App ${appId} not registered`, 'WebOS');
+            return;
+        }
         SysLog.log('INFO', `Requesting launch: ${app.name} (${appId})`);
         if (!app.allowMultiple) {
             const existingProc = state.processes.find(p => p.appId === appId);
@@ -376,6 +380,7 @@ window.WebOS = {
                 return acc;
             }, []);
             const sessionData = JSON.stringify({ openApps });
+            SysLog.log('DEBUG', `Saving session: ${openApps.length} apps`, 'WebOS');
             await VFS.write('/sys/session.json', sessionData, 'system');
             await VFS.saveImmediate();
         }, this.CONST.UI.SAVE_DELAY);
@@ -384,11 +389,15 @@ window.WebOS = {
         let data = { openApps: [] };
         try {
             const raw = await VFS.read('/sys/session.json', 'system');
+            SysLog.log('DEBUG', `Restoring session from VFS: ${raw ? 'found' : 'empty'}`, 'WebOS');
             if (raw) data = JSON.parse(raw);
             else {
                 data = (await PersistenceManager.get(state.persistenceKey)) || { openApps: [] };
+                SysLog.log('DEBUG', `Restoring session from Legacy: ${data.openApps?.length || 0} apps`, 'WebOS');
             }
-        } catch (e) { }
+        } catch (e) {
+            SysLog.log('ERR', `Restore failed: ${e.message}`, 'WebOS');
+        }
         if (deferredData) {
             data.openApps = [...(data.openApps || []), ...deferredData];
             const seen = new Set();
@@ -403,7 +412,8 @@ window.WebOS = {
             for (const appData of data.openApps) {
                 if (!appData.appId) continue;
                 if (state.processes.find(p => p.appId === appData.appId)) continue;
-                await WebOS.launchApp(appData.appId, appData.params || {});
+                SysLog.log('INFO', `Auto-restoring: ${appData.appId}`, 'WebOS');
+                await WebOS.launchApp(appData.appId, appData.params || {}, true);
                 const win = state.windows.find(w => w.appId === appData.appId && state.processes.some(p => p.windowId === w.id && p.appId === appData.appId));
                 if (win && appData.window) {
                     Object.assign(win.element.style, appData.window);
@@ -413,11 +423,18 @@ window.WebOS = {
             }
         }
         try {
-            const startup = JSON.parse(await VFS.read('/sys/startup.json', 'system') || '[]');
+            const startupRaw = await VFS.read('/sys/startup.json', 'system');
+            const startup = JSON.parse(startupRaw || '[]');
+            SysLog.log('DEBUG', `Autostart apps: ${startup.length}`, 'WebOS');
             for (const appId of startup) {
-                if (!state.processes.find(p => p.appId === appId)) await WebOS.launchApp(appId);
+                if (!state.processes.find(p => p.appId === appId)) {
+                    SysLog.log('INFO', `Starting autostart app: ${appId}`, 'WebOS');
+                    await WebOS.launchApp(appId, {}, true);
+                }
             }
-        } catch (e) { }
+        } catch (e) {
+            SysLog.log('ERR', `Autostart failed: ${e.message}`, 'WebOS');
+        }
         this.updateTaskbar();
     },
     async flushDeferredRestoration() {
