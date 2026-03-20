@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "taskmanager",
     get name() { return window.I18n.t('taskmanager.title'); },
     icon: "📊",
-    version: "4.5.3",
+    version: "4.8.0",
     manifest: {
         get name() { return window.I18n.t('taskmanager.title'); },
         icon: "📊",

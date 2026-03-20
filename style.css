@@ -32,10 +32,10 @@
     
     --glass-bg: rgba(255, 255, 255, 0.12);
     --glass-bg-hover: rgba(255, 255, 255, 0.08);
-    --glass-bg-accent: rgba(59, 130, 246, 0.15);
+    --glass-bg-accent: rgba(var(--accent-rgb), 0.15);
     --glass-border: rgba(255, 255, 255, 0.18);
     --glass-border-hover: rgba(255, 255, 255, 0.2);
-    --glass-border-accent: rgba(59, 130, 246, 0.4);
+    --glass-border-accent: rgba(var(--accent-rgb), 0.4);
     --glass-blur: blur(40px) saturate(200%);
     
     --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.1), 0 1px 4px -1px rgba(0, 0, 0, 0.06);
@@ -74,6 +74,9 @@
     --z-shutdown: 99999;
     --shadow-premium: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
     --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    --win-shadow-x: 0px;
+    --win-shadow-y: 10px;
+    --win-shadow-blur: 40px;
 }
 [data-theme="dark"] {
     --glass-bg: rgba(15, 23, 42, 0.75);
@@ -133,23 +136,40 @@ body {
     text-align: center;
     cursor: pointer;
     pointer-events: auto;
-    transition: transform var(--transition-fast), background-color var(--transition-fast);
-    border-radius: var(--radius-md);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-radius: var(--radius-lg);
     padding: 10px;
-    width: 80px;
-    height: 100px;
+    width: 90px;
+    height: 105px;
     position: absolute;
     user-select: none;
     z-index: var(--z-desktop-icon);
+    color: white;
+    transform-style: preserve-3d;
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+}
+.desktop-icon.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
 }
 .desktop-icon:hover {
-    background: var(--glass-bg-hover);
-    transform: translateY(-3px) scale(1.02);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transform: scale(1.1) rotateX(10deg) rotateY(-10deg) translateZ(10px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
 }
 .desktop-icon.selected {
     background: var(--glass-bg-accent);
     border: 1px solid var(--glass-border-accent);
-    box-shadow: 0 0 10px var(--glass-border-accent);
+    box-shadow: 0 0 15px var(--glass-border-accent);
+}
+.desktop-icon.dragging {
+    transition: none !important;
+    z-index: 9999 !important;
+    transform: scale(1.05) translateZ(20px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    cursor: grabbing;
 }
 .desktop-icon:focus-visible {
     outline: 2px solid var(--accent);
@@ -165,19 +185,20 @@ body {
     transform: scale(1.1);
 }
 .desktop-icon .label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
-    max-width: 100%;
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-    background: rgba(0, 0, 0, 0.4);
-    padding: 2px 8px;
-    border-radius: 12px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.65);
+    padding: 3px 10px;
+    border-radius: 20px;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    border: 1px solid var(--glass-border);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 5px;
 }
 .window {
     position: absolute;
@@ -202,9 +223,15 @@ body {
     filter: saturate(0.8) brightness(0.9);
 }
 .window.focused {
-    box-shadow: var(--window-shadow-focused);
-    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: var(--win-shadow-x) var(--win-shadow-y) var(--win-shadow-blur) rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(var(--accent-rgb), 0.3);
+    border-color: rgba(var(--accent-rgb), 0.5);
     z-index: var(--z-window-focus);
+    animation: focus-entry 0.3s var(--ease-out-back);
+}
+@keyframes focus-entry {
+    from { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.005); filter: brightness(1.1); }
+    to { transform: scale(1); filter: brightness(1); }
 }
 .window.window-closing {
     animation: window-disappear var(--transition-fast) forwards;
@@ -378,13 +405,15 @@ body {
     cursor: pointer;
     font-size: 13px;
     font-weight: 600;
-    transition: transform var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     position: relative;
+    user-select: none;
 }
 .taskbar-item:hover {
     background: var(--glass-bg-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 .taskbar-item:active {
     transform: translateY(0) scale(0.95);
@@ -392,7 +421,7 @@ body {
 .taskbar-item.active {
     background: rgba(255, 255, 255, 0.18);
     border-color: var(--accent);
-    box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.2);
+    box-shadow: inset 0 0 10px rgba(var(--accent-rgb), 0.2);
 }
 .taskbar-item.active::after {
     content: '';
@@ -483,7 +512,7 @@ textarea.modern {
 .toast-success::before { background: #10b981; }
 .toast-error::before { background: #ef4444; }
 .toast-warning::before { background: #f59e0b; }
-.toast-info::before { background: #3b82f6; }
+.toast-info::before { background: var(--accent); }
 @keyframes toast-slide {
     from {
         transform: translateX(120%) scale(0.9);
@@ -700,7 +729,7 @@ textarea.modern {
 .lock-btn {
     padding: 14px 40px;
     background: var(--accent-color);
-    background: linear-gradient(135deg, var(--accent-color) 0%, #2563eb 100%);
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-color-dark) 100%);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 30px;
@@ -708,18 +737,18 @@ textarea.modern {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 10px 25px -5px rgba(var(--accent-rgb), 0.4);
     letter-spacing: 0.5px;
     backdrop-filter: blur(5px);
 }
 .lock-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.6);
+    box-shadow: 0 15px 30px -5px rgba(var(--accent-rgb), 0.6);
     filter: brightness(1.1);
 }
 .lock-btn:active {
     transform: translateY(1px);
-    box-shadow: 0 5px 15px -5px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 5px 15px -5px rgba(var(--accent-rgb), 0.4);
 }
 @keyframes lock-panel-in {
     from {
@@ -794,6 +823,22 @@ body.system-locked #desktop {
         transform: scale(1) translateY(0);
     }
 }
+.desktop-icons {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 50px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 15px;
+    pointer-events: none;
+    z-index: var(--z-desktop);
+    perspective: 1000px;
+}
 .alt-tab-item {
     width: 100px;
     height: 120px;
@@ -806,35 +851,6 @@ body.system-locked #desktop {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     border: 2px solid transparent;
-}
-.desktop-icon {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 90px;
-    height: 90px;
-    padding: 5px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    color: white;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-    border: 1px solid transparent;
-    opacity: 0;
-    transform: translateY(10px);
-    user-select: none;
-}
-.desktop-icon.dragging {
-    transition: none !important;
-    z-index: 1000 !important;
-    transform: scale(1.05);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-    cursor: grabbing;
-}
-.desktop-icon.show {
-    opacity: 1;
-    transform: translateY(0);
 }
 .alt-tab-item.selected {
     background: rgba(255, 255, 255, 0.15);
@@ -1185,7 +1201,7 @@ body.system-locked #desktop {
     background: rgba(255, 255, 255, 0.1);
 }
 .breadcrumb-item.active {
-    background: rgba(59, 130, 246, 0.2);
+    background: rgba(var(--accent-rgb), 0.2);
     color: var(--accent);
 }
 

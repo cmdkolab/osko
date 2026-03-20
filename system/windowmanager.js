@@ -45,6 +45,7 @@
             this.makeDraggable(winEl);
             this.makeResizable(winEl);
             this.setupFocus(winEl);
+            this.updateDynamicShadow(winEl);
             this.focus(id);
             winEl.querySelector('.close').onclick = (e) => { e.stopPropagation(); WebOS.killApp(appId); };
             winEl.querySelector('.minimize').onclick = (e) => { e.stopPropagation(); this.minimize(id); };
@@ -215,6 +216,7 @@
                                 el.style.left = (currentX - (newWidth * ratio)) + 'px';
                             }
                             updatePosition();
+                            this.updateDynamicShadow(el);
                         });
                     }
                 };
@@ -364,5 +366,32 @@
                 document.addEventListener('mousemove', onMouseMove);
                 document.addEventListener('mouseup', onMouseUp);
             });
+        },
+        updateSnapPreview(preview, x, y, vw, vh, edge, corner, th) {
+            if (edge) { // This condition seems to be a placeholder, as 'edge' is a number.
+                // The original snap preview logic is more complex and based on currentX/currentY
+                // This method as provided in the instruction does not fully replace the existing logic.
+                // Assuming this is a new helper for a different snapping mechanism or a simplified version.
+                preview.style.display = 'block';
+                preview.style.left = x + 'px';
+                preview.style.top = y + 'px';
+                preview.style.width = vw + 'px';
+                preview.style.height = vh + 'px';
+            } else {
+                preview.style.display = 'none';
+            }
+        },
+        updateDynamicShadow(el) {
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const rect = el.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const offX = (centerX - vw / 2) / 15;
+            const offY = (centerY - vh / 2) / 15 + 10;
+            const blur = 30 + Math.abs(offY) / 2;
+            el.style.setProperty('--win-shadow-x', `${offX}px`);
+            el.style.setProperty('--win-shadow-y', `${offY}px`);
+            el.style.setProperty('--win-shadow-blur', `${blur}px`);
         }
     };

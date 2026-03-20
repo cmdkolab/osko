@@ -11,7 +11,8 @@
                     'Videos': {},
                     'settings': {
                         'wallpaper.txt': { content: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)', owner: 'system', size: 48, mtime: Date.now() },
-                        'theme.txt': { content: 'default', owner: 'system', size: 7, mtime: Date.now() }
+                        'theme.txt': { content: 'default', owner: 'system', size: 7, mtime: Date.now() },
+                        'accent.txt': { content: '#3b82f6', owner: 'system', size: 7, mtime: Date.now() }
                     }
                 }
             },
@@ -279,7 +280,14 @@
                     .map(name => {
                         const child = node[name];
                         const isFile = typeof child === 'string' || (child && child.content !== undefined);
-                        return { name, type: isFile ? 'file' : 'dir' };
+                        return {
+                            name,
+                            type: isFile ? 'file' : 'dir',
+                            size: child.size || 0,
+                            mtime: child.mtime || Date.now(),
+                            owner: child.owner || 'system',
+                            mode: child.mode || (isFile ? 0o644 : 0o755)
+                        };
                     });
             }
             return null;

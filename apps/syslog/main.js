@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "syslog",
     get name() { return window.I18n.t('syslog.title'); },
     icon: "📜",
-    version: "4.5.2",
+    version: "4.8.0",
     manifest: {
         get name() { return window.I18n.t('syslog.title'); },
         icon: "📜",
@@ -95,54 +95,95 @@ WebOS.registerApp({
         api.system.subscribe('vfs:changed', this._vfsWatcher);
     },
     async refresh() {
-        if (!this.viewer) return;
-        const logs = await this.api.fs.read('/var/log/syslog');
-        if (!logs) {
-            this.viewer.innerHTML = `<div class="log-empty">${window.I18n.t('syslog.no_logs')}</div>`;
-            this._lastLineCount = 0;
-            return;
+        if (!this.viewer || this._refreshing) return;
+        this._refreshing = true;
+        try {
+            const logs = await this.api.fs.read('/var/log/syslog');
+            if (!logs) {
+                this.viewer.innerHTML = `<div class="log-empty">${window.I18n.t('syslog.no_logs')}</div>`;
+                this._lastLineCount = 0;
+                this._refreshing = false;
+                return;
+            }
+            const lines = logs.split('\n').filter(l => l.trim());
+            const totalLines = lines.length;
+            if (this._lastLineCount === totalLines && !this._forceRefresh) {
+                this._refreshing = false;
+                return;
+            }
+            const isSearch = !!this.searchQuery || this.filter !== 'ALL';
+            const sourceSelect = this.container.querySelector('.source-select');
+            const sourceFilter = sourceSelect ? sourceSelect.value : 'ALL';
+            if (isSearch || sourceFilter !== 'ALL' || this._forceRefresh) {
+                this.viewer.innerHTML = '';
+                this._lastLineCount = 0;
+                this._forceRefresh = false;
+            }
+            const startIndex = this._lastLineCount || 0;
+            const fragment = document.createDocumentFragment();
+            const renderLines = lines.slice(Math.max(startIndex, totalLines - 2000));
+            requestAnimationFrame(() => {
+                renderLines.forEach(line => {
+                    const match = line.match(/^\[(.*?)\] \[(.*?)\] \[([A-Z]+)\] \[(.*?)\] (.*)$/);
+                    if (!match) return;
+                    const [_, time, session, level, source, message] = match;
+                    if (this.filter !== 'ALL' && level !== this.filter) return;
+                    if (sourceFilter !== 'ALL' && source !== sourceFilter) return;
+                    if (this.searchQuery && !line.toLowerCase().includes(this.searchQuery)) return;
+                    const entry = document.createElement('div');
+                    entry.className = `log-entry level-${level.toLowerCase()} reveal`;
+                    entry.innerHTML = `
+                        <span class="log-time">${time.includes('T') ? time.split('T')[1].split('.')[0] : time}</span>
+                        <span class="log-session">${session.slice(0, 8)}</span>
+                        <span class="log-level">${level}</span>
+                        <span class="log-source">${source}</span>
+                        <span class="log-msg">${this.highlight(message)}</span>
+                    `;
+                    entry.onclick = () => {
+                        this.api.system.setClipboard(line);
+                        this.api.notifications.show({ title: 'SysLog', message: window.I18n.t('syslog.copied_to_clipboard') });
+                    };
+                    fragment.appendChild(entry);
+                });
+                this.viewer.appendChild(fragment);
+                this._lastLineCount = totalLines;
+                const wasAtBottom = this.viewer.scrollHeight - this.viewer.scrollTop - this.viewer.clientHeight < 50;
+                if (this.autoScroll && (wasAtBottom || startIndex === 0)) {
+                    this.viewer.scrollTop = this.viewer.scrollHeight;
+                }
+                const status = this.container.querySelector('.log-count');
+                if (status) status.innerText = `${totalLines} ${window.I18n.t('syslog.lines')}`;
+                this._updateSources(lines);
+                this._refreshing = false;
+            });
+        } catch (e) {
+            this._refreshing = false;
         }
-        const lines = logs.split('\n').filter(l => l.trim());
-        const totalLines = lines.length;
-        if (this._lastLineCount === totalLines && !this._forceRefresh) return;
-        const isSearch = !!this.searchQuery || this.filter !== 'ALL';
+    },
+    _updateSources(lines) {
         const sourceSelect = this.container.querySelector('.source-select');
-        const sourceFilter = sourceSelect ? sourceSelect.value : 'ALL';
-        if (isSearch || sourceFilter !== 'ALL' || this._forceRefresh) {
-            this.viewer.innerHTML = '';
-            this._lastLineCount = 0;
-            this._forceRefresh = false;
-        }
-        const startIndex = this._lastLineCount || 0;
-        const fragment = document.createDocumentFragment();
-        const renderLines = lines.slice(Math.max(startIndex, totalLines - 2000));
-        renderLines.forEach(line => {
-            const match = line.match(/^\[(.*?)\] \[(.*?)\] \[([A-Z]+)\] \[(.*?)\] (.*)$/);
-            if (!match) return;
-            const [_, time, session, level, source, message] = match;
-            if (this.filter !== 'ALL' && level !== this.filter) return;
-            if (sourceFilter !== 'ALL' && source !== sourceFilter) return;
-            if (this.searchQuery && !line.toLowerCase().includes(this.searchQuery)) return;
-            const entry = document.createElement('div');
-            entry.className = `log-entry level-${level.toLowerCase()} reveal`;
-            entry.innerHTML = `
-                <span class="log-time">${time.includes('T') ? time.split('T')[1].split('.')[0] : time}</span>
-                <span class="log-session">${session.slice(0, 8)}</span>
-                <span class="log-level">${level}</span>
-                <span class="log-source">${source}</span>
-                <span class="log-msg">${this.highlight(message)}</span>
-            `;
-            entry.onclick = () => {
-                this.api.system.setClipboard(line);
-                this.api.notifications.show({ title: 'SysLog', message: window.I18n.t('syslog.copied_to_clipboard') });
-            };
-            fragment.appendChild(entry);
+        if (!sourceSelect) return;
+        const currentSources = new Set();
+        lines.forEach(line => {
+            const match = line.match(/\[(.*?)\] \[(.*?)\] \[([A-Z]+)\] \[(.*?)\]/);
+            if (match && match[4]) currentSources.add(match[4]);
         });
-        this.viewer.appendChild(fragment);
-        this._lastLineCount = totalLines;
-        if (this.autoScroll) this.viewer.scrollTop = this.viewer.scrollHeight;
-        const status = this.container.querySelector('.log-count');
-        if (status) status.innerText = `${totalLines} ${window.I18n.t('syslog.lines')}`;
+        const existing = Array.from(sourceSelect.options).map(o => o.value);
+        let changed = false;
+        currentSources.forEach(src => {
+            if (!existing.includes(src)) {
+                const opt = document.createElement('option');
+                opt.value = src;
+                opt.innerText = src;
+                sourceSelect.appendChild(opt);
+                changed = true;
+            }
+        });
+        if (changed) {
+            const sorted = Array.from(sourceSelect.options).sort((a,b) => a.value === 'ALL' ? -1 : a.innerText.localeCompare(b.innerText));
+            sourceSelect.innerHTML = '';
+            sorted.forEach(o => sourceSelect.appendChild(o));
+        }
     },
     highlight(msg) {
         if (!this.searchQuery) return msg;

@@ -98,27 +98,93 @@
 .explorer-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 20px;
+    gap: 12px;
+    width: 100%;
     outline: none;
     transform-style: preserve-3d;
+}
+.explorer-grid.view-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.explorer-list-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 15px;
+    padding: 8px 12px;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    opacity: 0.5;
+    border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 6px;
+    position: sticky;
+    top: 0;
+    background: var(--glass-bg);
+    z-index: 10;
+}
+.explorer-list-header > div {
+    display: flex;
+    align-items: center;
 }
 .explorer-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 16px 10px;
-    border-radius: var(--radius-lg);
+    justify-content: center;
+    padding: 10px;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    user-select: none;
     border: 1px solid transparent;
-    transform-style: preserve-3d;
-    backface-visibility: hidden;
 }
 .explorer-item:hover {
     background: var(--glass-bg-hover);
-    transform: translateY(-8px) rotateX(4deg) rotateY(-2deg);
-    border-color: var(--glass-border-hover);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: var(--glass-border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.explorer-item.item-list {
+    flex-direction: row;
+    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 15px;
+    padding: 8px 12px;
+    width: 100%;
+    align-items: center;
+    border-radius: 8px;
+}
+.explorer-item.item-list:hover {
+    transform: translateX(4px);
+    background: var(--glass-bg-hover);
+}
+.explorer-item.item-list .item-icon {
+    font-size: 20px;
+    margin-bottom: 0;
+    margin-right: 12px;
+    width: 24px;
+    display: flex;
+    justify-content: center;
+    filter: none; /* Reset filter */
+    transform: none; /* Reset transform */
+}
+.explorer-item.item-list .item-name {
+    margin-top: 0;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transform: none; /* Reset transform */
+}
+.explorer-item.item-list .item-type,
+.explorer-item.item-list .item-size {
+    font-size: 12px;
+    opacity: 0.7;
+    white-space: nowrap;
 }
 .explorer-item:active {
     transform: translateY(-2px) scale(0.98);

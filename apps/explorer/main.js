@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "explorer",
     get name() { return window.I18n.t('explorer.title'); },
     icon: "📂",
-    version: "4.5.3",
+    version: "4.8.0",
     manifest: {
         get name() { return window.I18n.t('explorer.title'); },
         icon: "📂",
@@ -18,8 +18,8 @@ WebOS.registerApp({
         this.selectedItem = null;
         this.selectedFiles = new Set();
         this.clipboard = null;
+        this.viewMode = await api.system.storage.get('explorer:view') || 'grid';
         this.sortBy = await api.system.storage.get('explorer:sort') || 'name';
-        this.sortOrder = 1;
         const render = async () => {
             if (!container.querySelector('.explorer-toolbar')) {
                 container.innerHTML = `
@@ -29,6 +29,7 @@ WebOS.registerApp({
                             <button class="sys-btn back-btn" title="${window.I18n.t('explorer.back')}">⬅</button>
                             <div class="explorer-breadcrumbs"></div>
                             <button class="sys-btn sort-btn" title="${window.I18n.t('explorer.sort')}">↕️</button>
+                            <button class="sys-btn view-btn" title="${window.I18n.t('explorer.view')}">${this.viewMode === 'grid' ? '☰' : '▦'}</button>
                             <input type="text" class="explorer-search" placeholder="${window.I18n.t('system.search_placeholder')}">
                         </div>
                         <div class="explorer-main">
@@ -65,10 +66,18 @@ WebOS.registerApp({
                 { label: `${window.I18n.t('explorer.sort_date')} ${this.sortBy === 'date' ? '✓' : ''}`, action: async () => { this.sortBy = 'date'; await this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } }
             ]);
         };
+        container.querySelector('.view-btn').onclick = async () => {
+            this.viewMode = this.viewMode === 'grid' ? 'list' : 'grid';
+            await this.api.system.storage.set('explorer:view', this.viewMode);
+            this.render(container);
+        };
         const search = container.querySelector('.explorer-search');
         search.oninput = (e) => {
-            this.searchQuery = e.target.value.toLowerCase();
-            this.refresh(container);
+            if (this._searchTimer) clearTimeout(this._searchTimer);
+            this._searchTimer = setTimeout(() => {
+                this.searchQuery = e.target.value.toLowerCase();
+                this.refresh(container);
+            }, 300);
         };
         this._vfsWatcher = (e) => {
             if (this.api.fs.dirname(e?.data?.path) === this.currentPath || e?.data?.path === this.currentPath) {
@@ -94,7 +103,18 @@ WebOS.registerApp({
             if (sort === 'date') return (b.mtime || 0) - (a.mtime || 0);
             return a.name.localeCompare(b.name, undefined, { numeric: true });
         });
+        grid.classList.toggle('view-list', this.viewMode === 'list');
         grid.innerHTML = items.length ? '' : `<div class="explorer-empty">${window.I18n.t('explorer.empty')}</div>`;
+        if (this.viewMode === 'list' && items.length) {
+            const header = document.createElement('div');
+            header.className = 'explorer-list-header';
+            header.innerHTML = `
+                <div class="header-name">${window.I18n.t('explorer.prop_name')}</div>
+                <div class="header-type">${window.I18n.t('explorer.prop_type')}</div>
+                <div class="header-size">${window.I18n.t('explorer.prop_size')}</div>
+            `;
+            grid.appendChild(header);
+        }
         grid.oncontextmenu = (e) => {
             if (e.target !== grid && !e.target.classList.contains('explorer-empty')) return;
             e.preventDefault();
@@ -114,10 +134,21 @@ WebOS.registerApp({
         const frag = document.createDocumentFragment();
         items.forEach(item => {
             const el = document.createElement('div');
-            el.className = 'explorer-item reveal';
+            el.className = `explorer-item reveal ${this.viewMode === 'list' ? 'item-list' : ''}`;
             el.tabIndex = 0;
             const icon = item.type === 'dir' ? '📁' : this.getIcon(item.name);
-            el.innerHTML = `<div class="item-icon">${icon}</div><div class="item-name">${item.name}</div>`;
+            if (this.viewMode === 'list') {
+                const size = item.type === 'dir' ? '---' : this.formatSize(item.size);
+                const type = item.type === 'dir' ? (window.I18n.t('system.type_dir') || 'Folder') : (window.I18n.t('system.type_file') || 'File');
+                el.innerHTML = `
+                    <div class="item-icon">${icon}</div>
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-type">${type}</div>
+                    <div class="item-size">${size}</div>
+                `;
+            } else {
+                el.innerHTML = `<div class="item-icon">${icon}</div><div class="item-name">${item.name}</div>`;
+            }
             el.onclick = () => {
                 if (item.type === 'dir') {
                     this.currentPath = this.api.fs.join(this.currentPath, item.name);
@@ -143,6 +174,12 @@ WebOS.registerApp({
         });
         grid.appendChild(frag);
         status.innerText = `${items.length} ${window.I18n.t('explorer.items')}`;
+    },
+    formatSize(bytes) {
+        if (!bytes) return '0 B';
+        if (bytes > 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        if (bytes > 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return bytes + ' B';
     },
     updateBreadcrumbs(el) {
         el.innerHTML = '';
@@ -178,15 +215,16 @@ WebOS.registerApp({
         let destPath = this.api.fs.join(this.currentPath, destName);
         if (await this.api.fs.exists(destPath)) {
             const conflictChoice = await new Promise(resolve => {
-                WebOS.ui.showChoiceDialog({
+                this.api.ui.showDialog({
                     title: window.I18n.t('explorer.title'),
                     message: window.I18n.t('explorer.conflict_msg', destName),
+                    type: 'choice',
                     choices: [
-                        { label: window.I18n.t('explorer.conflict_overwrite'), value: 'overwrite', type: 'danger' },
-                        { label: window.I18n.t('explorer.conflict_keep_both'), value: 'keep', type: 'primary' },
+                        { label: window.I18n.t('explorer.conflict_overwrite'), value: 'overwrite', class: 'danger' },
+                        { label: window.I18n.t('explorer.conflict_keep_both'), value: 'keep' },
                         { label: window.I18n.t('dialog.cancel'), value: 'cancel' }
                     ],
-                    callback: resolve
+                    onChoice: resolve
                 });
             });
             if (conflictChoice === 'cancel') return;
@@ -266,7 +304,10 @@ WebOS.registerApp({
                 <div class="prop-row"><b>${window.I18n.t('explorer.prop_mtime') || 'Modified'}:</b> <span>${date}</span></div>
             </div>
         `;
-        this.api.ui.showDialog({ title: item.name || 'Properties', content });
+        this.api.ui.showDialog({ 
+            title: item.name || window.I18n.t('explorer.properties'), 
+            message: content 
+        });
     },
     renameFile(item, container) {
         this.api.ui.prompt(window.I18n.t('explorer.prompt_rename', item.name), item.name, async (name) => {
