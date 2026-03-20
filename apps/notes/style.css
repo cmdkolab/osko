@@ -34,14 +34,14 @@
     transition: var(--transition-fast);
     font-size: 16px;
 }
-.notes-app .sys-btn:hover { 
-    background: var(--glass-bg-hover); 
-    transform: translateY(-2px); 
+.notes-app .sys-btn:hover {
+    background: var(--glass-bg-hover);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
 }
-.notes-app .sys-btn.active { 
-    background: var(--accent); 
-    color: #fff; 
+.notes-app .sys-btn.active {
+    background: var(--accent);
+    color: #fff;
     border-color: var(--accent-hover);
 }
 .notes-status {
@@ -84,8 +84,8 @@
 }
 .notes-editor::-webkit-scrollbar { width: 10px; }
 .notes-editor::-webkit-scrollbar-track { background: transparent; }
-.notes-editor::-webkit-scrollbar-thumb { 
-    background: rgba(255, 255, 255, 0.08); 
+.notes-editor::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 20px;
     border: 2px solid transparent;
     background-clip: content-box;

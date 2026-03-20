@@ -31,24 +31,11 @@
                 };
                 img.src = val;
             } else {
-                const safeVal = val.replace(/[;{}]/g, ''); 
+                const safeVal = val.replace(/[;{}]/g, '');
                 setStyle(safeVal);
                 await VFS.write('/home/user/settings/wallpaper.txt', safeVal, 'system');
                 await VFS.saveImmediate();
             }
-        },
-        async setAccentColor(hex) {
-            if (!hex || !/^#[0-9A-F]{6}$/i.test(hex)) return;
-            this.applyAccent(hex);
-            await VFS.write('/home/user/settings/accent.txt', hex, 'system');
-            await VFS.saveImmediate();
-        },
-        applyAccent(hex) {
-            document.documentElement.style.setProperty('--accent', hex);
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
         },
         async init() {
             const savedTheme = await VFS.read('/home/user/settings/theme.txt', 'system');
@@ -65,10 +52,6 @@
             const savedWall = await VFS.read('/home/user/settings/wallpaper.txt', 'system');
             if (savedWall) {
                 this.setWallpaper(savedWall);
-            }
-            const savedAccent = await VFS.read('/home/user/settings/accent.txt', 'system');
-            if (savedAccent) {
-                this.applyAccent(savedAccent);
             }
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
                 if (!this._manualTheme) this.applyAutoTheme();

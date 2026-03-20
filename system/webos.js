@@ -102,7 +102,7 @@ window.WebOS = {
                 message: window.I18n.t('system.launch_error', app.name),
                 type: 'error'
             });
-            await this.killApp(appId, pid); 
+            await this.killApp(appId, pid);
             return;
         }
         this.updateTaskbar();

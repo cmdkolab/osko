@@ -32,7 +32,6 @@ WebOS.registerApp({
                 const rawAudio = await api.fs.read('/home/user/settings/audio.json');
                 if (rawAudio) currentSound = JSON.parse(rawAudio).enabled ? 'on' : 'off';
             } catch (e) {}
-            const currentAccent = (await api.fs.read('/home/user/settings/accent.txt')) || '#3b82f6';
             container.innerHTML = `
                 <div class="settings-app">
                     <div class="settings-section">
@@ -60,16 +59,6 @@ WebOS.registerApp({
                         <div class="toggle-group">
                             <button class="sound-btn ${currentSound === 'on' ? 'active' : ''}" data-sound="on">${window.I18n.t('settings.sound_on')}</button>
                             <button class="sound-btn ${currentSound === 'off' ? 'active' : ''}" data-sound="off">${window.I18n.t('settings.sound_off')}</button>
-                        </div>
-                    </div>
-                    <div class="settings-section">
-                        <h3>${window.I18n.t('settings.accent_color')}</h3>
-                        <div class="accent-picker-container">
-                            <div class="accent-input-wrapper">
-                                <input type="color" class="accent-input" value="${currentAccent}">
-                                <span class="accent-preview-hex">${currentAccent}</span>
-                            </div>
-                            <button class="accent-reset-btn">${window.I18n.t('settings.accent_reset')}</button>
                         </div>
                     </div>
                     <div class="settings-section">
@@ -118,29 +107,6 @@ WebOS.registerApp({
                 if (isEnabled) { try { AudioEngine.play('click'); } catch(e){} }
             };
         });
-        const accentInput = container.querySelector('.accent-input');
-        if (accentInput) {
-            accentInput.oninput = (e) => {
-                const color = e.target.value;
-                container.querySelector('.accent-preview-hex').innerText = color;
-                ThemeEngine.applyAccent(color);
-            };
-            accentInput.onchange = async (e) => {
-                const color = e.target.value;
-                await ThemeEngine.setAccentColor(color);
-                api.notifications.show({ title: window.I18n.t('settings.accent_color'), message: window.I18n.t('settings.theme_changed') });
-            };
-        }
-        const accentReset = container.querySelector('.accent-reset-btn');
-        if (accentReset) {
-            accentReset.onclick = async () => {
-                const defaultColor = '#3b82f6';
-                if (accentInput) accentInput.value = defaultColor;
-                container.querySelector('.accent-preview-hex').innerText = defaultColor;
-                await ThemeEngine.setAccentColor(defaultColor);
-                api.notifications.show({ title: window.I18n.t('settings.accent_color'), message: window.I18n.t('settings.accent_reset') });
-            };
-        }
         const resetBtn = container.querySelector('.reset-btn');
         if (resetBtn) {
             resetBtn.onclick = () => {
@@ -211,12 +177,5 @@ WebOS.registerApp({
             const uptimeEl = container.querySelector('.sys-uptime');
             if (uptimeEl) uptimeEl.innerText = api.system.getUptime();
         }, 1000);
-    },
-    _applyAccent(hex) {
-        document.documentElement.style.setProperty('--accent', hex);
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
     }
 });

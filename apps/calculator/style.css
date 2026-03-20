@@ -52,7 +52,7 @@
 .calc-btn {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
-    border-radius: 50%; 
+    border-radius: 50%;
     aspect-ratio: 1;
     color: #fff;
     font-size: 20px;

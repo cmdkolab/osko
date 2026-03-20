@@ -2,9 +2,9 @@
         ctx: null,
         enabled: true,
         async init() {
-            try { 
-                this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
-            } catch (e) { 
+            try {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
                 SysLog.log('ERR', 'Web Audio API not supported', 'AudioEngine');
             }
             try {

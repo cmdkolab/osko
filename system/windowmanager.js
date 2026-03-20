@@ -369,9 +369,6 @@
         },
         updateSnapPreview(preview, x, y, vw, vh, edge, corner, th) {
             if (edge) { // This condition seems to be a placeholder, as 'edge' is a number.
-                // The original snap preview logic is more complex and based on currentX/currentY
-                // This method as provided in the instruction does not fully replace the existing logic.
-                // Assuming this is a new helper for a different snapping mechanism or a simplified version.
                 preview.style.display = 'block';
                 preview.style.left = x + 'px';
                 preview.style.top = y + 'px';

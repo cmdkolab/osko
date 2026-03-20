@@ -16,10 +16,10 @@ window.PersistenceManager = {
         }
     },
     async remove(key) {
-        try { 
-            await DBWrapper.remove(this.PREFIX + key); 
-        } catch (e) { 
-            console.error("[Kernel] Removal Error:", e); 
+        try {
+            await DBWrapper.remove(this.PREFIX + key);
+        } catch (e) {
+            console.error("[Kernel] Removal Error:", e);
             SysLog.log('ERR', `Removal Failure: ${e.message}`, 'PersistenceManager');
         }
     },

@@ -38,20 +38,20 @@
     padding: 2px 6px;
     border-radius: 4px;
 }
-.breadcrumb-item:hover { 
-    opacity: 1; 
-    color: var(--accent); 
+.breadcrumb-item:hover {
+    opacity: 1;
+    color: var(--accent);
     background: rgba(255, 255, 255, 0.05);
 }
-.breadcrumb-item.active { 
-    opacity: 1; 
-    font-weight: 700; 
-    pointer-events: none; 
+.breadcrumb-item.active {
+    opacity: 1;
+    font-weight: 700;
+    pointer-events: none;
     color: var(--text-color);
 }
-.breadcrumb-sep { 
-    opacity: 0.4; 
-    font-size: 11px; 
+.breadcrumb-sep {
+    opacity: 0.4;
+    font-size: 11px;
     font-weight: 800;
 }
 .explorer-app .sys-btn {
@@ -67,9 +67,9 @@
     cursor: pointer;
     transition: var(--transition-fast);
 }
-.explorer-app .sys-btn:hover { 
-    background: var(--glass-bg-hover); 
-    transform: translateY(-2px); 
+.explorer-app .sys-btn:hover {
+    background: var(--glass-bg-hover);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
     border-color: var(--glass-border-hover);
 }
@@ -83,9 +83,9 @@
     width: 140px;
     transition: var(--transition-normal);
 }
-.explorer-search:focus { 
-    width: 220px; 
-    outline: none; 
+.explorer-search:focus {
+    width: 220px;
+    outline: none;
     border-color: var(--accent);
     background: rgba(0, 0, 0, 0.4);
 }
@@ -202,8 +202,8 @@
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     transform: translateZ(20px);
 }
-.explorer-item:hover .item-icon { 
-    transform: translateZ(40px) scale(1.15); 
+.explorer-item:hover .item-icon {
+    transform: translateZ(40px) scale(1.15);
 }
 .item-name {
     font-size: 12px;

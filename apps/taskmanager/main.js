@@ -89,8 +89,8 @@ WebOS.registerApp({
         const refresh = async () => {
             const processes = await api.system.getProcesses();
             const filterQuery = this.filter;
-            const filtered = processes.filter(p => 
-                (p.name || p.appId).toLowerCase().includes(filterQuery) || 
+            const filtered = processes.filter(p =>
+                (p.name || p.appId).toLowerCase().includes(filterQuery) ||
                 String(p.pid).includes(filterQuery)
             );
             const activePids = new Set(filtered.map(p => p.pid));

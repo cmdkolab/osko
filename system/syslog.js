@@ -45,8 +45,8 @@ window.SysLog = {
                 if (value instanceof Error) return `[Error ${value.message}]`;
                 return value;
             })}`;
-        } catch (e) { 
-            return ' | META: [Unserializable]'; 
+        } catch (e) {
+            return ' | META: [Unserializable]';
         }
     },
     log(level, msg, source = 'Kernel', metadata = null) {
@@ -86,12 +86,12 @@ window.SysLog = {
             this._isWriting = true;
             try {
                 await VFS.write('/var/log/syslog', this._buffer, 'system');
-                this._retryCount = 0; 
+                this._retryCount = 0;
             } catch (e) {
                 this._retryCount++;
                 console.error(`[Kernel] SysLog Persistence Failed (Attempt ${this._retryCount})`, e);
                 if (this._retryCount < 5) {
-                    this._scheduleWrite(false); 
+                    this._scheduleWrite(false);
                 }
             } finally {
                 this._isWriting = false;

@@ -12,7 +12,6 @@
                     'settings': {
                         'wallpaper.txt': { content: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)', owner: 'system', size: 48, mtime: Date.now() },
                         'theme.txt': { content: 'default', owner: 'system', size: 7, mtime: Date.now() },
-                        'accent.txt': { content: '#3b82f6', owner: 'system', size: 7, mtime: Date.now() }
                     }
                 }
             },
@@ -432,7 +431,7 @@
                 const newParentFinal = this._resolve(this.dirname(newPath), true);
                 const newName = this.basename(newPath);
                 if (newParentFinal[newName]) {
-                    if (newParentFinal[newName].content === undefined) return false; 
+                    if (newParentFinal[newName].content === undefined) return false;
                     const targetSize = newParentFinal[newName].size || 0;
                     const targetOwner = newParentFinal[newName].owner || 'system';
                     this._usage[targetOwner] = Math.max(0, (this._usage[targetOwner] || 0) - targetSize);

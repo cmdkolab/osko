@@ -29,7 +29,6 @@
     --accent-color: var(--accent);
     --accent-hover: #60a5fa;
     --text-color: #ffffff;
-    
     --glass-bg: rgba(255, 255, 255, 0.12);
     --glass-bg-hover: rgba(255, 255, 255, 0.08);
     --glass-bg-accent: rgba(var(--accent-rgb), 0.15);
@@ -37,7 +36,6 @@
     --glass-border-hover: rgba(255, 255, 255, 0.2);
     --glass-border-accent: rgba(var(--accent-rgb), 0.4);
     --glass-blur: blur(40px) saturate(200%);
-    
     --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.1), 0 1px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-md: 0 12px 24px -6px rgba(0, 0, 0, 0.25), 0 8px 16px -4px rgba(0, 0, 0, 0.15);
     --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -1204,7 +1202,6 @@ body.system-locked #desktop {
     background: rgba(var(--accent-rgb), 0.2);
     color: var(--accent);
 }
-
 .calc-btn[data-val="0"] {
     grid-column: span 2;
 }
@@ -1479,7 +1476,6 @@ body.system-locked #desktop {
 .sys-status {
     color: #4ade80;
 }
-
 @keyframes reveal {
     from { opacity: 0; transform: translateY(10px) scale(0.98); }
     to { opacity: 1; transform: translateY(0) scale(1); }
@@ -1627,7 +1623,7 @@ body.system-locked #desktop {
 .calc-btn {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
-    border-radius: 50%; 
+    border-radius: 50%;
     aspect-ratio: 1;
     color: #fff;
     font-size: 20px;
@@ -1716,20 +1712,20 @@ body.system-locked #desktop {
     padding: 2px 6px;
     border-radius: 4px;
 }
-.breadcrumb-item:hover { 
-    opacity: 1; 
-    color: var(--accent); 
+.breadcrumb-item:hover {
+    opacity: 1;
+    color: var(--accent);
     background: rgba(255, 255, 255, 0.05);
 }
-.breadcrumb-item.active { 
-    opacity: 1; 
-    font-weight: 700; 
-    pointer-events: none; 
+.breadcrumb-item.active {
+    opacity: 1;
+    font-weight: 700;
+    pointer-events: none;
     color: var(--text-color);
 }
-.breadcrumb-sep { 
-    opacity: 0.4; 
-    font-size: 11px; 
+.breadcrumb-sep {
+    opacity: 0.4;
+    font-size: 11px;
     font-weight: 800;
 }
 .explorer-app .sys-btn {
@@ -1745,9 +1741,9 @@ body.system-locked #desktop {
     cursor: pointer;
     transition: var(--transition-fast);
 }
-.explorer-app .sys-btn:hover { 
-    background: var(--glass-bg-hover); 
-    transform: translateY(-2px); 
+.explorer-app .sys-btn:hover {
+    background: var(--glass-bg-hover);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
     border-color: var(--glass-border-hover);
 }
@@ -1761,9 +1757,9 @@ body.system-locked #desktop {
     width: 140px;
     transition: var(--transition-normal);
 }
-.explorer-search:focus { 
-    width: 220px; 
-    outline: none; 
+.explorer-search:focus {
+    width: 220px;
+    outline: none;
     border-color: var(--accent);
     background: rgba(0, 0, 0, 0.4);
 }
@@ -1880,8 +1876,8 @@ body.system-locked #desktop {
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     transform: translateZ(20px);
 }
-.explorer-item:hover .item-icon { 
-    transform: translateZ(40px) scale(1.15); 
+.explorer-item:hover .item-icon {
+    transform: translateZ(40px) scale(1.15);
 }
 .item-name {
     font-size: 12px;
@@ -1970,14 +1966,14 @@ body.system-locked #desktop {
     transition: var(--transition-fast);
     font-size: 16px;
 }
-.notes-app .sys-btn:hover { 
-    background: var(--glass-bg-hover); 
-    transform: translateY(-2px); 
+.notes-app .sys-btn:hover {
+    background: var(--glass-bg-hover);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
 }
-.notes-app .sys-btn.active { 
-    background: var(--accent); 
-    color: #fff; 
+.notes-app .sys-btn.active {
+    background: var(--accent);
+    color: #fff;
     border-color: var(--accent-hover);
 }
 .notes-status {
@@ -2020,8 +2016,8 @@ body.system-locked #desktop {
 }
 .notes-editor::-webkit-scrollbar { width: 10px; }
 .notes-editor::-webkit-scrollbar-track { background: transparent; }
-.notes-editor::-webkit-scrollbar-thumb { 
-    background: rgba(255, 255, 255, 0.08); 
+.notes-editor::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 20px;
     border: 2px solid transparent;
     background-clip: content-box;
@@ -2072,70 +2068,6 @@ body.system-locked #desktop {
     color: #fff;
     box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
 }
-.accent-picker-container {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 10px 15px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--glass-border);
-}
-.accent-input {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    width: 40px;
-    height: 40px;
-    background-color: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-}
-.accent-input::-webkit-color-swatch {
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-}
-.accent-input-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-}
-.accent-preview-hex {
-    font-family: monospace;
-    font-weight: 600;
-    font-size: 14px;
-    letter-spacing: 1px;
-    color: var(--accent);
-}
-.accent-reset-btn {
-    padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
-    color: var(--text-color);
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.accent-reset-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateY(-1px);
-}
-.color-presets {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
-    gap: 8px;
-    margin-bottom: 12px;
-}
-.preset-btn {
-    aspect-ratio: 1;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
     border: 2px solid transparent;
     transition: 0.2s;
 }
@@ -2489,11 +2421,9 @@ body.system-locked #desktop {
     position: relative;
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
-
 .terminal-container.theme-matrix { --terminal-text: #00ff41; background: rgba(0, 5, 0, 0.98); }
 .terminal-container.theme-cyberpunk { --terminal-text: #f0f; background: rgba(20, 0, 40, 0.98); }
 .terminal-container.theme-classic { --terminal-text: #fff; background: rgba(30, 30, 30, 0.98); }
-
 .terminal-container::before {
     content: " ";
     display: block;
@@ -2534,7 +2464,6 @@ body.system-locked #desktop {
     font-size: inherit;
     outline: none;
 }
-
 .terminal-cursor {
     display: inline-block;
     width: 8px;

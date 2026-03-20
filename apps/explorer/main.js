@@ -285,10 +285,10 @@ WebOS.registerApp({
         const path = this.api.fs.join(this.currentPath, item.name);
         const stat = await this.api.fs.stat(path);
         if (!stat) {
-            this.api.notifications.show({ 
-                title: window.I18n.t('explorer.title'), 
+            this.api.notifications.show({
+                title: window.I18n.t('explorer.title'),
                 message: window.I18n.t('explorer.error_read_properties') || 'Could not read properties',
-                type: 'error' 
+                type: 'error'
             });
             return;
         }
@@ -304,9 +304,9 @@ WebOS.registerApp({
                 <div class="prop-row"><b>${window.I18n.t('explorer.prop_mtime') || 'Modified'}:</b> <span>${date}</span></div>
             </div>
         `;
-        this.api.ui.showDialog({ 
-            title: item.name || window.I18n.t('explorer.properties'), 
-            message: content 
+        this.api.ui.showDialog({
+            title: item.name || window.I18n.t('explorer.properties'),
+            message: content
         });
     },
     renameFile(item, container) {
