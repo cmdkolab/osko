@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "syslog",
     get name() { return window.I18n.t('syslog.title'); },
     icon: "📜",
-    version: "4.2.0",
+    version: "4.5.2",
     manifest: {
         get name() { return window.I18n.t('syslog.title'); },
         icon: "📜",
@@ -59,6 +59,7 @@ WebOS.registerApp({
                 container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.filter = btn.dataset.filter;
+                this._forceRefresh = true;
                 this.refresh();
             };
         });
@@ -98,40 +99,32 @@ WebOS.registerApp({
         const logs = await this.api.fs.read('/var/log/syslog');
         if (!logs) {
             this.viewer.innerHTML = `<div class="log-empty">${window.I18n.t('syslog.no_logs')}</div>`;
+            this._lastLineCount = 0;
             return;
         }
         const lines = logs.split('\n').filter(l => l.trim());
-        const sources = new Set(['ALL']);
-        lines.forEach(line => {
-             const m = line.match(/\[(.*?)\] \[(.*?)\] \[([A-Z]+)\] \[(.*?)\]/);
-             if (m) sources.add(m[4]);
-        });
+        const totalLines = lines.length;
+        if (this._lastLineCount === totalLines && !this._forceRefresh) return;
+        const isSearch = !!this.searchQuery || this.filter !== 'ALL';
         const sourceSelect = this.container.querySelector('.source-select');
-        if (sourceSelect && (sourceSelect.options.length <= 1 || sources.size > sourceSelect.options.length)) {
-            const currentSource = sourceSelect.value;
-            sourceSelect.innerHTML = '';
-            Array.from(sources).sort().forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = opt.innerText = s === 'ALL' ? window.I18n.t('syslog.source_all') : s;
-                if (s === 'ALL') opt.value = 'ALL';
-                sourceSelect.appendChild(opt);
-            });
-            sourceSelect.value = sources.has(currentSource) ? currentSource : 'ALL';
-            sourceSelect.onchange = () => this.refresh();
+        const sourceFilter = sourceSelect ? sourceSelect.value : 'ALL';
+        if (isSearch || sourceFilter !== 'ALL' || this._forceRefresh) {
+            this.viewer.innerHTML = '';
+            this._lastLineCount = 0;
+            this._forceRefresh = false;
         }
+        const startIndex = this._lastLineCount || 0;
         const fragment = document.createDocumentFragment();
-        let visibleCount = 0;
-        const renderLines = lines.slice(-2000); // Increased buffer
+        const renderLines = lines.slice(Math.max(startIndex, totalLines - 2000));
         renderLines.forEach(line => {
             const match = line.match(/^\[(.*?)\] \[(.*?)\] \[([A-Z]+)\] \[(.*?)\] (.*)$/);
             if (!match) return;
             const [_, time, session, level, source, message] = match;
             if (this.filter !== 'ALL' && level !== this.filter) return;
-            if (sourceSelect && sourceSelect.value !== 'ALL' && source !== sourceSelect.value) return;
+            if (sourceFilter !== 'ALL' && source !== sourceFilter) return;
             if (this.searchQuery && !line.toLowerCase().includes(this.searchQuery)) return;
-            visibleCount++;
             const entry = document.createElement('div');
-            entry.className = `log-entry level-${level.toLowerCase()}`;
+            entry.className = `log-entry level-${level.toLowerCase()} reveal`;
             entry.innerHTML = `
                 <span class="log-time">${time.includes('T') ? time.split('T')[1].split('.')[0] : time}</span>
                 <span class="log-session">${session.slice(0, 8)}</span>
@@ -141,15 +134,15 @@ WebOS.registerApp({
             `;
             entry.onclick = () => {
                 this.api.system.setClipboard(line);
-                this.api.notifications.show({ title: window.I18n.t('syslog.title'), message: window.I18n.t('syslog.copied_to_clipboard') });
+                this.api.notifications.show({ title: 'SysLog', message: window.I18n.t('syslog.copied_to_clipboard') });
             };
             fragment.appendChild(entry);
         });
-        this.viewer.innerHTML = '';
         this.viewer.appendChild(fragment);
+        this._lastLineCount = totalLines;
         if (this.autoScroll) this.viewer.scrollTop = this.viewer.scrollHeight;
         const status = this.container.querySelector('.log-count');
-        if (status) status.innerText = `${visibleCount} / ${lines.length} ${window.I18n.t('syslog.lines')}`;
+        if (status) status.innerText = `${totalLines} ${window.I18n.t('syslog.lines')}`;
     },
     highlight(msg) {
         if (!this.searchQuery) return msg;

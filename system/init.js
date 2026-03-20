@@ -1,7 +1,16 @@
     async function init() {
         console.log("OS(KO) Core Initializing...");
+        const splash = document.getElementById('boot-screen');
+        const loader = splash?.querySelector('.loader-bar');
+        const statusEl = splash?.querySelector('.boot-status');
+        const setProgress = (p, text) => {
+            if (loader) loader.style.width = p + '%';
+            if (statusEl) statusEl.innerText = text;
+        };
         _setupErrorHandlers();
+        setProgress(20, 'Loading VFS...');
         await VFS.init();
+        setProgress(40, 'Initializing Audio...');
         await Promise.all([
             AudioEngine.init(),
             SessionManager.init(),
@@ -10,6 +19,7 @@
             _setupUIInteractives()
         ]);
         _setupLockScreen();
+        setProgress(60, 'Starting Kernel...');
         AudioEngine.play('startup');
         if (DBWrapper._isFallback) {
             WebOS.ui.showDialog({
@@ -18,23 +28,34 @@
                 acceptText: window.I18n.t('dialog.ok')
             });
         }
+        setProgress(80, 'Updating System Stats...');
         WebOS.updateSystemStats();
         WebOS._setupNotificationClearButton();
         EventBus.subscribe('vfs:changed', () => WebOS.updateSystemStats());
+        setProgress(85, 'Restoring Session State...');
         if (state.isLocked) {
-            const data = await PersistenceManager.get(state.persistenceKey);
-            if (data && data.openApps) state.deferredRestoration = data.openApps;
+            const raw = await VFS.read('/sys/session.json', 'system');
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (data.openApps) state.deferredRestoration = data.openApps;
+            } else {
+                const legacy = await PersistenceManager.get(state.persistenceKey);
+                if (legacy && legacy.openApps) state.deferredRestoration = legacy.openApps;
+            }
         } else {
             await WebOS.restoreState();
         }
+        setProgress(90, 'Setting up Desktop Events...');
         _setupDesktopEvents();
+        setProgress(92, 'Setting up Global Events...');
         _setupGlobalEvents();
+        setProgress(95, 'Setting up Keyboard Shortcuts...');
         _setupKeyboardShortcuts();
         EventBus.subscribe('system:ready', () => {
             _startAutoApps();
             setTimeout(() => {
-                const bootScreen = document.getElementById('boot-screen');
-                if (bootScreen) bootScreen.classList.add('hidden');
+                setProgress(100, 'Ready');
+                if (splash) splash.classList.add('hidden');
                 document.querySelectorAll('.desktop-icon').forEach((icon, i) => {
                     setTimeout(() => icon.classList.add('show'), 100 + (i * 60));
                 });

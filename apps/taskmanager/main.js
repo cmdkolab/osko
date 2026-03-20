@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "taskmanager",
     get name() { return window.I18n.t('taskmanager.title'); },
     icon: "📊",
-    version: "4.2.0",
+    version: "4.5.3",
     manifest: {
         get name() { return window.I18n.t('taskmanager.title'); },
         icon: "📊",
@@ -88,13 +88,15 @@ WebOS.registerApp({
         };
         const refresh = async () => {
             const processes = await api.system.getProcesses();
+            const filterQuery = this.filter;
             const filtered = processes.filter(p => 
-                (p.name || p.appId).toLowerCase().includes(this.filter) || 
-                String(p.pid).includes(this.filter)
+                (p.name || p.appId).toLowerCase().includes(filterQuery) || 
+                String(p.pid).includes(filterQuery)
             );
             const activePids = new Set(filtered.map(p => p.pid));
             Array.from(list.children).forEach(row => {
-                if (!activePids.has(Number(row.dataset.pid))) row.remove();
+                const pid = Number(row.dataset.pid);
+                if (!activePids.has(pid)) row.remove();
             });
             filtered.forEach(p => {
                 let row = list.querySelector(`.tm-row[data-pid="${p.pid}"]`);
@@ -103,36 +105,30 @@ WebOS.registerApp({
                     row.className = 'tm-row reveal';
                     row.dataset.pid = p.pid;
                     row.innerHTML = `
-                        <div class="tm-app-info">
-                            <span class="tm-icon">${p.icon || '❓'}</span>
-                            <span class="tm-name">${p.name || p.appId}</span>
-                        </div>
+                        <div class="tm-app-info"><span class="tm-icon">${p.icon || '❓'}</span><span class="tm-name">${p.name || p.appId}</span></div>
                         <div class="tm-pid text-center">${p.pid}</div>
                         <div class="tm-uptime text-right"></div>
                         <div class="tm-mem text-right"></div>
                         <div class="tm-actions text-center">
-                            <button class="tm-kill-btn" ${p.appId === 'taskmanager' ? 'disabled' : ''}>
-                                ${window.I18n.t('taskmanager.kill')}
-                            </button>
+                            <button class="tm-kill-btn" ${p.appId === 'taskmanager' ? 'disabled' : ''}>${window.I18n.t('taskmanager.kill')}</button>
                         </div>
                     `;
                     const killBtn = row.querySelector('.tm-kill-btn');
                     if (p.appId !== 'taskmanager') {
-                        killBtn.onclick = () => {
-                            api.system.killApp(p.appId, p.pid);
-                            refresh();
-                        };
+                        killBtn.onclick = () => { api.system.killApp(p.appId, p.pid); refresh(); };
                     }
                     list.appendChild(row);
                 }
                 const uptimeEl = row.querySelector('.tm-uptime');
                 const memEl = row.querySelector('.tm-mem');
-                const uptime = Math.floor((Date.now() - p.startTime) / 1000);
+                const uptimeVal = Math.floor((Date.now() - p.startTime) / 1000);
                 const s = window.I18n.t('taskmanager.unit_s');
                 const m = window.I18n.t('taskmanager.unit_m');
-                uptimeEl.innerText = uptime < 60 ? `${uptime}${s}` : `${Math.floor(uptime/60)}${m} ${uptime%60}${s}`;
+                const newUptime = uptimeVal < 60 ? `${uptimeVal}${s}` : `${Math.floor(uptimeVal/60)}${m} ${uptimeVal%60}${s}`;
+                if (uptimeEl.innerText !== newUptime) uptimeEl.innerText = newUptime;
                 const appUsage = api.system.storage.calculateUsage ? api.system.storage.calculateUsage(p.appId) : 0;
-                memEl.innerText = (appUsage / 1024).toFixed(1) + ' KB';
+                const newMem = (appUsage / 1024).toFixed(1) + ' KB';
+                if (memEl.innerText !== newMem) memEl.innerText = newMem;
             });
             const totalUsage = api.system.storage.getTotalUsage ? api.system.storage.getTotalUsage() : 0;
             const quota = 10 * 1024 * 1024;

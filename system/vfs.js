@@ -139,13 +139,15 @@
         },
         async saveImmediate() {
             if (this._saveTimer) clearTimeout(this._saveTimer);
-            try {
-                await PersistenceManager.set(this.persistenceKey, this.root);
-                if (this.syncChannel) this.syncChannel.postMessage('sync');
-            } finally {
-                this._saveTimer = null;
-                this._pendingSaveResolves.splice(0).forEach(r => r());
-            }
+            return this._enqueue(async () => {
+                try {
+                    await PersistenceManager.set(this.persistenceKey, this.root);
+                    if (this.syncChannel) this.syncChannel.postMessage('sync');
+                } finally {
+                    this._saveTimer = null;
+                    this._pendingSaveResolves.splice(0).forEach(r => r());
+                }
+            });
         },
         _resolveInternal(path) {
             const normalized = this.join(path);
@@ -281,6 +283,19 @@
                     });
             }
             return null;
+        },
+        stat(path, appId, manifest) {
+            path = this.join(path);
+            if (!this.checkAccess(path, appId, 'r', manifest)) return null;
+            const node = this._resolve(path, true);
+            if (!node) return null;
+            return {
+                size: node.size || 0,
+                mtime: node.mtime || Date.now(),
+                owner: node.owner || 'system',
+                mode: node.mode || 0o644,
+                type: (typeof node === 'string' || node.content !== undefined) ? 'file' : 'dir'
+            };
         },
         calculateUsage(appId) {
             if (!appId || appId === 'system' || appId === 'kernel') {
@@ -460,15 +475,6 @@
                 this._notifyWatchers(dstPath);
                 return true;
             });
-        },
-        stat(path, appId, manifest) {
-            path = this.join(path);
-            if (!this.checkAccess(path, appId, 'r', manifest)) return null;
-            const node = this._resolveInternal(path);
-            if (node === null || node === undefined) return null;
-            if (typeof node === 'object' && node.content !== undefined)
-                return { type: 'file', size: node.size || 0, mtime: node.mtime || 0 };
-            return { type: 'dir', mtime: node.mtime || 0 };
         },
         exists(path) {
             return this._resolveInternal(path) !== null;

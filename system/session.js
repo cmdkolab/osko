@@ -4,10 +4,20 @@
             if (locked) this.lock();
         },
         lock() {
+            if (state.isLocked) return;
             state.isLocked = true;
             PersistenceManager.set('SYS:LOCKED', true);
             const ls = document.getElementById('lock-screen');
-            if (ls) ls.classList.remove('hidden');
+            if (ls) {
+                ls.classList.remove('hidden');
+                this._lockKeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.unlock();
+                    }
+                };
+                document.addEventListener('keydown', this._lockKeydown);
+            }
             SysLog.log('INFO', 'System locked', 'SessionManager');
         },
         async unlock() {
@@ -42,12 +52,5 @@
         },
         showLockScreen() {
             this.lock();
-            this._lockKeydown = (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.unlock();
-                }
-            };
-            document.addEventListener('keydown', this._lockKeydown);
         }
     };

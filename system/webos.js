@@ -374,12 +374,14 @@ window.WebOS = {
                     acc.push({
                         appId: p.appId,
                         params: p.params,
-                        window: { left: win.element.style.left, top: win.element.style.top, width: win.element.style.width, height: win.element.style.height }
+                        window: { left: win.element.style.left, top: win.element.style.top, width: win.element.style.width, height: win.element.style.height, state: win.state }
                     });
                 }
                 return acc;
             }, []);
             const sessionData = JSON.stringify({ openApps });
+            if (this._lastSavedState === sessionData) return;
+            this._lastSavedState = sessionData;
             SysLog.log('DEBUG', `Saving session: ${openApps.length} apps`, 'WebOS');
             await VFS.write('/sys/session.json', sessionData, 'system');
             await VFS.saveImmediate();
@@ -414,12 +416,14 @@ window.WebOS = {
                 if (state.processes.find(p => p.appId === appData.appId)) continue;
                 SysLog.log('INFO', `Auto-restoring: ${appData.appId}`, 'WebOS');
                 await WebOS.launchApp(appData.appId, appData.params || {}, true);
-                const win = state.windows.find(w => w.appId === appData.appId && state.processes.some(p => p.windowId === w.id && p.appId === appData.appId));
+                const win = state.windows.find(w => w.appId === appData.appId);
                 if (win && appData.window) {
                     Object.assign(win.element.style, appData.window);
+                    if (appData.window.state === 'maximized') WindowManager.toggleMaximize(win.id);
                     win.element.style.transition = 'none';
                     setTimeout(() => win.element.style.transition = '', 100);
                 }
+                await new Promise(r => setTimeout(r, 100)); // Stagger launches
             }
         }
         try {

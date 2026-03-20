@@ -167,3 +167,25 @@
     opacity: 0.3;
     font-style: italic;
 }
+.properties-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 300px;
+    padding: 10px 0;
+}
+.prop-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 8px;
+}
+.prop-row b {
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
+}
+.prop-row span {
+    font-weight: 600;
+    color: var(--text-color);
+}

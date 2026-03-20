@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "about",
     get name() { return window.I18n.t('about.title'); },
     icon: "ℹ️",
-    version: "4.2.0",
+    version: "4.5.2",
     manifest: {
         get name() { return window.I18n.t('about.title'); },
         icon: "ℹ️",

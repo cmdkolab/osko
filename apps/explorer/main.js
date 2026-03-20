@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "explorer",
     get name() { return window.I18n.t('explorer.title'); },
     icon: "📂",
-    version: "4.2.0",
+    version: "4.5.3",
     manifest: {
         get name() { return window.I18n.t('explorer.title'); },
         icon: "📂",
@@ -133,7 +133,9 @@ WebOS.registerApp({
                     { label: window.I18n.t('explorer.open'), action: () => el.onclick() },
                     { label: window.I18n.t('explorer.copy'), action: () => this.copyFile(item) },
                     { label: window.I18n.t('explorer.rename'), action: () => this.renameFile(item, container) },
-                    { label: window.I18n.t('explorer.delete'), action: () => this.deleteFile(item, container) }
+                    { label: window.I18n.t('explorer.delete'), action: () => this.deleteFile(item, container) },
+                    { type: 'separator' },
+                    { label: window.I18n.t('explorer.properties') || 'Properties', action: () => this.showProperties(item) }
                 ];
                 this.api.system.showContextMenu(e, menuItems);
             };
@@ -239,6 +241,32 @@ WebOS.registerApp({
                 this.refresh(container);
             }
         });
+    },
+    async showProperties(item) {
+        if (!item) return;
+        const path = this.api.fs.join(this.currentPath, item.name);
+        const stat = await this.api.fs.stat(path);
+        if (!stat) {
+            this.api.notifications.show({ 
+                title: window.I18n.t('explorer.title'), 
+                message: window.I18n.t('explorer.error_read_properties') || 'Could not read properties',
+                type: 'error' 
+            });
+            return;
+        }
+        const size = (item.type === 'dir' || stat.type === 'dir') ? '---' : (stat.size > 1024 * 1024 ? (stat.size / (1024 * 1024)).toFixed(2) + ' MB' : (stat.size / 1024).toFixed(1) + ' KB');
+        const date = stat.mtime ? new Date(stat.mtime).toLocaleString() : '---';
+        const typeLabel = stat.type === 'dir' ? (window.I18n.t('system.type_dir') || 'Folder') : (window.I18n.t('system.type_file') || 'File');
+        const content = `
+            <div class="properties-dialog">
+                <div class="prop-row"><b>${window.I18n.t('explorer.prop_name') || 'Name'}:</b> <span>${item.name || '---'}</span></div>
+                <div class="prop-row"><b>${window.I18n.t('explorer.prop_path') || 'Path'}:</b> <span>${path || '---'}</span></div>
+                <div class="prop-row"><b>${window.I18n.t('explorer.prop_type') || 'Type'}:</b> <span>${typeLabel}</span></div>
+                <div class="prop-row"><b>${window.I18n.t('explorer.prop_size') || 'Size'}:</b> <span>${size || '---'}</span></div>
+                <div class="prop-row"><b>${window.I18n.t('explorer.prop_mtime') || 'Modified'}:</b> <span>${date}</span></div>
+            </div>
+        `;
+        this.api.ui.showDialog({ title: item.name || 'Properties', content });
     },
     renameFile(item, container) {
         this.api.ui.prompt(window.I18n.t('explorer.prompt_rename', item.name), item.name, async (name) => {

@@ -30,10 +30,10 @@
     --accent-hover: #60a5fa;
     --text-color: #ffffff;
     
-    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-bg: rgba(255, 255, 255, 0.12);
     --glass-bg-hover: rgba(255, 255, 255, 0.08);
     --glass-bg-accent: rgba(59, 130, 246, 0.15);
-    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.18);
     --glass-border-hover: rgba(255, 255, 255, 0.2);
     --glass-border-accent: rgba(59, 130, 246, 0.4);
     --glass-blur: blur(40px) saturate(200%);
@@ -72,6 +72,8 @@
     --z-calendar: 21000;
     --z-dialog: 30000;
     --z-shutdown: 99999;
+    --shadow-premium: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+    --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 [data-theme="dark"] {
     --glass-bg: rgba(15, 23, 42, 0.75);
@@ -170,7 +172,6 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-    letter-spacing: 0.3px;
     background: rgba(0, 0, 0, 0.4);
     padding: 2px 8px;
     border-radius: 12px;
@@ -461,9 +462,9 @@ textarea.modern {
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--glass-shadow);
-    display: flex;
+    box-shadow: var(--shadow-premium);
+    overflow: hidden;
+    transition: transform var(--transition-smooth) 0.3s, opacity var(--transition-smooth) 0.3s;
     align-items: flex-start;
     gap: 12px;
     animation: toast-slide 0.4s var(--ease-out-back);
@@ -1314,7 +1315,7 @@ body.system-locked #desktop {
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: opacity 0.8s ease, visibility 0.8s;
+    transition: opacity 0.8s var(--transition-smooth), visibility 0.8s;
 }
 #boot-screen.hidden {
     opacity: 0;
@@ -1325,7 +1326,6 @@ body.system-locked #desktop {
     flex-direction: column;
     align-items: center;
     gap: 30px;
-    animation: boot-pulse 2s infinite ease-in-out;
 }
 .boot-logo {
     width: 140px;
@@ -1333,6 +1333,7 @@ body.system-locked #desktop {
     border-radius: 35px;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: boot-pulse 2s infinite ease-in-out;
 }
 .boot-loader {
     width: 200px;
@@ -1345,26 +1346,23 @@ body.system-locked #desktop {
 .loader-bar {
     position: absolute;
     top: 0;
-    left: -100%;
-    width: 100%;
+    left: 0;
+    width: 0%;
     height: 100%;
     background: var(--accent);
-    animation: loader-flow 2s infinite ease-in-out;
+    box-shadow: 0 0 15px var(--accent);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .boot-status {
     font-size: 14px;
     font-weight: 500;
-    opacity: 0.6;
+    color: rgba(255, 255, 255, 0.5);
     letter-spacing: 1px;
+    text-transform: uppercase;
 }
 @keyframes boot-pulse {
-    0%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 0px var(--accent)); }
-    50% { transform: scale(0.98); opacity: 0.8; filter: drop-shadow(0 0 20px var(--accent)); }
-}
-@keyframes loader-flow {
-    0% { left: -100%; }
-    50% { left: 0%; }
-    100% { left: 100%; }
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0px var(--accent)); }
+    50% { transform: scale(1.02); filter: drop-shadow(0 0 20px var(--accent)); }
 }
 .section-desc {
     font-size: 11px;
@@ -1412,6 +1410,17 @@ body.system-locked #desktop {
     display: flex;
     justify-content: flex-end;
     margin-bottom: 5px;
+}
+.taskbar {
+    height: 40px;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(28px) saturate(180%);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 4px;
+    z-index: 10000;
 }
 .notification-clear-btn {
     background: rgba(0, 0, 0, 0.3);

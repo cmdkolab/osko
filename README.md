@@ -4,7 +4,7 @@
 
 # 🚀 OS(KO) - Browser OS
 
-![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-4.5.3-blue.svg)
 ![Vanilla JS](https://img.shields.io/badge/Vanilla-Javascript-yellow)
 ![Local](https://img.shields.io/badge/Runs-Locally-success)
 
@@ -13,22 +13,23 @@
 ## ✨ Features
 
 - **🪟 Advanced Window Manager**: Draggable, resizable, stackable, and snappable windows with minimize/maximize capabilities.
+- **🔍 Quick Search & Multitasking**: Instant access to apps and files via `Ctrl+Space` and a dedicated Task View for effortless multitasking.
 - **📁 Virtual File System (VFS)**: IndexedDB-backed persistent file system simulating a real directory structure (`/sys`, `/home/user`, `/tmp`) with quota management.
 - **⚙️ Core EventBus Architecture**: Robust internal message passing and event handling across different isolated applications.
 - **🔒 Sandboxed "WebOS" API**: Applications run within a managed lifecycle, interacting with the system through a safely scoped permissions module.
-- **🎨 Custom Themes & Personalization**: Premium "Liquid Glass" aesthetic, customizable wallpapers, dark/light modes, and UI accents.
+- **🎨 Custom Themes & Personalization**: Premium "Liquid Glass" aesthetic with 8+ color presets (Sunset, Ocean, Cyberpunk, and more), customizable wallpapers, and dark/light modes.
 - **🌍 Internationalization (i18n)**: Multi-language support out of the box (English & Polish).
 - **🛡️ Secure & Optimized**: No external dependencies. Built with security in mind (mitigation of Prototype Pollution and strict memory leak management).
 
 ## 📦 Built-in Applications
 
 OSKO natively ships with a core suite of productive applications:
-- **📂 Explorer**: Full-featured file manager to browse, create, edit, move, and delete files within the VFS.
-- **⚙️ Settings**: Control personalization, system language, autostart programs, and audio preferences.
+- **📂 Explorer**: Full-featured file manager to browse, create, edit, move, and delete files. Includes wallpaper management directly from the file context menu.
+- **⚙️ Settings**: Control personalization (8+ color presets), system language, autostart programs, and audio preferences.
 - **📊 Task Manager**: Monitor active processes, inspect memory/DOM usage, and force-kill stuck applications.
 - **📝 Notes**: A sleek text editor for quick thoughts featuring auto-save, export, and text wrap.
-- **📟 Terminal**: A command-line interface simulating a UNIX-like environment (supports commands like `ls`, `cd`, `cat`, `mkdir`, `rm`, `date`, `echo`).
-- **🧮 Calculator**: A beautifully designed numeric calculator.
+- **📟 Terminal**: A powerful UNIX-like CLI. Supports 19+ commands: `help`, `ls`, `cd`, `cat`, `edit`, `mkdir`, `rm`, `clear`, `echo`, `date`, `pwd`, `version`, `play`, `uptime`, `ps`, `system`, `theme`, `history`, `top`. Features custom themes (Matrix, Cyberpunk) and tab-completion.
+- **🧮 Calculator**: A beautifully designed numeric calculator with history.
 - **📋 Syslog**: A diagnostic tool for monitoring OS-level background events, processes, and errors.
 
 ## 🛠️ Technology Stack
