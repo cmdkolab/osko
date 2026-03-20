@@ -16,7 +16,6 @@ WebOS.registerApp({
         this.filter = 'ALL';
         this.searchQuery = '';
         this.autoScroll = true;
-        
         const renderFrame = () => {
             container.innerHTML = `
                 <div class="syslog-app">

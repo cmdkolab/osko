@@ -12,12 +12,10 @@
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
-/* Themes */
 .terminal-container.theme-matrix { --terminal-text: #00ff41; background: rgba(0, 5, 0, 0.98); }
 .terminal-container.theme-cyberpunk { --terminal-text: #f0f; background: rgba(20, 0, 40, 0.98); }
 .terminal-container.theme-classic { --terminal-text: #fff; background: rgba(30, 30, 30, 0.98); }
 
-/* Scanlines Effect */
 .terminal-container::before {
     content: " ";
     display: block;
@@ -29,7 +27,6 @@
     pointer-events: none;
     opacity: 0.3;
 }
-
 .terminal-output {
     flex: 1;
     overflow-y: auto;
@@ -39,20 +36,17 @@
     scrollbar-width: thin;
     z-index: 1;
 }
-
 .terminal-input-line {
     display: flex;
     align-items: center;
     z-index: 1;
 }
-
 .terminal-prompt {
     margin-right: 10px;
     white-space: nowrap;
     color: var(--accent);
     font-weight: 700;
 }
-
 .terminal-input {
     flex: 1;
     background: transparent;
@@ -63,7 +57,6 @@
     outline: none;
 }
 
-/* Blinking Cursor */
 .terminal-cursor {
     display: inline-block;
     width: 8px;
@@ -73,11 +66,9 @@
     vertical-align: middle;
     margin-left: 2px;
 }
-
 @keyframes blink {
     50% { opacity: 0; }
 }
-
 .terminal-echo { color: rgba(255, 255, 255, 0.5); }
 .terminal-error { color: #ff5555; font-weight: bold; }
 .terminal-info { color: var(--terminal-text, #10b981); }

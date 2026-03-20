@@ -10,7 +10,6 @@
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     overflow: hidden;
 }
-
 .syslog-toolbar {
     display: flex;
     justify-content: space-between;
@@ -20,13 +19,11 @@
     border-bottom: 1px solid var(--glass-border);
     gap: 16px;
 }
-
 .toolbar-left, .toolbar-right {
     display: flex;
     gap: 10px;
     align-items: center;
 }
-
 .syslog-app .sys-btn {
     padding: 6px 12px;
     background: rgba(255, 255, 255, 0.05);
@@ -38,19 +35,16 @@
     cursor: pointer;
     transition: var(--transition-fast);
 }
-
 .syslog-app .sys-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     transform: translateY(-1px);
 }
-
 .syslog-app .sys-btn.active {
     background: var(--accent);
     border-color: var(--accent);
     color: #fff;
     box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.3);
 }
-
 .source-select {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--glass-border);
@@ -60,7 +54,6 @@
     font-size: 12px;
     outline: none;
 }
-
 .syslog-search {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
@@ -72,13 +65,11 @@
     outline: none;
     transition: var(--transition-fast);
 }
-
 .syslog-search:focus {
     width: 220px;
     background: rgba(255, 255, 255, 0.08);
     border-color: var(--accent);
 }
-
 .syslog-viewer {
     flex: 1;
     overflow: auto;
@@ -88,7 +79,6 @@
     line-height: 1.4;
     background: rgba(0, 0, 0, 0.15);
 }
-
 .log-entry {
     display: flex;
     gap: 8px;
@@ -97,22 +87,18 @@
     transition: background 0.1s;
     cursor: pointer;
 }
-
 .log-entry:hover { background: rgba(255, 255, 255, 0.05); }
-
 .log-time { color: var(--accent); opacity: 0.6; font-weight: 500; }
 .log-session { color: #8e44ad; opacity: 0.7; }
 .log-level { font-weight: 800; min-width: 50px; text-transform: uppercase; }
 .log-source { color: #2ecc71; font-weight: 600; }
 .log-msg { color: #ecf0f1; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
 .log-entry.level-err { background: rgba(231, 76, 60, 0.05); }
 .log-entry.level-err .log-level { color: #e74c3c; }
 .log-entry.level-warn { background: rgba(241, 196, 15, 0.05); }
 .log-entry.level-warn .log-level { color: #f1c40f; }
 .log-entry.level-info .log-level { color: #3498db; }
 .log-entry.level-debug .log-level { color: #95a5a6; }
-
 .syslog-status {
     padding: 8px 20px;
     background: rgba(0, 0, 0, 0.3);

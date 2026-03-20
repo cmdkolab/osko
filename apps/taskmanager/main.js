@@ -53,29 +53,23 @@ WebOS.registerApp({
         const searchInput = container.querySelector('.tm-search');
         const canvas = container.querySelector('.tm-sparkline-canvas');
         const ctx = canvas.getContext('2d');
-
         searchInput.oninput = (e) => {
             this.filter = e.target.value.toLowerCase();
             refresh();
         };
-
         const drawSparkline = (usage) => {
             this.history.push(usage);
             if (this.history.length > 50) this.history.shift();
-            
             const w = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
             const h = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
             ctx.clearRect(0, 0, w, h);
-            
             if (this.history.length < 2) return;
-            
             const max = 10 * 1024 * 1024;
             const points = this.history.map((v, i) => ({
                 x: (i / 49) * (canvas.offsetWidth),
                 y: canvas.offsetHeight - (v / max) * canvas.offsetHeight
             }));
-
             ctx.beginPath();
             ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent');
             ctx.lineWidth = 2;
@@ -83,8 +77,6 @@ WebOS.registerApp({
             ctx.moveTo(points[0].x, points[0].y);
             for(let i=1; i<points.length; i++) ctx.lineTo(points[i].x, points[i].y);
             ctx.stroke();
-
-            // Area fill
             ctx.lineTo(points[points.length-1].x, canvas.offsetHeight);
             ctx.lineTo(points[0].x, canvas.offsetHeight);
             const gradient = ctx.createLinearGradient(0, 0, 0, canvas.offsetHeight);
@@ -94,19 +86,16 @@ WebOS.registerApp({
             ctx.fillStyle = gradient;
             ctx.fill();
         };
-
         const refresh = async () => {
             const processes = await api.system.getProcesses();
             const filtered = processes.filter(p => 
                 (p.name || p.appId).toLowerCase().includes(this.filter) || 
                 String(p.pid).includes(this.filter)
             );
-            
             const activePids = new Set(filtered.map(p => p.pid));
             Array.from(list.children).forEach(row => {
                 if (!activePids.has(Number(row.dataset.pid))) row.remove();
             });
-
             filtered.forEach(p => {
                 let row = list.querySelector(`.tm-row[data-pid="${p.pid}"]`);
                 if (!row) {
@@ -145,7 +134,6 @@ WebOS.registerApp({
                 const appUsage = api.system.storage.calculateUsage ? api.system.storage.calculateUsage(p.appId) : 0;
                 memEl.innerText = (appUsage / 1024).toFixed(1) + ' KB';
             });
-
             const totalUsage = api.system.storage.getTotalUsage ? api.system.storage.getTotalUsage() : 0;
             const quota = 10 * 1024 * 1024;
             const percent = Math.min(100, (totalUsage / quota) * 100);
@@ -154,7 +142,6 @@ WebOS.registerApp({
             storageFillEl.style.background = percent > 90 ? '#ef4444' : (percent > 70 ? '#ff9f0a' : 'var(--accent)');
             drawSparkline(totalUsage);
         };
-
         const killAllBtn = container.querySelector('.tm-kill-all-btn');
         killAllBtn.onclick = () => {
             api.ui.confirm(window.I18n.t('dialog.close_all_confirm'), async (ok) => {

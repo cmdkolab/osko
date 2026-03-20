@@ -234,30 +234,33 @@
     }
     function _setupLockScreen() {
         const lockScreen = document.getElementById('lock-screen');
+        if (!lockScreen) {
+            console.error('[init] lock-screen element not found! DOM structure might be corrupted.');
+            return;
+        }
         const lockWallpaper = lockScreen.querySelector('.lock-wallpaper');
         const lockTime = document.getElementById('lock-time');
         const lockDate = document.getElementById('lock-date');
         const unlockBtn = document.getElementById('unlock-btn');
-        
+        if (!lockTime || !lockDate || !unlockBtn) {
+            console.error('[init] Critical lock screen sub-elements missing!');
+            return;
+        }
         const updateLockTime = () => {
             const now = new Date();
             const loc = window.I18n.current === 'pl' ? 'pl-PL' : 'en-US';
             lockTime.innerText = now.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false });
             lockDate.innerText = now.toLocaleDateString(loc, { weekday: 'long', month: 'long', day: 'numeric' });
         };
-        
         setInterval(updateLockTime, 1000);
         updateLockTime();
-
         document.addEventListener('mousemove', (e) => {
             if (lockScreen.classList.contains('hidden')) return;
             const x = (e.clientX / window.innerWidth - 0.5) * 40;
             const y = (e.clientY / window.innerHeight - 0.5) * 40;
-            lockWallpaper.style.transform = `translate(${x}px, ${y}px) scale(1.1)`;
+            if (lockWallpaper) lockWallpaper.style.transform = `translate(${x}px, ${y}px) scale(1.1)`;
         });
-
         unlockBtn.onclick = () => SessionManager.unlock();
-
         if (state.isLocked) {
             lockScreen.classList.remove('hidden');
             SessionManager.showLockScreen();

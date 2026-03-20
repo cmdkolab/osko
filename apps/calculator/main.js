@@ -99,7 +99,6 @@ WebOS.registerApp({
                 const result = safeEval(expr);
                 if (!isFinite(result) || isNaN(result)) throw new Error('Math Error');
                 const resultStr = String(Number(result.toFixed(8)));
-                
                 this.history = this.current + window.I18n.t('calculator.result_eq');
                 this.current = resultStr;
                 this.shouldReset = true;

@@ -1,26 +1,19 @@
 <!DOCTYPE html>
 <html lang="pl">
-
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="OS(KO) - Advanced browser-based operating system with window management, virtual file system, and multi-language support.">
     <meta name="theme-color" content="#1e293b">
-    
-
     <meta property="og:type" content="website">
     <meta property="og:title" content="OS(KO) - Browser OS">
     <meta property="og:description" content="Elite browser-based desktop experience with advanced window management and VFS.">
     <meta property="og:image" content="assets/icons/256.png">
-
     <title>OS(KO)</title>
-    
     <link rel="manifest" href="app.webmanifest">
     <link rel="stylesheet" href="osko.min.css">
     <link rel="icon" type="image/png" href="assets/icons/256.png">
 </head>
-
 <body>
     <div id="boot-screen">
         <div class="boot-content">
@@ -31,7 +24,6 @@
             <p class="boot-status"></p>
         </div>
     </div>
-
     <div id="lock-screen" class="hidden">
         <div class="lock-wallpaper"></div>
         <div class="lock-content reveal">
@@ -43,12 +35,10 @@
             </div>
         </div>
     </div>
-
     <main id="desktop" role="main">
         <div id="desktop-icons" role="list"></div>
         <div id="window-layer"></div>
     </main>
-
     <nav id="taskbar" role="navigation">
         <div class="taskbar-blur"></div>
         <button id="search-btn" class="search-btn" aria-label="Search">🔍</button>
@@ -62,5 +52,4 @@
     <div id="notification-center" role="log" aria-live="polite"></div>
     <script src="osko.min.js"></script>
 </body>
-
 </html>

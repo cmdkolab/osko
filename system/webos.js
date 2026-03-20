@@ -375,7 +375,6 @@ window.WebOS = {
                 }
                 return acc;
             }, []);
-            
             const sessionData = JSON.stringify({ openApps });
             await VFS.write('/sys/session.json', sessionData, 'system');
             await VFS.saveImmediate();
@@ -387,11 +386,9 @@ window.WebOS = {
             const raw = await VFS.read('/sys/session.json', 'system');
             if (raw) data = JSON.parse(raw);
             else {
-                // Fallback for transition from old system
                 data = (await PersistenceManager.get(state.persistenceKey)) || { openApps: [] };
             }
         } catch (e) { }
-
         if (deferredData) {
             data.openApps = [...(data.openApps || []), ...deferredData];
             const seen = new Set();
@@ -401,14 +398,11 @@ window.WebOS = {
                 return true;
             });
         }
-        
         if (!state.positionsLoaded) await new Promise(res => EventBus.subscribe('system:positions-ready', () => res()));
-        
         if (data.openApps && Array.isArray(data.openApps)) {
             for (const appData of data.openApps) {
                 if (!appData.appId) continue;
                 if (state.processes.find(p => p.appId === appData.appId)) continue;
-                
                 await WebOS.launchApp(appData.appId, appData.params || {});
                 const win = state.windows.find(w => w.appId === appData.appId && state.processes.some(p => p.windowId === w.id && p.appId === appData.appId));
                 if (win && appData.window) {
@@ -418,7 +412,6 @@ window.WebOS = {
                 }
             }
         }
-        
         try {
             const startup = JSON.parse(await VFS.read('/sys/startup.json', 'system') || '[]');
             for (const appId of startup) {
