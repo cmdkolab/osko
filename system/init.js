@@ -6,7 +6,8 @@
             AudioEngine.init(),
             SessionManager.init(),
             ThemeEngine.init(),
-            WebOS._loadDesktopPositions()
+            WebOS._loadDesktopPositions(),
+            _setupLockScreen()
         ]);
         AudioEngine.play('startup');
         if (DBWrapper._isFallback) {
@@ -230,5 +231,36 @@
                 WebOS.launchApp(app.id);
             }
         });
+    }
+    function _setupLockScreen() {
+        const lockScreen = document.getElementById('lock-screen');
+        const lockWallpaper = lockScreen.querySelector('.lock-wallpaper');
+        const lockTime = document.getElementById('lock-time');
+        const lockDate = document.getElementById('lock-date');
+        const unlockBtn = document.getElementById('unlock-btn');
+        
+        const updateLockTime = () => {
+            const now = new Date();
+            const loc = window.I18n.current === 'pl' ? 'pl-PL' : 'en-US';
+            lockTime.innerText = now.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false });
+            lockDate.innerText = now.toLocaleDateString(loc, { weekday: 'long', month: 'long', day: 'numeric' });
+        };
+        
+        setInterval(updateLockTime, 1000);
+        updateLockTime();
+
+        document.addEventListener('mousemove', (e) => {
+            if (lockScreen.classList.contains('hidden')) return;
+            const x = (e.clientX / window.innerWidth - 0.5) * 40;
+            const y = (e.clientY / window.innerHeight - 0.5) * 40;
+            lockWallpaper.style.transform = `translate(${x}px, ${y}px) scale(1.1)`;
+        });
+
+        unlockBtn.onclick = () => SessionManager.unlock();
+
+        if (state.isLocked) {
+            lockScreen.classList.remove('hidden');
+            SessionManager.showLockScreen();
+        }
     }
     init();

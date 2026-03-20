@@ -210,7 +210,7 @@ window.WebOS = {
         const name = app.name || (app.manifest && app.manifest.name) || window.I18n.t('system.default_app_name');
         const iconImg = app.icon || (app.manifest && app.manifest.icon) || '❓';
         const icon = document.createElement('div');
-        icon.className = 'desktop-icon';
+        icon.className = 'desktop-icon reveal';
         icon.setAttribute('data-id', app.id);
         const grid = this.CONST.DESKTOP_GRID;
         const pos = this._desktopPositions[app.id];
@@ -364,32 +364,61 @@ window.WebOS = {
     saveState() {
         if (this._saveStateTimer) clearTimeout(this._saveStateTimer);
         this._saveStateTimer = setTimeout(async () => {
-            const data = {
-                openApps: state.processes.reduce((acc, p) => {
-                    const win = state.windows.find(w => w.id === p.windowId);
-                    if (win) {
-                        acc.push({
-                            appId: p.appId,
-                            params: p.params,
-                            window: { x: win.element.style.left, y: win.element.style.top, width: win.element.style.width, height: win.element.style.height }
-                        });
-                    }
-                    return acc;
-                }, [])
-            };
-            await PersistenceManager.set(state.persistenceKey, data);
+            const openApps = state.processes.reduce((acc, p) => {
+                const win = state.windows.find(w => w.id === p.windowId);
+                if (win) {
+                    acc.push({
+                        appId: p.appId,
+                        params: p.params,
+                        window: { left: win.element.style.left, top: win.element.style.top, width: win.element.style.width, height: win.element.style.height }
+                    });
+                }
+                return acc;
+            }, []);
+            
+            const sessionData = JSON.stringify({ openApps });
+            await VFS.write('/sys/session.json', sessionData, 'system');
+            await VFS.saveImmediate();
         }, this.CONST.UI.SAVE_DELAY);
     },
     async restoreState(deferredData) {
-        const data = deferredData ? { openApps: deferredData } : (await PersistenceManager.get(state.persistenceKey));
-        if (!state.positionsLoaded) await new Promise(res => EventBus.subscribe('system:positions-ready', res));
-        if (data && Array.isArray(data.openApps)) {
+        let data = { openApps: [] };
+        try {
+            const raw = await VFS.read('/sys/session.json', 'system');
+            if (raw) data = JSON.parse(raw);
+            else {
+                // Fallback for transition from old system
+                data = (await PersistenceManager.get(state.persistenceKey)) || { openApps: [] };
+            }
+        } catch (e) { }
+
+        if (deferredData) {
+            data.openApps = [...(data.openApps || []), ...deferredData];
+            const seen = new Set();
+            data.openApps = data.openApps.filter(a => {
+                if (!a.appId || seen.has(a.appId)) return false;
+                seen.add(a.appId);
+                return true;
+            });
+        }
+        
+        if (!state.positionsLoaded) await new Promise(res => EventBus.subscribe('system:positions-ready', () => res()));
+        
+        if (data.openApps && Array.isArray(data.openApps)) {
             for (const appData of data.openApps) {
+                if (!appData.appId) continue;
+                if (state.processes.find(p => p.appId === appData.appId)) continue;
+                
                 await WebOS.launchApp(appData.appId, appData.params || {});
                 const win = state.windows.find(w => w.appId === appData.appId && state.processes.some(p => p.windowId === w.id && p.appId === appData.appId));
-                if (win && appData.window) Object.assign(win.element.style, appData.window);
+                if (win && appData.window) {
+                    Object.assign(win.element.style, appData.window);
+                    win.element.style.transition = 'none';
+                    setTimeout(() => win.element.style.transition = '', 100);
+                }
             }
         }
+        
         try {
             const startup = JSON.parse(await VFS.read('/sys/startup.json', 'system') || '[]');
             for (const appId of startup) {
@@ -499,13 +528,13 @@ window.WebOS = {
                     }
                     allResults = [...allResults, ...appResults, ...fileResults.slice(0, 10)];
                     results.innerHTML = allResults.map(res => `
-                        <div class="search-item" data-type="${res.type}" data-id="${res.id || res.path}">
+                        <div class="search-item reveal" data-type="${res.type}" data-id="${res.id || res.path}">
                             <span class="res-icon">${res.icon || (res.type === 'dir' ? '📁' : '📄')}</span>
                             <div class="res-info">
                                 <span class="res-name">${res.name}</span>
                                 <span class="res-path">${res.path || window.I18n.t('taskmanager.app')}</span>
                             </div>
-                            <span class="res-type-badge">${res.type}</span>
+                            <span class="res-type-badge">${window.I18n.t('system.type_' + res.type)}</span>
                         </div>
                     `).join('');
                     results.querySelectorAll('.search-item').forEach(item => {
@@ -571,8 +600,16 @@ window.WebOS = {
                 let daysHtml = '';
                 for (let i = 0; i < firstDay; i++) daysHtml += '<div class="cal-day empty"></div>';
                 for (let i = 1; i <= daysInMonth; i++) daysHtml += `<div class="cal-day ${i === now.getDate() ? 'today' : ''}">${i}</div>`;
-                const weekdays = window.I18n.current === 'pl' ? ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-                overlay.innerHTML = `<div class="cal-header">${month} ${year}</div><div class="cal-grid">${weekdays.map(w => `<div class="cal-weekday">${w}</div>`).join('')}${daysHtml}</div>`;
+                const weekdays = [
+                    window.I18n.t('system.calendar_weekday_mo'),
+                    window.I18n.t('system.calendar_weekday_tu'),
+                    window.I18n.t('system.calendar_weekday_we'),
+                    window.I18n.t('system.calendar_weekday_th'),
+                    window.I18n.t('system.calendar_weekday_fr'),
+                    window.I18n.t('system.calendar_weekday_sa'),
+                    window.I18n.t('system.calendar_weekday_su')
+                ];
+                overlay.innerHTML = `<div class="cal-header reveal">${month} ${year}</div><div class="cal-grid reveal">${weekdays.map(w => `<div class="cal-weekday">${w}</div>`).join('')}${daysHtml}</div>`;
                 overlay.style.display = 'block';
                 setTimeout(() => overlay.classList.add('active'), 10);
             } else {

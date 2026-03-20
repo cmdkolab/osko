@@ -2,32 +2,38 @@ WebOS.registerApp({
     id: "taskmanager",
     get name() { return window.I18n.t('taskmanager.title'); },
     icon: "📊",
-    version: "4.1.14",
+    version: "4.2.0",
     manifest: {
         get name() { return window.I18n.t('taskmanager.title'); },
         icon: "📊",
         permissions: ["notifications", "system.manage"]
     },
-    width: "500px",
-    height: "550px",
+    width: "550px",
+    height: "600px",
     async mount(container, api) {
         this.container = container;
         this.api = api;
+        this.history = []; // For sparkline
+        this.filter = '';
         container.innerHTML = `
             <div class="task-manager">
                 <div class="tm-sysinfo">
-                    <div class="tm-sys-header">
-                        <span class="tm-os-version">OS(KO) v${api.system.VERSION}</span>
-                        <span class="tm-sys-uptime"></span>
-                    </div>
-                    <div class="tm-storage-info">
-                        <div class="tm-storage-label">
-                            <span>${window.I18n.t('taskmanager.total_storage')}</span>
-                            <span class="tm-storage-value">0 / 10 MB</span>
+                    <div class="tm-metrics">
+                        <div class="tm-storage-info">
+                            <div class="tm-storage-label">
+                                <span>${window.I18n.t('taskmanager.total_storage')}</span>
+                                <span class="tm-storage-value">0 / 10 MB</span>
+                            </div>
+                            <div class="tm-storage-bar"><div class="tm-storage-fill"></div></div>
                         </div>
-                        <div class="tm-storage-bar"><div class="tm-storage-fill"></div></div>
+                        <div class="tm-sparkline-container">
+                            <canvas class="tm-sparkline-canvas"></canvas>
+                        </div>
                     </div>
-                    <button class="tm-kill-all-btn">${window.I18n.t('menu.close_all')}</button>
+                    <div class="tm-controls">
+                        <input type="text" class="tm-search" placeholder="${window.I18n.t('system.search_placeholder')}">
+                        <button class="tm-kill-all-btn">${window.I18n.t('menu.close_all')}</button>
+                    </div>
                 </div>
                 <div class="tm-table">
                     <div class="tm-header">
@@ -42,20 +48,70 @@ WebOS.registerApp({
             </div>
         `;
         const list = container.querySelector('.tm-list');
-        const sysUptimeEl = container.querySelector('.tm-sys-uptime');
         const storageValueEl = container.querySelector('.tm-storage-value');
         const storageFillEl = container.querySelector('.tm-storage-fill');
+        const searchInput = container.querySelector('.tm-search');
+        const canvas = container.querySelector('.tm-sparkline-canvas');
+        const ctx = canvas.getContext('2d');
+
+        searchInput.oninput = (e) => {
+            this.filter = e.target.value.toLowerCase();
+            refresh();
+        };
+
+        const drawSparkline = (usage) => {
+            this.history.push(usage);
+            if (this.history.length > 50) this.history.shift();
+            
+            const w = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            const h = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            ctx.clearRect(0, 0, w, h);
+            
+            if (this.history.length < 2) return;
+            
+            const max = 10 * 1024 * 1024;
+            const points = this.history.map((v, i) => ({
+                x: (i / 49) * (canvas.offsetWidth),
+                y: canvas.offsetHeight - (v / max) * canvas.offsetHeight
+            }));
+
+            ctx.beginPath();
+            ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent');
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+            ctx.moveTo(points[0].x, points[0].y);
+            for(let i=1; i<points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+            ctx.stroke();
+
+            // Area fill
+            ctx.lineTo(points[points.length-1].x, canvas.offsetHeight);
+            ctx.lineTo(points[0].x, canvas.offsetHeight);
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.offsetHeight);
+            const accentRGB = getComputedStyle(document.documentElement).getPropertyValue('--accent-rgb').trim() || '59, 130, 246';
+            gradient.addColorStop(0, `rgba(${accentRGB}, 0.2)`);
+            gradient.addColorStop(1, `rgba(${accentRGB}, 0)`);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+        };
+
         const refresh = async () => {
             const processes = await api.system.getProcesses();
-            const activePids = new Set(processes.map(p => p.pid));
+            const filtered = processes.filter(p => 
+                (p.name || p.appId).toLowerCase().includes(this.filter) || 
+                String(p.pid).includes(this.filter)
+            );
+            
+            const activePids = new Set(filtered.map(p => p.pid));
             Array.from(list.children).forEach(row => {
                 if (!activePids.has(Number(row.dataset.pid))) row.remove();
             });
-            processes.forEach(p => {
+
+            filtered.forEach(p => {
                 let row = list.querySelector(`.tm-row[data-pid="${p.pid}"]`);
                 if (!row) {
                     row = document.createElement('div');
-                    row.className = 'tm-row';
+                    row.className = 'tm-row reveal';
                     row.dataset.pid = p.pid;
                     row.innerHTML = `
                         <div class="tm-app-info">
@@ -89,18 +145,16 @@ WebOS.registerApp({
                 const appUsage = api.system.storage.calculateUsage ? api.system.storage.calculateUsage(p.appId) : 0;
                 memEl.innerText = (appUsage / 1024).toFixed(1) + ' KB';
             });
-            const totalUptime = Math.floor((Date.now() - (api.system.START_TIME || Date.now())) / 1000);
-            const s = window.I18n.t('taskmanager.unit_s');
-            const m = window.I18n.t('taskmanager.unit_m');
-            const h = window.I18n.t('taskmanager.unit_h');
-            sysUptimeEl.innerText = `${window.I18n.t('taskmanager.uptime')}: ${totalUptime < 3600 ? Math.floor(totalUptime/60)+m+' '+(totalUptime%60)+s : Math.floor(totalUptime/3600)+h+' '+Math.floor((totalUptime%3600)/60)+m}`;
+
             const totalUsage = api.system.storage.getTotalUsage ? api.system.storage.getTotalUsage() : 0;
             const quota = 10 * 1024 * 1024;
             const percent = Math.min(100, (totalUsage / quota) * 100);
             storageValueEl.innerText = `${(totalUsage / (1024 * 1024)).toFixed(2)} / 10.00 MB`;
             storageFillEl.style.width = percent + '%';
-            storageFillEl.style.background = percent > 90 ? '#ef4444' : (percent > 70 ? '#f59e0b' : 'var(--accent)');
+            storageFillEl.style.background = percent > 90 ? '#ef4444' : (percent > 70 ? '#ff9f0a' : 'var(--accent)');
+            drawSparkline(totalUsage);
         };
+
         const killAllBtn = container.querySelector('.tm-kill-all-btn');
         killAllBtn.onclick = () => {
             api.ui.confirm(window.I18n.t('dialog.close_all_confirm'), async (ok) => {

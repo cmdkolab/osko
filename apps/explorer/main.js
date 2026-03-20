@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "explorer",
     get name() { return window.I18n.t('explorer.title'); },
     icon: "📂",
-    version: "4.1.17",
+    version: "4.2.0",
     manifest: {
         get name() { return window.I18n.t('explorer.title'); },
         icon: "📂",
@@ -114,7 +114,7 @@ WebOS.registerApp({
         const frag = document.createDocumentFragment();
         items.forEach(item => {
             const el = document.createElement('div');
-            el.className = 'explorer-item';
+            el.className = 'explorer-item reveal';
             el.tabIndex = 0;
             const icon = item.type === 'dir' ? '📁' : this.getIcon(item.name);
             el.innerHTML = `<div class="item-icon">${icon}</div><div class="item-name">${item.name}</div>`;
@@ -153,12 +153,12 @@ WebOS.registerApp({
             if (!active) span.onclick = () => { this.currentPath = path; this.render(this.container); };
             el.appendChild(span);
         };
-        createCrumb('OS(KO)', '/', this.currentPath === '/');
+        createCrumb(window.I18n.t('about.title'), '/', this.currentPath === '/');
         parts.forEach((p, i) => {
             if (!p) return;
             const sep = document.createElement('span');
             sep.className = 'breadcrumb-sep';
-            sep.innerText = '❯';
+            sep.innerText = window.I18n.t('explorer.breadcrumb_sep');
             el.appendChild(sep);
             acc = this.api.fs.join(acc, p);
             createCrumb(p, acc, i === parts.length - 1);

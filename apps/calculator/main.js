@@ -26,9 +26,9 @@ WebOS.registerApp({
                     </div>
                     <div class="calc-grid">
                         <button class="calc-btn clear" data-val="C">C</button>
-                        <button class="calc-btn op" data-val="()">()</button>
-                        <button class="calc-btn op" data-val="%">%</button>
-                        <button class="calc-btn op" data-val="/">/</button>
+                        <button class="calc-btn op" data-val="(">(</button>
+                        <button class="calc-btn op" data-val=")">)</button>
+                        <button class="calc-btn op" data-val="/">÷</button>
                         <button class="calc-btn num" data-val="7">7</button>
                         <button class="calc-btn num" data-val="8">8</button>
                         <button class="calc-btn num" data-val="9">9</button>
@@ -43,6 +43,7 @@ WebOS.registerApp({
                         <button class="calc-btn op" data-val="+">+</button>
                         <button class="calc-btn num" data-val="0">0</button>
                         <button class="calc-btn num" data-val=".">.</button>
+                        <button class="calc-btn op" data-val="%">%</button>
                         <button class="calc-btn eq" data-val="=">=</button>
                     </div>
                 </div>
@@ -99,7 +100,7 @@ WebOS.registerApp({
                 if (!isFinite(result) || isNaN(result)) throw new Error('Math Error');
                 const resultStr = String(Number(result.toFixed(8)));
                 
-                this.history = this.current + ' =';
+                this.history = this.current + window.I18n.t('calculator.result_eq');
                 this.current = resultStr;
                 this.shouldReset = true;
                 this.openParens = 0;
@@ -118,11 +119,12 @@ WebOS.registerApp({
                     this.current = '0'; this.history = ''; this.openParens = 0;
                 } else if (val === '=') {
                     calculate();
-                } else if (val === '()') {
+                } else if (val === '(') {
                     if (this.current === '0' || this.shouldReset) { this.current = '('; this.openParens = 1; this.shouldReset = false; }
                     else if (['+', '-', '*', '/'].includes(this.current.slice(-1))) { this.current += '('; this.openParens++; }
-                    else if (this.openParens > 0) { this.current += ')'; this.openParens--; }
                     else { this.current += '×('; this.openParens++; }
+                } else if (val === ')') {
+                    if (this.openParens > 0) { this.current += ')'; this.openParens--; }
                 } else if (['+', '-', '*', '/'].includes(val)) {
                     if (this.shouldReset) this.shouldReset = false;
                     const last = this.current.slice(-1);

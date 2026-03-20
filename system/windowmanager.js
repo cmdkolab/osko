@@ -11,10 +11,11 @@
             const secureId = window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
             const id = `win_${secureId}`;
             const winEl = document.createElement('div');
-            winEl.className = 'window';
+            winEl.className = 'window reveal';
             winEl.id = id;
             winEl.style.width = options.width || '400px';
             winEl.style.height = options.height || '300px';
+            winEl.style.transition = 'none'; // Initial placement without transition
             const cascadeOffset = (state.windows.length * this.CONST.CASCADE_STEP) % (window.innerHeight / 3);
             let baseX = parseInt(options.x !== undefined ? options.x : (100 + cascadeOffset));
             let baseY = parseInt(options.y !== undefined ? options.y : (80 + cascadeOffset));
@@ -28,14 +29,15 @@
                 <div class="window-header">
                     <div class="window-title"></div>
                     <div class="window-controls">
-                        <button class="control-btn minimize" title="${window.I18n.t('system.minimize') || '−'}">−</button>
-                        <button class="control-btn maximize" title="${window.I18n.t('system.maximize') || '□'}">□</button>
-                        <button class="control-btn close" title="${window.I18n.t('system.close') || '×'}">×</button>
+                        <button class="control-btn minimize" aria-label="${window.I18n.t('system.minimize')}">−</button>
+                        <button class="control-btn maximize" aria-label="${window.I18n.t('system.maximize')}">□</button>
+                        <button class="control-btn close" aria-label="${window.I18n.t('system.close')}">×</button>
                     </div>
                 </div>
                 <div class="window-content"></div>
                 <div class="window-resizer"></div>
             `;
+            setTimeout(() => winEl.style.transition = '', 50);
             winEl.querySelector('.window-title').textContent = `${options.icon || ''} ${options.title || window.I18n.t('system.default_app_name')}`;
             document.getElementById('window-layer').appendChild(winEl);
             const win = { id, element: winEl, appId, state: 'normal' };
@@ -71,22 +73,28 @@
         minimize(id) {
             const win = state.windows.find(w => w.id === id);
             if (win) {
-                win.element.style.display = 'none';
-                win.state = 'minimized';
-                this._focusNext(id);
-                WebOS.updateTaskbar();
+                win.element.style.transform = 'scale(0.8) translateY(20px)';
+                win.element.style.opacity = '0';
+                setTimeout(() => {
+                    win.element.style.display = 'none';
+                    win.state = 'minimized';
+                    this._focusNext(id);
+                    WebOS.updateTaskbar();
+                }, 200);
             }
         },
         toggleMaximize(id) {
             const win = state.windows.find(w => w.id === id);
             if (!win) return;
             if (win.state === 'maximized') {
+                win.element.style.transition = 'all var(--transition-bounce)';
                 win.element.style.width = win.oldWidth || '400px';
                 win.element.style.height = win.oldHeight || '300px';
                 win.element.style.top = win.oldTop || '100px';
                 win.element.style.left = win.oldLeft || '100px';
                 win.element.classList.remove('window-snapped');
                 win.state = 'normal';
+                setTimeout(() => win.element.style.transition = '', 600);
             } else {
                 if (!win.element.classList.contains('window-snapped')) {
                     win.oldWidth = win.element.style.width;
@@ -94,12 +102,14 @@
                     win.oldTop = win.element.style.top;
                     win.oldLeft = win.element.style.left;
                 }
+                win.element.style.transition = 'all var(--transition-bounce)';
                 win.element.style.width = '100%';
                 win.element.style.height = `calc(100% - ${this.CONST.TASKBAR_HEIGHT}px)`;
                 win.element.style.top = '0';
                 win.element.style.left = '0';
                 win.state = 'maximized';
                 win.element.classList.remove('window-snapped');
+                setTimeout(() => win.element.style.transition = '', 600);
             }
             WebOS.saveState();
         },
@@ -128,8 +138,10 @@
                 if (prevFocus) prevFocus.element.classList.remove('focused');
             }
             win.element.classList.add('focused');
-            if (win.state === 'minimized') {
+            if (win.state === 'minimized' || win.element.style.display === 'none') {
                 win.element.style.display = 'flex';
+                win.element.style.transform = 'scale(1) translateY(0)';
+                win.element.style.opacity = '1';
                 win.state = 'normal';
             }
             state.focusedWindow = id;

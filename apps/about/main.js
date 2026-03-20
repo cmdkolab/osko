@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "about",
     get name() { return window.I18n.t('about.title'); },
     icon: "ℹ️",
-    version: "4.1.14",
+    version: "4.2.0",
     manifest: {
         get name() { return window.I18n.t('about.title'); },
         icon: "ℹ️",
@@ -15,7 +15,7 @@ WebOS.registerApp({
         this.api = api;
         const render = () => {
             container.innerHTML = `
-                <div class="about-container">
+                <div class="about-container reveal">
                     <div class="about-logo">🚀</div>
                     <h2 class="about-title">OS(KO)</h2>
                     <div class="about-desc">${window.I18n.t('about.desc')}</div>

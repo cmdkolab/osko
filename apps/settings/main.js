@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "settings",
     get name() { return window.I18n.t('settings.title'); },
     icon: "⚙️",
-    version: "4.1.17",
+    version: "4.2.0",
     manifest: {
         get name() { return window.I18n.t('settings.title'); },
         icon: "⚙️",
@@ -20,7 +20,10 @@ WebOS.registerApp({
                 { name: 'settings.preset_ocean', val: 'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)' },
                 { name: 'settings.preset_midnight', val: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)' },
                 { name: 'settings.preset_emerald', val: 'linear-gradient(135deg, #1D976C 0%, #93F9B9 100%)' },
-                { name: 'settings.preset_cyberpunk', val: 'linear-gradient(135deg, #000428 0%, #004e92 100%)' }
+                { name: 'settings.preset_cyberpunk', val: 'linear-gradient(135deg, #000428 0%, #004e92 100%)' },
+                { name: 'settings.preset_aurora', val: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+                { name: 'settings.preset_frost', val: 'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)' },
+                { name: 'settings.preset_deep_sea', val: 'linear-gradient(135deg, #2b5876 0%, #4e4376 100%)' }
             ];
             const currentWallpaper = await api.fs.read('/home/user/settings/wallpaper.txt');
             const currentTheme = (await api.fs.read('/home/user/settings/theme.txt')) || 'default';

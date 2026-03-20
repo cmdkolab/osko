@@ -6,16 +6,18 @@
         lock() {
             state.isLocked = true;
             PersistenceManager.set('SYS:LOCKED', true);
-            document.body.classList.add('system-locked');
-            this.showLockScreen();
+            const ls = document.getElementById('lock-screen');
+            if (ls) ls.classList.remove('hidden');
             SysLog.log('INFO', 'System locked', 'SessionManager');
         },
         async unlock() {
             state.isLocked = false;
             await PersistenceManager.set('SYS:LOCKED', false);
-            document.body.classList.remove('system-locked');
             const ls = document.getElementById('lock-screen');
-            if (ls) ls.remove();
+            if (ls) {
+                ls.classList.add('hidden');
+                AudioEngine.play('click');
+            }
             if (this._lockKeydown) {
                 document.removeEventListener('keydown', this._lockKeydown);
                 this._lockKeydown = null;
@@ -23,6 +25,8 @@
             SysLog.log('INFO', 'System unlocked', 'SessionManager');
             if (state.deferredRestoration) {
                 WebOS.flushDeferredRestoration();
+            } else {
+                WebOS.restoreState();
             }
         },
         async logout() {
@@ -37,21 +41,7 @@
             return state.isLocked;
         },
         showLockScreen() {
-            if (document.getElementById('lock-screen')) return;
-            const ls = document.createElement('div');
-            ls.id = 'lock-screen';
-            ls.innerHTML = `
-                <div class="lock-panel">
-                    <div class="lock-avatar">👤</div>
-                    <div class="lock-user">OS(KO)</div>
-                    <button class="lock-btn">${window.I18n.t('system.unlock')}</button>
-                </div>
-            `;
-            document.body.appendChild(ls);
-            const btn = ls.querySelector('.lock-btn');
-            btn.onclick = () => {
-                this.unlock();
-            };
+            this.lock();
             this._lockKeydown = (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();

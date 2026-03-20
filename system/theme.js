@@ -8,6 +8,7 @@
             const urlPattern = /^(https?:\/\/|data:image\/)/i;
             const isUrl = urlPattern.test(val);
             const setStyle = (bgValue) => {
+                document.body.style.transition = 'background 0.8s var(--ease-in-out-cubic)';
                 document.body.style.background = bgValue;
                 document.body.style.backgroundSize = 'cover';
                 document.body.style.backgroundPosition = 'center center';

@@ -1,33 +1,55 @@
 .terminal-container {
-    background: rgba(15, 23, 42, 0.95);
-    color: #10b981;
-    font-family: 'Courier New', Courier, monospace;
+    background: rgba(10, 15, 25, 0.98);
+    color: var(--terminal-text, #10b981);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
     font-size: 14px;
-    padding: 15px;
+    padding: 20px;
     height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-radius: 0 0 12px 12px;
+    position: relative;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+/* Themes */
+.terminal-container.theme-matrix { --terminal-text: #00ff41; background: rgba(0, 5, 0, 0.98); }
+.terminal-container.theme-cyberpunk { --terminal-text: #f0f; background: rgba(20, 0, 40, 0.98); }
+.terminal-container.theme-classic { --terminal-text: #fff; background: rgba(30, 30, 30, 0.98); }
+
+/* Scanlines Effect */
+.terminal-container::before {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 2;
+    background-size: 100% 4px, 3px 100%;
+    pointer-events: none;
+    opacity: 0.3;
 }
 
 .terminal-output {
     flex: 1;
     overflow-y: auto;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
     white-space: pre-wrap;
     word-break: break-all;
+    scrollbar-width: thin;
+    z-index: 1;
 }
 
 .terminal-input-line {
     display: flex;
     align-items: center;
+    z-index: 1;
 }
 
 .terminal-prompt {
-    margin-right: 8px;
+    margin-right: 10px;
     white-space: nowrap;
-    color: #3b82f6;
+    color: var(--accent);
     font-weight: 700;
 }
 
@@ -35,26 +57,28 @@
     flex: 1;
     background: transparent;
     border: none;
-    color: #10b981;
+    color: inherit;
     font-family: inherit;
     font-size: inherit;
     outline: none;
 }
 
-.terminal-input:focus {
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4);
-    border-radius: 4px;
+/* Blinking Cursor */
+.terminal-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 18px;
+    background: var(--terminal-text, #10b981);
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+    margin-left: 2px;
 }
 
-.terminal-echo {
-    color: #94a3b8;
-    margin-top: 10px;
+@keyframes blink {
+    50% { opacity: 0; }
 }
 
-.terminal-error {
-    color: #ef4444;
-}
-
-.terminal-info {
-    color: #10b981;
-}
+.terminal-echo { color: rgba(255, 255, 255, 0.5); }
+.terminal-error { color: #ff5555; font-weight: bold; }
+.terminal-info { color: var(--terminal-text, #10b981); }
+.terminal-dir { color: var(--accent); font-weight: bold; }

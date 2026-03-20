@@ -22,7 +22,10 @@ WebOS.registerApp({
                 <div class="terminal-output"></div>
                 <div class="terminal-input-line">
                     <span class="terminal-prompt"></span>
-                    <input type="text" class="terminal-input" spellcheck="false" autofocus>
+                    <div style="position: relative; flex: 1; display: flex; align-items: center;">
+                        <input type="text" class="terminal-input" spellcheck="false" autofocus>
+                        <span class="terminal-cursor"></span>
+                    </div>
                 </div>
             </div>
         `;
@@ -30,7 +33,7 @@ WebOS.registerApp({
         this.input = container.querySelector('.terminal-input');
         this.prompt = container.querySelector('.terminal-prompt');
         this.updatePrompt();
-        this.print(`OS(KO) ${window.I18n.t('terminal.title')} v${this.api.system.VERSION}`);
+        this.print(window.I18n.t('terminal.version_prefix', window.I18n.t('terminal.title'), this.api.system.VERSION));
         this.print(window.I18n.t('terminal.welcome'));
         this.input.onkeydown = (e) => {
             if (e.key === 'Enter') {
@@ -69,7 +72,9 @@ WebOS.registerApp({
         container.onclick = () => this.input.focus();
     },
     updatePrompt() {
-        this.prompt.innerText = `user@osko:${this.cwd}$ `;
+        const user = window.I18n.t('terminal.prompt_user');
+        const host = window.I18n.t('terminal.prompt_host');
+        this.prompt.innerText = `${user}@${host}:${this.cwd}$ `;
     },
     print(text, type = 'info') {
         const line = document.createElement('div');
@@ -102,11 +107,11 @@ WebOS.registerApp({
                     if (entries === null) {
                         this.print(`ls: ${this.cwd}: ${window.I18n.t('terminal.not_found')}`, 'error');
                     } else {
-                        const sorted = [...entries].sort((a, b) => {
-                            if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-                            return a.name.localeCompare(b.name, undefined, { numeric: true });
-                        });
-                        this.print(sorted.map(e => e.type === 'dir' ? e.name + '/' : e.name).join('  '));
+                        const html = sorted.map(e => {
+                            const cls = e.type === 'dir' ? 'terminal-dir' : '';
+                            return `<span class="${cls}">${e.type === 'dir' ? e.name + '/' : e.name}</span>`;
+                        }).join('  ');
+                        this.printHTML(html);
                     }
                 } catch (e) { this.print(`${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
                 break;
@@ -209,6 +214,19 @@ WebOS.registerApp({
                     });
                 } catch (e) { this.print(`edit: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
                 break;
+            case 'theme':
+                if (!args[0]) { this.print("Usage: theme <default|matrix|cyberpunk|classic>"); break; }
+                const container = this.container.querySelector('.terminal-container');
+                container.classList.remove('theme-matrix', 'theme-cyberpunk', 'theme-classic');
+                if (args[0] !== 'default') container.classList.add(`theme-${args[0]}`);
+                this.print(`Theme changed to: ${args[0]}`);
+                break;
+            case 'history':
+                this.history.slice().reverse().forEach((cmd, i) => this.print(`${i + 1}: ${cmd}`));
+                break;
+            case 'top':
+                 this.executeTop();
+                 break;
             default:
                 this.print(`${window.I18n.t('terminal.not_found')}: ${cmd}`, 'error');
         }
@@ -237,6 +255,24 @@ WebOS.registerApp({
                 this.print([...new Set(matches)].join('  '));
             }
         } catch (e) { }
+    },
+    printHTML(html, type = 'info') {
+        const line = document.createElement('div');
+        line.className = `terminal-line terminal-${type}`;
+        line.innerHTML = html;
+        this.output.appendChild(line);
+        this.output.scrollTop = this.output.scrollHeight;
+    },
+    async executeTop() {
+        this.print("--- SYSTEM TOP ---", 'echo');
+        const procs = await this.api.system.getProcesses();
+        this.print(`PID   APPS      UPTIME    MEM`, 'echo');
+        procs.forEach(p => {
+            const up = Math.floor((Date.now() - p.startTime)/1000);
+            const mem = (this.api.system.storage.calculateUsage(p.appId) / 1024).toFixed(0) + 'K';
+            this.print(`${String(p.pid).padEnd(6)}${p.appId.slice(0,8).padEnd(10)}${String(up+'s').padEnd(10)}${mem}`);
+        });
+        this.print("------------------", 'echo');
     },
     async _loadHistory() {
         try {

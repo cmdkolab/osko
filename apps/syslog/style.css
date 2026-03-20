@@ -5,106 +5,121 @@
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-color);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    overflow: hidden;
 }
 
 .syslog-toolbar {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.03);
+    align-items: center;
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.2);
     border-bottom: 1px solid var(--glass-border);
-    flex-wrap: wrap;
-    gap: 12px;
+    gap: 16px;
 }
 
 .toolbar-left, .toolbar-right {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
-    flex-wrap: wrap;
 }
 
 .syslog-app .sys-btn {
-    padding: 5px 10px;
+    padding: 6px 12px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     color: var(--text-color);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    transition: 0.2s;
+    transition: var(--transition-fast);
 }
 
-.syslog-app .sys-btn:hover { background: rgba(255, 255, 255, 0.1); }
-.syslog-app .sys-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-.syslog-app .sys-btn.danger:hover { background: #ff3b30; border-color: #ff3b30; color: #fff; }
+.syslog-app .sys-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.syslog-app .sys-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.3);
+}
+
+.source-select {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: 6px 10px;
+    color: var(--text-color);
+    font-size: 12px;
+    outline: none;
+}
 
 .syslog-search {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
-    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    padding: 6px 14px;
     color: var(--text-color);
-    font-size: 11px;
-    width: 120px;
-    min-width: 80px;
+    font-size: 12px;
+    width: 180px;
+    outline: none;
+    transition: var(--transition-fast);
+}
+
+.syslog-search:focus {
+    width: 220px;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--accent);
 }
 
 .syslog-viewer {
     flex: 1;
     overflow: auto;
-    padding: 10px;
-    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    padding: 12px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
     font-size: 11px;
-    line-height: 1.2;
-    background: rgba(0, 0, 0, 0.1);
+    line-height: 1.4;
+    background: rgba(0, 0, 0, 0.15);
 }
 
 .log-entry {
-    margin-bottom: 0px;
-    white-space: nowrap;
-    padding: 1px 4px;
-    border-radius: 2px;
-}
-
-.log-entry:hover { background: rgba(255, 255, 255, 0.03); }
-
-.log-time { color: #94a3b8; opacity: 0.7; }
-.log-session { color: #a855f7; opacity: 0.8; }
-.log-level { font-weight: 800; }
-.log-source { color: #10b981; }
-.log-msg { color: #e2e8f0; }
-
-.level-err .log-level { color: #f87171; }
-.level-err { background: rgba(248, 113, 113, 0.05); }
-.level-warn .log-level { color: #fbbf24; }
-.level-info .log-level { color: #3b82f6; }
-
-.log-empty {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    opacity: 0.5;
-    font-style: italic;
+    gap: 8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: background 0.1s;
+    cursor: pointer;
 }
+
+.log-entry:hover { background: rgba(255, 255, 255, 0.05); }
+
+.log-time { color: var(--accent); opacity: 0.6; font-weight: 500; }
+.log-session { color: #8e44ad; opacity: 0.7; }
+.log-level { font-weight: 800; min-width: 50px; text-transform: uppercase; }
+.log-source { color: #2ecc71; font-weight: 600; }
+.log-msg { color: #ecf0f1; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.log-entry.level-err { background: rgba(231, 76, 60, 0.05); }
+.log-entry.level-err .log-level { color: #e74c3c; }
+.log-entry.level-warn { background: rgba(241, 196, 15, 0.05); }
+.log-entry.level-warn .log-level { color: #f1c40f; }
+.log-entry.level-info .log-level { color: #3498db; }
+.log-entry.level-debug .log-level { color: #95a5a6; }
 
 .syslog-status {
-    padding: 4px 12px;
-    background: rgba(0, 0, 0, 0.2);
-    font-size: 10px;
-    opacity: 0.5;
-    text-align: right;
+    padding: 8px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.6;
+    display: flex;
+    justify-content: space-between;
     border-top: 1px solid var(--glass-border);
-}
-
-mark {
-    background: var(--accent);
-    color: #fff;
-    padding: 0 2px;
-    border-radius: 2px;
 }
