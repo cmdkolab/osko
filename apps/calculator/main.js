@@ -7,7 +7,7 @@ WebOS.registerApp({
         icon: "🧮",
         permissions: []
     },
-    version: "4.1.14",
+    version: "4.1.15",
     width: "320px",
     height: "480px",
     async mount(container, api) {
@@ -43,7 +43,6 @@ WebOS.registerApp({
                         <button class="calc-btn op" data-val="+">+</button>
                         <button class="calc-btn num" data-val="0">0</button>
                         <button class="calc-btn num" data-val=".">.</button>
-                        <button class="calc-btn op" data-val="%">%</button>
                         <button class="calc-btn eq" data-val="=">=</button>
                     </div>
                 </div>
@@ -129,8 +128,6 @@ WebOS.registerApp({
                     const last = this.current.slice(-1);
                     if (['+', '-', '*', '/'].includes(last)) this.current = this.current.slice(0, -1) + val;
                     else this.current += val;
-                } else if (val === '%') {
-                    this.current = String(parseFloat(this.current) / 100);
                 } else {
                     if (this.shouldReset) { this.current = val; this.shouldReset = false; }
                     else if (this.current === '0') this.current = val;
@@ -144,7 +141,7 @@ WebOS.registerApp({
             '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
             '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
             '.': '.', ',': '.', '+': '+', '-': '-', '*': '*', '/': '/',
-            '%': '%', '(': '()', ')': '()', 'Enter': '=', '=': '=',
+            '(': '()', ')': '()', 'Enter': '=', '=': '=',
             'Escape': 'C', 'Backspace': 'Backspace'
         };
         const appEl = container.querySelector('.calc-app');

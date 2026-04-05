@@ -91,3 +91,34 @@
     background-clip: content-box;
 }
 .notes-editor::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); background-clip: content-box; }
+.notes-search-bar {
+    display: none;
+    padding: 8px 12px;
+    gap: 6px;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.15);
+}
+.notes-search-input, .notes-replace-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: var(--text-color);
+    outline: none;
+    font-family: inherit;
+}
+.notes-search-input:focus, .notes-replace-input:focus {
+    border-color: var(--accent);
+}
+.notes-search-btn, .notes-replace-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+}

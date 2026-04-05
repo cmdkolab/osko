@@ -17,7 +17,7 @@
                 if (!granted) {
                     Notifications.show({
                         title: window.I18n.t('system.error_title'),
-                        message: `App "${appDef.name}" tried to use "${perm}" without permission.`,
+                        message: window.I18n.t('permissions.denied_msg', appDef.name, perm),
                         type: 'warning'
                     });
                 }
@@ -100,7 +100,10 @@
                         clearTimeout(handle);
                         _untrack(handle);
                     },
-                    setInterval: (fn, delay) => track(setInterval(fn, delay), 'interval'),
+                    setInterval: (fn, delay) => {
+                        const handle = setInterval(fn, delay);
+                        return track(handle, 'interval');
+                    },
                     clearInterval: (handle) => {
                         clearInterval(handle);
                         _untrack(handle);

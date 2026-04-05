@@ -41,7 +41,10 @@ window.WebOS = {
         }
     },
     async launchApp(appId, params = {}, internal = false) {
-        if (state.isLocked && !internal) return;
+        if (state.isLocked && !internal) {
+            Notifications.show({ title: window.I18n.t('system.notification_title'), message: window.I18n.t('system.locked_msg'), type: 'warning' });
+            return;
+        }
         const app = state.apps[appId];
         if (!app) {
             SysLog.log('WARN', `Launch failed: App ${appId} not registered`, 'WebOS');
@@ -52,7 +55,7 @@ window.WebOS = {
             const existingProc = state.processes.find(p => p.appId === appId);
             if (existingProc) {
                 const win = state.windows.find(w => w.id === existingProc.windowId);
-                if (win && (win.state === 'minimized' || win.element.style.display === 'none')) {
+                if (win && win.element && (win.state === 'minimized' || win.element.style.display === 'none')) {
                     win.element.style.display = 'flex';
                     win.state = 'normal';
                 }
@@ -108,16 +111,21 @@ window.WebOS = {
         this.updateTaskbar();
         this.saveState();
     },
+    _killLock: new Set(),
     async killApp(appId, specificPid = null) {
+        const key = `${appId}:${specificPid}`;
+        if (this._killLock.has(key)) return;
         const index = state.processes.findIndex(p => p.appId === appId && (specificPid === null || p.pid === specificPid));
         if (index > -1) {
             const proc = state.processes[index];
             if (proc._terminated) return;
+            this._killLock.add(key);
             proc._terminated = true;
             SysLog.log('INFO', `Terminating process: ${proc.appDef.name}`, 'WebOS', { appId, pid: proc.pid });
             try {
                 if (proc.appDef.onBeforeClose && (await proc.appDef.onBeforeClose()) === false) {
                     proc._terminated = false;
+                    this._killLock.delete(key);
                     return;
                 }
                 if (proc.appDef.unmount) proc.appDef.unmount();
@@ -141,7 +149,8 @@ window.WebOS = {
             }
             if (proc.windowId) WindowManager.destroy(proc.windowId);
             state.processes.splice(index, 1);
-            if (window.events) events.emit('process:terminated', appId);
+            this._killLock.delete(key);
+            if (window.events) window.events.emit('process:terminated', appId);
             this.updateTaskbar();
             this.saveState();
         }
@@ -183,7 +192,7 @@ window.WebOS = {
     async _loadDesktopPositions() {
         try {
             const data = await VFS.read('/home/user/settings/desktop.json', 'system');
-            if (data) this._desktopPositions = JSON.parse(data);
+            if (data) { try { this._desktopPositions = JSON.parse(data); } catch(e) { this._desktopPositions = {}; } }
         } catch (e) {
             this._desktopPositions = {};
         } finally {
@@ -243,7 +252,7 @@ window.WebOS = {
         let startX, startY, initialX, initialY;
         icon.onmousedown = (e) => {
             if (e.button !== 0) return;
-            document.querySelectorAll('.desktop-icon.selected').forEach(el => el.classList.remove('selected'));
+            const sel = document.querySelectorAll('.desktop-icon.selected'); for(let i=0;i<sel.length;i++) sel[i].classList.remove('selected');
             icon.classList.add('selected');
             icon.style.zIndex = '1000';
             startX = e.clientX;
@@ -351,10 +360,7 @@ window.WebOS = {
                 container.appendChild(item);
                 this._taskbarCache[proc.pid] = item;
             }
-            item.querySelector('.tb-icon').innerText = icon;
-            item.querySelector('.tb-name').innerText = name;
-            item.querySelector('.preview-thumbnail').innerText = icon;
-            item.querySelector('.preview-info').innerText = name;
+            const tbIcon = item.querySelector('.tb-icon'); const tbName = item.querySelector('.tb-name'); const pThumb = item.querySelector('.preview-thumbnail'); const pInfo = item.querySelector('.preview-info'); if(tbIcon) tbIcon.innerText = icon; if(tbName) tbName.innerText = name; if(pThumb) pThumb.innerText = icon; if(pInfo) pInfo.innerText = name;
             item.classList.toggle('active', isActive);
         });
     },
@@ -370,7 +376,7 @@ window.WebOS = {
         this._saveStateTimer = setTimeout(async () => {
             const openApps = state.processes.reduce((acc, p) => {
                 const win = state.windows.find(w => w.id === p.windowId);
-                if (win) {
+                if (win && win.element) {
                     acc.push({
                         appId: p.appId,
                         params: p.params,
@@ -392,7 +398,7 @@ window.WebOS = {
         try {
             const raw = await VFS.read('/sys/session.json', 'system');
             SysLog.log('DEBUG', `Restoring session from VFS: ${raw ? 'found' : 'empty'}`, 'WebOS');
-            if (raw) data = JSON.parse(raw);
+            if (raw) { try { data = JSON.parse(raw); } catch(e) { SysLog.log('ERR', `Corrupt session data: ${e.message}`, 'WebOS'); } }
             else {
                 data = (await PersistenceManager.get(state.persistenceKey)) || { openApps: [] };
                 SysLog.log('DEBUG', `Restoring session from Legacy: ${data.openApps?.length || 0} apps`, 'WebOS');
@@ -428,7 +434,7 @@ window.WebOS = {
         }
         try {
             const startupRaw = await VFS.read('/sys/startup.json', 'system');
-            const startup = JSON.parse(startupRaw || '[]');
+            let startup = []; try { startup = JSON.parse(startupRaw || '[]'); } catch(e) { SysLog.log('ERR', `Corrupt startup data: ${e.message}`, 'WebOS'); }
             SysLog.log('DEBUG', `Autostart apps: ${startup.length}`, 'WebOS');
             for (const appId of startup) {
                 if (!state.processes.find(p => p.appId === appId)) {
@@ -690,21 +696,25 @@ window.WebOS = {
             }
         });
     },
+        _repositionTimer: null,
     repositionDesktopIcons() {
-        const container = document.getElementById('desktop-icons');
-        if (!container) return;
-        const icons = Array.from(container.querySelectorAll('.desktop-icon'));
-        const grid = this.CONST.DESKTOP_GRID;
-        const columns = Math.floor(container.clientWidth / grid.CELL_W) || 1;
-        icons.forEach((icon, index) => {
-            const appId = icon.dataset.id;
-            if (!this._desktopPositions[appId]) {
-                const col = index % columns;
-                const row = Math.floor(index / columns);
-                icon.style.left = (grid.OFFSET + col * grid.CELL_W) + 'px';
-                icon.style.top = (grid.OFFSET + row * grid.CELL_H) + 'px';
-            }
-        });
+        clearTimeout(this._repositionTimer);
+        this._repositionTimer = setTimeout(() => {
+            const container = document.getElementById('desktop-icons');
+            if (!container) return;
+            const icons = Array.from(container.querySelectorAll('.desktop-icon'));
+            const grid = this.CONST.DESKTOP_GRID;
+            const columns = Math.floor(container.clientWidth / grid.CELL_W) || 1;
+            icons.forEach((icon, index) => {
+                const appId = icon.dataset.id;
+                if (!this._desktopPositions[appId]) {
+                    const col = index % columns;
+                    const row = Math.floor(index / columns);
+                    icon.style.left = (grid.OFFSET + col * grid.CELL_W) + 'px';
+                    icon.style.top = (grid.OFFSET + row * grid.CELL_H) + 'px';
+                }
+            });
+        }, 200);
     }
 };
 window.addEventListener('resize', () => {

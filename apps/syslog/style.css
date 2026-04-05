@@ -12,25 +12,27 @@
 }
 .syslog-toolbar {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    padding: 8px 12px;
     background: rgba(0, 0, 0, 0.2);
     border-bottom: 1px solid var(--glass-border);
-    gap: 16px;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
 }
 .toolbar-left, .toolbar-right {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
 }
 .syslog-app .sys-btn {
-    padding: 6px 12px;
+    padding: 6px 10px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     color: var(--text-color);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition-fast);
@@ -48,25 +50,25 @@
 .source-select {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    padding: 5px 8px;
     color: var(--text-color);
-    font-size: 12px;
+    font-size: 11px;
     outline: none;
 }
 .syslog-search {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    padding: 5px 10px;
     color: var(--text-color);
-    font-size: 12px;
-    width: 180px;
+    font-size: 11px;
+    min-width: 100px;
+    flex: 1;
     outline: none;
     transition: var(--transition-fast);
 }
 .syslog-search:focus {
-    width: 220px;
     background: rgba(255, 255, 255, 0.08);
     border-color: var(--accent);
 }
@@ -78,6 +80,7 @@
     font-size: 11px;
     line-height: 1.4;
     background: rgba(0, 0, 0, 0.15);
+    min-height: 0;
 }
 .log-entry {
     display: flex;
@@ -100,12 +103,13 @@
 .log-entry.level-info .log-level { color: #3498db; }
 .log-entry.level-debug .log-level { color: #95a5a6; }
 .syslog-status {
-    padding: 8px 20px;
+    padding: 6px 12px;
     background: rgba(0, 0, 0, 0.3);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     opacity: 0.6;
     display: flex;
     justify-content: space-between;
     border-top: 1px solid var(--glass-border);
+    flex-shrink: 0;
 }

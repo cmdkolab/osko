@@ -134,7 +134,7 @@ body {
     text-align: center;
     cursor: pointer;
     pointer-events: auto;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.25s ease-out;
     border-radius: var(--radius-lg);
     padding: 10px;
     width: 90px;
@@ -143,7 +143,6 @@ body {
     user-select: none;
     z-index: var(--z-desktop-icon);
     color: white;
-    transform-style: preserve-3d;
     opacity: 0;
     transform: translateY(20px) scale(0.8);
 }
@@ -152,15 +151,11 @@ body {
     transform: translateY(0) scale(1);
 }
 .desktop-icon:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transform: scale(1.1) rotateX(10deg) rotateY(-10deg) translateZ(10px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    background: transparent;
+    transform: scale(1.03);
 }
 .desktop-icon.selected {
-    background: var(--glass-bg-accent);
-    border: 1px solid var(--glass-border-accent);
-    box-shadow: 0 0 15px var(--glass-border-accent);
+    transform: scale(0.98);
 }
 .desktop-icon.dragging {
     transition: none !important;
@@ -176,11 +171,11 @@ body {
 .desktop-icon .icon {
     font-size: 36px;
     margin-bottom: 8px;
-    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
-    transition: transform var(--transition-normal);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+    transition: transform 0.25s ease-out;
 }
 .desktop-icon:hover .icon {
-    transform: scale(1.1);
+    transform: scale(1.05);
 }
 .desktop-icon .label {
     font-size: 12px;
@@ -209,8 +204,8 @@ body {
     border-radius: 12px;
     box-shadow: var(--window-shadow);
     overflow: hidden;
-    min-width: 200px;
-    min-height: 100px;
+    min-width: 400px;
+    min-height: 250px;
     transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, border-color 0.3s;
     animation: window-appear var(--transition-bounce);
     z-index: var(--z-window);
@@ -265,6 +260,7 @@ body {
     justify-content: space-between;
     align-items: center;
     cursor: move;
+    user-select: none;
 }
 .window-title {
     font-size: 13px;
@@ -323,6 +319,13 @@ body {
     padding: 12px;
     overflow: auto;
     position: relative;
+    min-height: 0;
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+.window:not(.focused) {
+    opacity: 0.95;
+    filter: none;
 }
 #taskbar {
     position: fixed;
@@ -1010,6 +1013,37 @@ body.system-locked #desktop {
         opacity: 1;
     }
 }
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+@media (max-width: 768px) {
+    #taskbar { height: 50px; top: auto; bottom: 0; padding: 0 8px; }
+    #desktop { height: calc(100% - 50px); margin-top: 0; margin-bottom: 50px; }
+    .desktop-icon { width: 60px; height: 75px; }
+    .desktop-icon .icon { font-size: 24px; }
+    .desktop-icon .label { font-size: 10px; }
+    .window { min-width: 260px !important; min-height: 180px !important; }
+    .control-btn { width: 28px; height: 28px; font-size: 14px; }
+    .toast { width: 280px; min-width: 240px; }
+    #calendar-overlay { bottom: 60px; right: 10px; width: 280px; }
+    .search-container { width: 90vw; }
+    .switcher-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
+    .switcher-card .card-icon { font-size: 48px; }
+    .switcher-card .card-title { font-size: 14px; }
+    .taskbar-preview { bottom: 55px; width: 160px; }
+}
+@media (max-width: 480px) {
+    #taskbar { height: 48px; gap: 6px; padding: 0 4px; }
+    .taskbar-item { height: 32px; padding: 0 8px; font-size: 12px; }
+    .tb-icon { font-size: 14px; }
+    .search-btn, .switcher-btn { width: 28px; height: 28px; font-size: 12px; }
+    #system-tray { font-size: 11px; }
+    .toast { width: 100%; min-width: auto; }
+    .notification-center { right: 0; left: 0; width: 100%; }
+    #notification-center { right: 0; left: 10px; right: 10px; width: auto; }
+    .system-dialog { width: 90vw; padding: 16px; }
+    .dialog-btn { padding: 8px 12px; font-size: 12px; }
+}
 .switcher-card {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -1576,101 +1610,111 @@ body.system-locked #desktop {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
-    padding: 24px;
-    gap: 20px;
+    padding: 12px;
+    gap: 8px;
     outline: none;
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    overflow-y: auto;
 }
 .calc-display {
-    background: rgba(0, 0, 0, 0.25);
+    background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    padding: 24px;
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
     text-align: right;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    min-height: 120px;
-    box-shadow: inset 0 4px 15px rgba(0,0,0,0.3);
+    height: 85px;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);
     transition: var(--transition-normal);
+    flex-shrink: 0;
 }
 .calc-display:focus-within {
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.4);
     border-color: var(--accent);
 }
 .calc-history {
-    font-size: 14px;
+    font-size: 11px;
     color: rgba(255, 255, 255, 0.4);
-    min-height: 20px;
-    margin-bottom: 8px;
-    font-family: 'JetBrains Mono', monospace;
-    letter-spacing: 0.5px;
+    min-height: 16px;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .calc-current {
-    font-size: 42px;
+    font-size: 28px;
     font-weight: 300;
     color: var(--text-color);
     word-break: break-all;
-    font-family: var(--font-main);
-    line-height: 1;
+    line-height: 1.1;
+    overflow: hidden;
+    max-height: 40px;
 }
 .calc-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    gap: 6px;
     flex: 1;
 }
 .calc-btn {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.06);
     border: 1px solid var(--glass-border);
-    border-radius: 50%;
-    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
     color: #fff;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 500;
     cursor: pointer;
     transition: var(--transition-fast);
     display: flex;
     justify-content: center;
     align-items: center;
+    min-height: 48px;
+    padding: 8px 4px;
     position: relative;
     overflow: hidden;
 }
 .calc-btn:hover {
-    background: var(--glass-bg-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     border-color: var(--glass-border-hover);
 }
 .calc-btn:active, .calc-btn.active {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(0.92);
-    transition: 0.1s;
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(0.96);
+    transition: 0.08s;
 }
 .calc-btn.op {
-    background: rgba(var(--accent-rgb), 0.1);
+    background: rgba(var(--accent-rgb), 0.15);
     color: var(--accent);
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 20px;
 }
 .calc-btn.eq {
     background: var(--accent);
     color: #fff;
     font-weight: 700;
-    box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.3);
+    font-size: 22px;
+    border-color: var(--accent);
 }
 .calc-btn.eq:hover {
     background: var(--accent-hover);
-    box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.4);
+    box-shadow: 0 2px 12px rgba(var(--accent-rgb), 0.3);
 }
 .calc-btn.clear {
     color: #ff3b30;
     background: rgba(255, 59, 48, 0.1);
-    border-color: rgba(255, 59, 48, 0.2);
+    border-color: rgba(255, 59, 48, 0.25);
+    font-weight: 700;
 }
 .calc-btn.clear:hover {
     background: rgba(255, 59, 48, 0.2);
 }
-
+.calc-btn[data-val="0"] {
+    grid-column: span 2;
+}
 
 .explorer-app {
     display: flex;
@@ -2023,16 +2067,49 @@ body.system-locked #desktop {
     background-clip: content-box;
 }
 .notes-editor::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); background-clip: content-box; }
+.notes-search-bar {
+    display: none;
+    padding: 8px 12px;
+    gap: 6px;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.15);
+}
+.notes-search-input, .notes-replace-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: var(--text-color);
+    outline: none;
+    font-family: inherit;
+}
+.notes-search-input:focus, .notes-replace-input:focus {
+    border-color: var(--accent);
+}
+.notes-search-btn, .notes-replace-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+}
+
 
 .settings-app {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
     padding: 16px;
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
-    min-height: 100%;
+    height: 100%;
+    overflow-y: auto;
 }
 .settings-section h3 {
     font-size: 11px;
@@ -2068,11 +2145,22 @@ body.system-locked #desktop {
     color: #fff;
     box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
 }
+.color-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.preset-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     border: 2px solid transparent;
     transition: 0.2s;
+    cursor: pointer;
+    flex-shrink: 0;
 }
-.preset-btn:hover { transform: scale(1.1); }
-.preset-btn.active { border-color: var(--accent); transform: scale(0.95); }
+.preset-btn:hover { transform: scale(1.15); }
+.preset-btn.active { border-color: var(--accent); transform: scale(0.9); box-shadow: 0 0 12px var(--accent); }
 .input-group {
     display: flex;
     flex-direction: column;
@@ -2153,25 +2241,27 @@ body.system-locked #desktop {
 }
 .syslog-toolbar {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    padding: 8px 12px;
     background: rgba(0, 0, 0, 0.2);
     border-bottom: 1px solid var(--glass-border);
-    gap: 16px;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
 }
 .toolbar-left, .toolbar-right {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
 }
 .syslog-app .sys-btn {
-    padding: 6px 12px;
+    padding: 6px 10px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     color: var(--text-color);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition-fast);
@@ -2189,25 +2279,25 @@ body.system-locked #desktop {
 .source-select {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    padding: 5px 8px;
     color: var(--text-color);
-    font-size: 12px;
+    font-size: 11px;
     outline: none;
 }
 .syslog-search {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    padding: 5px 10px;
     color: var(--text-color);
-    font-size: 12px;
-    width: 180px;
+    font-size: 11px;
+    min-width: 100px;
+    flex: 1;
     outline: none;
     transition: var(--transition-fast);
 }
 .syslog-search:focus {
-    width: 220px;
     background: rgba(255, 255, 255, 0.08);
     border-color: var(--accent);
 }
@@ -2219,6 +2309,7 @@ body.system-locked #desktop {
     font-size: 11px;
     line-height: 1.4;
     background: rgba(0, 0, 0, 0.15);
+    min-height: 0;
 }
 .log-entry {
     display: flex;
@@ -2241,43 +2332,47 @@ body.system-locked #desktop {
 .log-entry.level-info .log-level { color: #3498db; }
 .log-entry.level-debug .log-level { color: #95a5a6; }
 .syslog-status {
-    padding: 8px 20px;
+    padding: 6px 12px;
     background: rgba(0, 0, 0, 0.3);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     opacity: 0.6;
     display: flex;
     justify-content: space-between;
     border-top: 1px solid var(--glass-border);
+    flex-shrink: 0;
 }
 
 .task-manager {
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 24px;
+    padding: 12px;
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
-    gap: 20px;
+    gap: 10px;
+    overflow: hidden;
 }
 .tm-sysinfo {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 20px;
+    gap: 10px;
+    padding: 12px;
     background: rgba(0, 0, 0, 0.2);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     border: 1px solid var(--glass-border);
 }
 .tm-metrics {
     display: flex;
-    gap: 20px;
+    gap: 12px;
     align-items: center;
+    flex-wrap: wrap;
 }
 .tm-sparkline-container {
     flex: 1;
-    height: 40px;
+    height: 32px;
+    min-width: 80px;
     background: rgba(255, 255, 255, 0.03);
     border-radius: var(--radius-sm);
     position: relative;
@@ -2289,22 +2384,23 @@ body.system-locked #desktop {
 }
 .tm-storage-info {
     flex: 2;
+    min-width: 150px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
 }
 .tm-storage-label {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 700;
     opacity: 0.9;
 }
 .tm-storage-bar {
     width: 100%;
-    height: 8px;
+    height: 5px;
     background: rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
+    border-radius: 3px;
     overflow: hidden;
 }
 .tm-storage-fill {
@@ -2318,16 +2414,18 @@ body.system-locked #desktop {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 .tm-search {
     flex: 1;
+    min-width: 100px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    padding: 5px 10px;
     color: var(--text-color);
-    font-size: 13px;
+    font-size: 11px;
     outline: none;
     transition: var(--transition-fast);
 }
@@ -2340,16 +2438,17 @@ body.system-locked #desktop {
     display: flex;
     flex-direction: column;
     flex: 1;
-    overflow: hidden;
+    overflow: auto;
+    min-height: 0;
     background: rgba(0, 0, 0, 0.1);
     border-radius: var(--radius-md);
     border: 1px solid var(--glass-border);
 }
 .tm-header {
     display: grid;
-    grid-template-columns: 2fr 60px 100px 90px 90px;
-    padding: 12px 16px;
-    font-size: 11px;
+    grid-template-columns: minmax(80px, 2fr) repeat(2, 50px) repeat(2, 70px);
+    padding: 8px 10px;
+    font-size: 9px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -2363,24 +2462,26 @@ body.system-locked #desktop {
 }
 .tm-row {
     display: grid;
-    grid-template-columns: 2fr 60px 100px 90px 90px;
-    padding: 12px 16px;
+    grid-template-columns: minmax(80px, 2fr) repeat(2, 50px) repeat(2, 70px);
+    padding: 8px 10px;
     align-items: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     transition: var(--transition-fast);
 }
 .tm-row:hover { background: rgba(255, 255, 255, 0.05); }
-.tm-app-info { display: flex; align-items: center; gap: 10px; }
-.tm-icon { font-size: 20px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
-.tm-name { font-weight: 600; font-size: 13px; }
-.tm-pid { font-family: 'JetBrains Mono', monospace; opacity: 0.5; font-size: 11px; }
+.tm-app-info { display: flex; align-items: center; gap: 8px; }
+.tm-icon { font-size: 16px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+.tm-name { font-weight: 600; font-size: 11px; }
+.tm-pid { font-family: 'JetBrains Mono', monospace; opacity: 0.5; font-size: 9px; }
+.tm-uptime, .tm-mem { font-size: 10px; text-align: right; }
+.tm-actions { text-align: center; }
 .tm-kill-btn {
-    padding: 6px 10px;
+    padding: 4px 6px;
     background: rgba(255, 59, 48, 0.1);
     border: 1px solid rgba(255, 59, 48, 0.2);
     color: #ff453a;
     border-radius: var(--radius-sm);
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 700;
     cursor: pointer;
     transition: var(--transition-fast);
@@ -2392,12 +2493,12 @@ body.system-locked #desktop {
     box-shadow: 0 4px 12px rgba(255, 69, 58, 0.3);
 }
 .tm-kill-all-btn {
-    padding: 8px 16px;
+    padding: 5px 10px;
     background: rgba(255, 59, 48, 0.15);
     border: 1px solid rgba(255, 59, 48, 0.3);
     color: #ff453a;
-    border-radius: var(--radius-md);
-    font-size: 12px;
+    border-radius: var(--radius-sm);
+    font-size: 10px;
     font-weight: 700;
     cursor: pointer;
     transition: var(--transition-fast);
@@ -2407,6 +2508,8 @@ body.system-locked #desktop {
     color: #fff;
     box-shadow: 0 4px 15px rgba(255, 69, 58, 0.4);
 }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
 
 .terminal-container {
     background: rgba(10, 15, 25, 0.98);

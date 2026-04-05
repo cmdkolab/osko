@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "explorer",
     get name() { return window.I18n.t('explorer.title'); },
     icon: "📂",
-    version: "4.8.0",
+    version: "4.9.0",
     manifest: {
         get name() { return window.I18n.t('explorer.title'); },
         icon: "📂",
@@ -149,12 +149,21 @@ WebOS.registerApp({
             } else {
                 el.innerHTML = `<div class="item-icon">${icon}</div><div class="item-name">${item.name}</div>`;
             }
-            el.onclick = () => {
-                if (item.type === 'dir') {
-                    this.currentPath = this.api.fs.join(this.currentPath, item.name);
-                    this.render(container);
+            el.onclick = (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    const fp = this.api.fs.join(this.currentPath, item.name);
+                    if (this.selectedFiles.has(fp)) { this.selectedFiles.delete(fp); el.classList.remove('selected'); }
+                    else { this.selectedFiles.add(fp); el.classList.add('selected'); }
                 } else {
-                    this.openFile(item);
+                    this.selectedFiles.clear();
+                    grid.querySelectorAll('.explorer-item.selected').forEach(x => x.classList.remove('selected'));
+                    if (item.type === 'dir') {
+                        this.currentPath = this.api.fs.join(this.currentPath, item.name);
+                        this.render(container);
+                    } else {
+                        this.openFile(item);
+                    }
                 }
             };
             el.oncontextmenu = (e) => {
@@ -285,29 +294,17 @@ WebOS.registerApp({
         const path = this.api.fs.join(this.currentPath, item.name);
         const stat = await this.api.fs.stat(path);
         if (!stat) {
-            this.api.notifications.show({
-                title: window.I18n.t('explorer.title'),
-                message: window.I18n.t('explorer.error_read_properties') || 'Could not read properties',
-                type: 'error'
-            });
+            this.api.notifications.show({ title: window.I18n.t('explorer.title'), message: window.I18n.t('explorer.error_read_properties'), type: 'error' });
             return;
         }
         const size = (item.type === 'dir' || stat.type === 'dir') ? '---' : (stat.size > 1024 * 1024 ? (stat.size / (1024 * 1024)).toFixed(2) + ' MB' : (stat.size / 1024).toFixed(1) + ' KB');
         const date = stat.mtime ? new Date(stat.mtime).toLocaleString() : '---';
-        const typeLabel = stat.type === 'dir' ? (window.I18n.t('system.type_dir') || 'Folder') : (window.I18n.t('system.type_file') || 'File');
-        const content = `
-            <div class="properties-dialog">
-                <div class="prop-row"><b>${window.I18n.t('explorer.prop_name') || 'Name'}:</b> <span>${item.name || '---'}</span></div>
-                <div class="prop-row"><b>${window.I18n.t('explorer.prop_path') || 'Path'}:</b> <span>${path || '---'}</span></div>
-                <div class="prop-row"><b>${window.I18n.t('explorer.prop_type') || 'Type'}:</b> <span>${typeLabel}</span></div>
-                <div class="prop-row"><b>${window.I18n.t('explorer.prop_size') || 'Size'}:</b> <span>${size || '---'}</span></div>
-                <div class="prop-row"><b>${window.I18n.t('explorer.prop_mtime') || 'Modified'}:</b> <span>${date}</span></div>
-            </div>
-        `;
-        this.api.ui.showDialog({
-            title: item.name || window.I18n.t('explorer.properties'),
-            message: content
-        });
+        const typeLabel = stat.type === 'dir' ? window.I18n.t('system.type_dir') : window.I18n.t('system.type_file');
+        const div = document.createElement('div');
+        div.className = 'properties-dialog';
+        const rows = [[window.I18n.t('explorer.prop_name'), item.name || '---'], [window.I18n.t('explorer.prop_path'), path], [window.I18n.t('explorer.prop_type'), typeLabel], [window.I18n.t('explorer.prop_size'), size], [window.I18n.t('explorer.prop_mtime'), date]];
+        rows.forEach(([label, val]) => { const r = document.createElement('div'); r.className = 'prop-row'; const b = document.createElement('b'); b.textContent = label + ': '; const s = document.createElement('span'); s.textContent = val; r.appendChild(b); r.appendChild(s); div.appendChild(r); });
+        this.api.ui.showDialog({ title: item.name || window.I18n.t('explorer.properties'), message: div.outerHTML });
     },
     renameFile(item, container) {
         this.api.ui.prompt(window.I18n.t('explorer.prompt_rename', item.name), item.name, async (name) => {

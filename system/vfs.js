@@ -345,14 +345,15 @@
                 return true;
             });
         },
-        async find(query, appId, manifest) {
+        async find(query, appId, manifest, maxDepth = 5, limit = 100) {
             const results = [];
             const q = (query || '').toLowerCase();
             if (!q) return [];
-            const generator = function* (node, currentPath) {
-                if (!node || typeof node !== 'object') return;
+            const generator = function* (node, currentPath, depth = 0) {
+                if (!node || typeof node !== 'object' || depth > maxDepth || results.length >= limit) return;
                 for (const name in node) {
                     if (['owner', 'mtime', 'size', 'content', 'mode'].includes(name)) continue;
+                    if (results.length >= limit) break;
                     const path = VFS.join(currentPath, name);
                     if (!VFS.checkAccess(path, appId, 'r', manifest)) continue;
                     if (name.toLowerCase().includes(q)) {
@@ -360,7 +361,7 @@
                         results.push({ name, path, type: isFile ? 'file' : 'dir' });
                     }
                     if (typeof node[name] === 'object' && node[name].content === undefined) {
-                        yield* generator(node[name], path);
+                        yield* generator(node[name], path, depth + 1);
                     }
                 }
             };

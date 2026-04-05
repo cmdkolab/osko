@@ -45,6 +45,7 @@ window.deepClone = (obj) => {
         if (typeof structuredClone === 'function') return structuredClone(obj);
         return JSON.parse(JSON.stringify(obj));
     } catch (e) {
-        return obj;
+        console.warn('[Utils] deepClone failed, returning null:', e);
+        return null;
     }
 };

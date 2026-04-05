@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "settings",
     get name() { return window.I18n.t('settings.title'); },
     icon: "⚙️",
-    version: "4.8.5",
+    version: "4.9.0",
     manifest: {
         get name() { return window.I18n.t('settings.title'); },
         icon: "⚙️",
@@ -113,7 +113,9 @@ WebOS.registerApp({
                 WebOS.ui.confirm(window.I18n.t('settings.clear_data_confirm'), async (ok) => {
                     if (ok) {
                         try {
-                            await PersistenceManager.clear();
+                            await api.system.storage.clearAll();
+                            VFS.reset();
+                            await VFS.saveImmediate();
                             window.location.reload();
                         } catch (e) {
                             SysLog.log('ERR', `Reset failed: ${e.message}`, 'Settings');
@@ -122,9 +124,11 @@ WebOS.registerApp({
                 });
             };
         }
+        this._savingAutostart = false;
         this._vfsWatcher = (eventData) => {
             const path = eventData?.data?.path;
             if (path && (path.includes('settings/') || path.includes('startup.json'))) {
+                if (this._savingAutostart) return;
                 this._render();
             }
         };
@@ -159,7 +163,9 @@ WebOS.registerApp({
                 } catch(e){}
                 if (e.target.checked) { if (!current.includes(id)) current.push(id); }
                 else { current = current.filter(x => x !== id); }
+                this._savingAutostart = true;
                 await api.fs.write('/sys/startup.json', JSON.stringify(current));
+                setTimeout(() => { this._savingAutostart = false; }, 200);
             };
             list.appendChild(item);
         });

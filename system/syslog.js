@@ -80,12 +80,13 @@ window.SysLog = {
     },
     _scheduleWrite(isEmergency = false) {
         if (this._writeTimer) clearTimeout(this._writeTimer);
-        const delay = isEmergency ? 500 : 5000;
+        const delay = isEmergency ? 200 : 1000;
         this._writeTimer = setTimeout(async () => {
             if (this._buffer === null || this._isWriting) return;
             this._isWriting = true;
             try {
                 await VFS.write('/var/log/syslog', this._buffer, 'system');
+                await VFS.saveImmediate();
                 this._retryCount = 0;
             } catch (e) {
                 this._retryCount++;
@@ -98,5 +99,15 @@ window.SysLog = {
             }
             this._writeTimer = null;
         }, delay);
+    },
+    getBuffer() {
+        if (this._buffer === null) {
+            this._buffer = '';
+            try {
+                const savedLog = VFS.read('/var/log/syslog', 'system');
+                if (savedLog) this._buffer = savedLog;
+            } catch (e) { }
+        }
+        return this._buffer;
     }
 };

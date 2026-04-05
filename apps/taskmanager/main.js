@@ -2,7 +2,7 @@ WebOS.registerApp({
     id: "taskmanager",
     get name() { return window.I18n.t('taskmanager.title'); },
     icon: "📊",
-    version: "4.8.0",
+    version: "4.9.0",
     manifest: {
         get name() { return window.I18n.t('taskmanager.title'); },
         icon: "📊",
@@ -15,6 +15,8 @@ WebOS.registerApp({
         this.api = api;
         this.history = []; // For sparkline
         this.filter = '';
+        this._lastNodeCountUpdate = 0;
+        this._cachedNodeCount = 0;
         container.innerHTML = `
             <div class="task-manager">
                 <div class="tm-sysinfo">
@@ -152,7 +154,26 @@ WebOS.registerApp({
         };
         this._interval = api.system.setInterval(refresh, 1000);
         refresh();
-        this._i18nListener = () => this.mount(container, api);
+        this._renderFrame = null;
+        const self = this;
+        this._i18nListener = function() {
+            if (self._renderFrame) return;
+            self._renderFrame = true;
+            setTimeout(function() {
+                self._renderFrame = false;
+                const tml = container.querySelector('.tm-list');
+                if (tml) tml.querySelectorAll('.tm-row').forEach(function(r) { r.innerHTML = ''; });
+                container.querySelectorAll('.tm-header span').forEach(function(s) {
+                    const key = s.getAttribute('data-i18n');
+                    if (key) s.innerText = window.I18n.t(key);
+                });
+            }, 0);
+        };
+        container.querySelector('.tm-header span:nth-child(1)').setAttribute('data-i18n', 'taskmanager.app');
+        container.querySelector('.tm-header span:nth-child(2)').setAttribute('data-i18n', 'taskmanager.pid');
+        container.querySelector('.tm-header span:nth-child(3)').setAttribute('data-i18n', 'taskmanager.uptime');
+        container.querySelector('.tm-header span:nth-child(4)').setAttribute('data-i18n', 'taskmanager.storage');
+        container.querySelector('.tm-header span:nth-child(5)').setAttribute('data-i18n', 'taskmanager.action');
         window.addEventListener('i18n:changed', this._i18nListener);
     },
     unmount() {

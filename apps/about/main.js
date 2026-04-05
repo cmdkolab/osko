@@ -30,7 +30,7 @@ WebOS.registerApp({
                         </div>
                         <div class="detail-row">
                             <span class="detail-label">${window.I18n.t('about.kernel')}:</span>
-                            <span class="detail-value">V8 / OS(KO) Core</span>
+                            <span class="detail-value">${window.I18n.t('about.kernel_info')}</span>
                         </div>
                     </div>
                 </div>

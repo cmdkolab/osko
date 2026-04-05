@@ -1,10 +1,10 @@
-    window.WindowManager = {
+window.WindowManager = {
         CONST: {
             CASCADE_STEP: 22,
             SNAP_EDGE: 30,
             SNAP_CORNER: 60,
-            MIN_WIDTH: 320,
-            MIN_HEIGHT: 200,
+            MIN_WIDTH: 400,
+            MIN_HEIGHT: 280,
             TASKBAR_HEIGHT: 40
         },
         create(options, appId) {
@@ -15,7 +15,7 @@
             winEl.id = id;
             winEl.style.width = options.width || '400px';
             winEl.style.height = options.height || '300px';
-            winEl.style.transition = 'none'; // Initial placement without transition
+            winEl.style.transition = 'none';
             const cascadeOffset = (state.windows.length * this.CONST.CASCADE_STEP) % (window.innerHeight / 3);
             let baseX = parseInt(options.x !== undefined ? options.x : (100 + cascadeOffset));
             let baseY = parseInt(options.y !== undefined ? options.y : (80 + cascadeOffset));
@@ -366,17 +366,6 @@
                 document.addEventListener('mousemove', onMouseMove);
                 document.addEventListener('mouseup', onMouseUp);
             });
-        },
-        updateSnapPreview(preview, x, y, vw, vh, edge, corner, th) {
-            if (edge) { // This condition seems to be a placeholder, as 'edge' is a number.
-                preview.style.display = 'block';
-                preview.style.left = x + 'px';
-                preview.style.top = y + 'px';
-                preview.style.width = vw + 'px';
-                preview.style.height = vh + 'px';
-            } else {
-                preview.style.display = 'none';
-            }
         },
         updateDynamicShadow(el) {
             const vw = window.innerWidth;

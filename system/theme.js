@@ -53,9 +53,14 @@
             if (savedWall) {
                 this.setWallpaper(savedWall);
             }
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-                if (!this._manualTheme) this.applyAutoTheme();
-            });
+            this._prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+            this._prefersDark.addEventListener('change', this._themeChangeListener);
+        },
+        _themeChangeListener() {
+            if (!ThemeEngine._manualTheme) ThemeEngine.applyAutoTheme();
+        },
+        _cleanup() {
+            if (this._prefersDark) this._prefersDark.removeEventListener('change', this._themeChangeListener);
         },
         applyAutoTheme() {
             const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
