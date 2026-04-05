@@ -27,7 +27,7 @@ FILES=(
 "system/init.js"
 )
 for file in "${FILES[@]}"; do
-if [ -f "$file" ]; then
+if [[ -f "$file" ]]; then
 echo "   -> Adding $file"
 cat "$file" >> $OUTPUT_FILE
 echo -e "\n;" >> $OUTPUT_FILE
@@ -38,7 +38,7 @@ fi
 done
 echo "✅ JS Bundling complete! Output file: $OUTPUT_FILE"
 echo "📦 Bundling CSS files..."
-if [ -f "style.css" ]; then
+if [[ -f "style.css" ]]; then
 echo "   -> Adding style.css"
 cat "style.css" >> $CSS_OUTPUT_FILE
 echo -e "\n" >> $CSS_OUTPUT_FILE
@@ -47,7 +47,7 @@ echo "❌ ERROR: style.css not found!"
 exit 1
 fi
 for css_file in apps/*/style.css; do
-if [ -f "$css_file" ]; then
+if [[ -f "$css_file" ]]; then
 echo "   -> Adding $css_file"
 cat "$css_file" >> $CSS_OUTPUT_FILE
 echo -e "\n" >> $CSS_OUTPUT_FILE

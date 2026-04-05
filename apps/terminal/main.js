@@ -88,237 +88,187 @@ WebOS.registerApp({
         const parts = input.split(/\s+/);
         const cmd = parts[0].toLowerCase();
         const args = parts.slice(1);
-        switch (cmd) {
-            case 'help':
-                this.print(window.I18n.t('terminal.help'));
-                this.print(window.I18n.t('terminal.help_system'));
-                break;
-            case 'echo':
-                this.print(args.join(' '));
-                break;
-            case 'date':
-                this.print(new Date().toString());
-                break;
-            case 'pwd':
-                this.print(this.cwd);
-                break;
-            case 'ls':
-                try {
-                    const entries = await this.api.fs.list(this.cwd);
-                    if (entries === null) {
-                        this.print(`ls: ${this.cwd}: ${window.I18n.t('terminal.not_found')}`, 'error');
-                    } else {
-                        const sorted = (entries || []).sort((a, b) => {
-                            if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-                            return a.name.localeCompare(b.name, undefined, { numeric: true });
-                        });
-                        const html = sorted.map(e => {
-                            const cls = e.type === 'dir' ? 'terminal-dir' : '';
-                            return `<span class="${cls}">${e.type === 'dir' ? e.name + '/' : e.name}</span>`;
-                        }).join('  ');
-                        this.printHTML(html);
-                    }
-                } catch (e) { this.print(`${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
-                break;
-            case 'cd':
-                const target = args[0] || '/home/user';
-                const newPath = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
-                if (await this.api.fs.exists(newPath)) {
-                    this.cwd = newPath;
-                    this.updatePrompt();
-                } else {
-                    this.print(`cd: ${target}: ${window.I18n.t('terminal.not_found')}`, 'error');
-                }
-                break;
-            case 'cat':
-                if (!args[0]) { this.print(window.I18n.t('terminal.usage_cat')); break; }
-                try {
-                    const target = args[0];
-                    const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
-                    const entries = await this.api.fs.list(path);
-                    if (entries !== null) {
-                        this.print(`cat: ${args[0]}: ${window.I18n.t('terminal.is_dir')}`, 'error');
-                        break;
-                    }
-                    const content = await this.api.fs.read(path);
-                    if (content === null) {
-                        this.print(`cat: ${args[0]}: ${window.I18n.t('terminal.not_found')}`, 'error');
-                    } else {
-                        this.print(content);
-                    }
-                } catch (e) { this.print(`cat: ${args[0]}: ${window.I18n.t('terminal.read_error')}`, 'error'); }
-                break;
-            case 'mkdir':
-                if (!args[0]) { this.print(window.I18n.t('terminal.usage_mkdir')); break; }
-                try {
-                    const target = args[0];
-                    const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
-                    await this.api.fs.mkdir(path);
-                } catch (e) { this.print(`mkdir: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
-                break;
-            case 'rm':
-                if (!args[0]) { this.print(window.I18n.t('terminal.usage_rm')); break; }
-                try {
-                    const target = args[0];
-                    const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
-                    await this.api.fs.remove(path);
-                } catch (e) { this.print(`rm: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
-                break;
-            case 'clear':
-                this.output.innerHTML = '';
-                break;
-            case 'version':
-                this.print(`OS(KO) Kernel v${this.api.system.VERSION}`);
-                break;
-            case 'uptime':
-                this.print(`${window.I18n.t('about.uptime')}: ${this.api.system.getUptime()}`);
-                break;
-            case 'ps':
-                try {
-                    const procs = await this.api.system.getProcesses();
-                    this.print(`${window.I18n.t('taskmanager.pid').padEnd(6)}${window.I18n.t('taskmanager.storage').padEnd(12)}${window.I18n.t('taskmanager.uptime').padEnd(10)}${window.I18n.t('taskmanager.status').padEnd(12)}${window.I18n.t('taskmanager.app')}`, 'echo');
-                    procs.forEach(p => {
-                        const pidStr = String(p.pid).padEnd(6);
-                        const storage = (this.api.system.storage.calculateUsage(p.appId) / 1024).toFixed(1) + ' KB';
-                        const storageStr = storage.padEnd(12);
-                        const uptime = Math.floor((Date.now() - p.startTime) / 1000);
-                        const uptimeStr = (uptime + 's').padEnd(10);
-                        const statusStr = window.I18n.t('taskmanager.running').padEnd(12);
-                        this.print(`${pidStr}${storageStr}${uptimeStr}${statusStr}${p.name || p.appId}`);
-                    });
-                } catch (e) { this.print(`ps: ${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
-                break;
-            case 'system':
-                this.print(`OS(KO) Kernel v${this.api.system.VERSION}`, 'echo');
-                this.print(`${window.I18n.t('about.uptime')}: ${this.api.system.getUptime()}`);
-                const totalUsage = this.api.system.storage.getTotalUsage();
-                const quota = 10 * 1024 * 1024;
-                const percent = ((totalUsage / quota) * 100).toFixed(1);
-                this.print(`${window.I18n.t('terminal.vfs_usage')}: ${(totalUsage / 1024 / 1024).toFixed(2)} MB / 10.00 MB (${percent}%)`);
-                this.print(`${window.I18n.t('terminal.resolution')}: ${window.innerWidth}x${window.innerHeight}`);
-                this.print(`${window.I18n.t('terminal.language')}: ${window.I18n.current.toUpperCase()}`);
-                break;
-            case 'play':
-                if (!args[0]) { this.print(window.I18n.t('terminal.sounds')); break; }
-                this.api.audio.play(args[0]);
-                break;
-            case 'edit':
-                if (!args[0]) { this.print(window.I18n.t('terminal.usage_edit')); break; }
-                try {
-                    const target = args[0];
-                    const path = target.startsWith('/') ? this.api.fs.join(target) : this.api.fs.join(this.cwd, target);
-                    let content = '';
-                    if (await this.api.fs.exists(path)) {
-                        content = await this.api.fs.read(path);
-                    }
-                    this.api.ui.prompt(`${window.I18n.t('menu.edit')}: ${args[0]}`, content, async (newContent) => {
-                        if (newContent !== null) {
-                            await this.api.fs.write(path, newContent);
-                            this.print(`${window.I18n.t('dialog.ok')} ${args[0]}`);
-                        }
-                    });
-                } catch (e) { this.print(`edit: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
-                break;
-            case 'theme':
-                if (!args[0]) { this.print(window.I18n.t('terminal.theme_usage')); break; }
-                const termContainer = this.container.querySelector('.terminal-container');
-                termContainer.classList.remove('theme-matrix', 'theme-cyberpunk', 'theme-classic');
-                if (args[0] !== 'default') termContainer.classList.add(`theme-${args[0]}`);
-                this.print(`Theme changed to: ${args[0]}`);
-                break;
-            case 'cp':
-                if (args.length < 2) { this.print('Usage: cp <source> <dest>'); break; }
-                try {
-                    const src = args[0].startsWith('/') ? this.api.fs.join(args[0]) : this.api.fs.join(this.cwd, args[0]);
-                    const dst = args[1].startsWith('/') ? this.api.fs.join(args[1]) : this.api.fs.join(this.cwd, args[1]);
-                    const content = await this.api.fs.read(src);
-                    if (content === null) { this.print(`cp: ${args[0]}: not found`, 'error'); break; }
-                    await this.api.fs.write(dst, content);
-                } catch (e) { this.print(`cp: ${e.message}`, 'error'); }
-                break;
-            case 'mv':
-                if (args.length < 2) { this.print('Usage: mv <source> <dest>'); break; }
-                try {
-                    const src = args[0].startsWith('/') ? this.api.fs.join(args[0]) : this.api.fs.join(this.cwd, args[0]);
-                    const dst = args[1].startsWith('/') ? this.api.fs.join(args[1]) : this.api.fs.join(this.cwd, args[1]);
-                    const content = await this.api.fs.read(src);
-                    if (content === null) { this.print(`mv: ${args[0]}: not found`, 'error'); break; }
-                    await this.api.fs.write(dst, content);
-                    await this.api.fs.remove(src);
-                } catch (e) { this.print(`mv: ${e.message}`, 'error'); }
-                break;
-            case 'touch':
-                if (!args[0]) { this.print('Usage: touch <file>'); break; }
-                try {
-                    const path = args[0].startsWith('/') ? this.api.fs.join(args[0]) : this.api.fs.join(this.cwd, args[0]);
-                    if (!(await this.api.fs.exists(path))) await this.api.fs.write(path, '');
-                } catch (e) { this.print(`touch: ${e.message}`, 'error'); }
-                break;
-            case 'head':
-                if (!args[0]) { this.print('Usage: head [-n N] <file>'); break; }
-                try {
-                    let n = 10, file = args[0];
-                    if (args[0] === '-n') { n = parseInt(args[1]); file = args[2]; }
-                    const path = file.startsWith('/') ? this.api.fs.join(file) : this.api.fs.join(this.cwd, file);
-                    const content = await this.api.fs.read(path);
-                    if (content === null) { this.print(`head: ${file}: not found`, 'error'); break; }
-                    this.print(content.split('\n').slice(0, n).join('\n'));
-                } catch (e) { this.print(`head: ${e.message}`, 'error'); }
-                break;
-            case 'tail':
-                if (!args[0]) { this.print('Usage: tail [-n N] <file>'); break; }
-                try {
-                    let n = 10, file = args[0];
-                    if (args[0] === '-n') { n = parseInt(args[1]); file = args[2]; }
-                    const path = file.startsWith('/') ? this.api.fs.join(file) : this.api.fs.join(this.cwd, file);
-                    const content = await this.api.fs.read(path);
-                    if (content === null) { this.print(`tail: ${file}: not found`, 'error'); break; }
-                    this.print(content.split('\n').slice(-n).join('\n'));
-                } catch (e) { this.print(`tail: ${e.message}`, 'error'); }
-                break;
-            case 'find':
-                if (!args[0]) { this.print('Usage: find <path> [name]'); break; }
-                try {
-                    const searchPath = args[0].startsWith('/') ? this.api.fs.join(args[0]) : this.api.fs.join(this.cwd, args[0]);
-                    const nameFilter = args[1] || '';
-                    const results = await this._findFiles(searchPath, nameFilter);
-                    if (results.length) this.print(results.join('\n'));
-                    else this.print('No files found');
-                } catch (e) { this.print(`find: ${e.message}`, 'error'); }
-                break;
-            case 'tree':
-                try {
-                    const treePath = args[0] ? (args[0].startsWith('/') ? this.api.fs.join(args[0]) : this.api.fs.join(this.cwd, args[0])) : this.cwd;
-                    const tree = await this._buildTree(treePath, '');
-                    this.print(treePath.split('/').pop() || '/');
-                    this.print(tree);
-                } catch (e) { this.print(`tree: ${e.message}`, 'error'); }
-                break;
-            case 'alias':
-                if (!args[0]) { try { const a = JSON.parse(localStorage.getItem('OSKO:terminal:aliases') || '{}'); Object.entries(a).forEach(([k,v]) => this.print(`${k}='${v}'`)); } catch(e){} break; }
-                if (args[0] === 'rm' && args[1]) { try { const a = JSON.parse(localStorage.getItem('OSKO:terminal:aliases') || '{}'); delete a[args[1]]; localStorage.setItem('OSKO:terminal:aliases', JSON.stringify(a)); this.print(`Alias '${args[1]}' removed`); } catch(e){ this.print(`alias rm: ${e.message}`, 'error'); } break; }
-                if (args[0].includes('=')) { const [name, ...rest] = args.join(' ').split('='); const a = JSON.parse(localStorage.getItem('OSKO:terminal:aliases') || '{}'); a[name.trim()] = rest.join('=').trim(); localStorage.setItem('OSKO:terminal:aliases', JSON.stringify(a)); this.print(`Alias '${name.trim()}' set to '${rest.join('=').trim()}'`); } else { try { const a = JSON.parse(localStorage.getItem('OSKO:terminal:aliases') || '{}'); const v = a[args[0]]; this.print(v ? `${args[0]}='${v}'` : `alias: ${args[0]}: not found`); } catch(e){} }
-                break;
-            case 'grep':
-                if (args.length < 2) { this.print('Usage: grep <pattern> <file>'); break; }
-                try {
-                    const pattern = args[0];
-                    const file = args[1].startsWith('/') ? this.api.fs.join(args[1]) : this.api.fs.join(this.cwd, args[1]);
-                    const content = await this.api.fs.read(file);
-                    if (content === null) { this.print(`grep: ${args[1]}: not found`, 'error'); break; }
-                    const lines = content.split('\n').filter(l => l.toLowerCase().includes(pattern.toLowerCase()));
-                    if (lines.length) this.print(lines.join('\n')); else this.print('No matches found');
-                } catch (e) { this.print(`grep: ${e.message}`, 'error'); }
-                break;
-            case 'history':
-                this.history.slice().reverse().forEach((cmd, i) => this.print(`${i + 1}: ${cmd}`));
-                break;
-            case 'top':
-                 this.executeTop();
-                 break;
-            default:
-                this.print(`${window.I18n.t('terminal.not_found')}: ${cmd}`, 'error');
-        }
+        const m = this._cmds[cmd];
+        if (m) await this[m](this, args);
+        else this.print(`${window.I18n.t('terminal.not_found')}: ${cmd}`, 'error');
+    },
+    async _cmd_help(ctx, args) {
+        ctx.print(window.I18n.t('terminal.help'));
+        ctx.print(window.I18n.t('terminal.help_system'));
+    },
+    async _cmd_echo(ctx, args) { ctx.print(args.join(' ')); },
+    async _cmd_date(ctx, args) { ctx.print(new Date().toString()); },
+    async _cmd_pwd(ctx, args) { ctx.print(ctx.cwd); },
+    async _cmd_ls(ctx, args) {
+        try {
+            const entries = await ctx.api.fs.list(ctx.cwd);
+            if (entries === null) { ctx.print(`ls: ${ctx.cwd}: ${window.I18n.t('terminal.not_found')}`, 'error'); return; }
+            const sorted = (entries || []).sort((a, b) => {
+                if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+                return a.name.localeCompare(b.name, undefined, { numeric: true });
+            });
+            ctx.printHTML(sorted.map(e => `<span class="${e.type === 'dir' ? 'terminal-dir' : ''}">${e.type === 'dir' ? e.name + '/' : e.name}</span>`).join('  '));
+        } catch (e) { ctx.print(`${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
+    },
+    async _cmd_cd(ctx, args) {
+        const target = args[0] || '/home/user';
+        const newPath = target.startsWith('/') ? ctx.api.fs.join(target) : ctx.api.fs.join(ctx.cwd, target);
+        if (await ctx.api.fs.exists(newPath)) { ctx.cwd = newPath; ctx.updatePrompt(); }
+        else ctx.print(`cd: ${target}: ${window.I18n.t('terminal.not_found')}`, 'error');
+    },
+    async _cmd_cat(ctx, args) {
+        if (!args[0]) { ctx.print(window.I18n.t('terminal.usage_cat')); return; }
+        try {
+            const path = args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0]);
+            if (await ctx.api.fs.list(path) !== null) { ctx.print(`cat: ${args[0]}: ${window.I18n.t('terminal.is_dir')}`, 'error'); return; }
+            const content = await ctx.api.fs.read(path);
+            if (content === null) ctx.print(`cat: ${args[0]}: ${window.I18n.t('terminal.not_found')}`, 'error');
+            else ctx.print(content);
+        } catch (e) { ctx.print(`cat: ${args[0]}: ${window.I18n.t('terminal.read_error')}`, 'error'); }
+    },
+    async _cmd_mkdir(ctx, args) {
+        if (!args[0]) { ctx.print(window.I18n.t('terminal.usage_mkdir')); return; }
+        try { const path = args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0]); await ctx.api.fs.mkdir(path); }
+        catch (e) { ctx.print(`mkdir: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
+    },
+    async _cmd_rm(ctx, args) {
+        if (!args[0]) { ctx.print(window.I18n.t('terminal.usage_rm')); return; }
+        try { const path = args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0]); await ctx.api.fs.remove(path); }
+        catch (e) { ctx.print(`rm: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
+    },
+    async _cmd_clear(ctx, args) { ctx.output.innerHTML = ''; },
+    async _cmd_version(ctx, args) { ctx.print(`OS(KO) Kernel v${ctx.api.system.VERSION}`); },
+    async _cmd_uptime(ctx, args) { ctx.print(`${window.I18n.t('about.uptime')}: ${ctx.api.system.getUptime()}`); },
+    async _cmd_ps(ctx, args) {
+        try {
+            const procs = await ctx.api.system.getProcesses();
+            ctx.print(`${window.I18n.t('taskmanager.pid').padEnd(6)}${window.I18n.t('taskmanager.storage').padEnd(12)}${window.I18n.t('taskmanager.uptime').padEnd(10)}${window.I18n.t('taskmanager.status').padEnd(12)}${window.I18n.t('taskmanager.app')}`, 'echo');
+            procs.forEach(p => {
+                const pidStr = String(p.pid).padEnd(6);
+                const storage = (ctx.api.system.storage.calculateUsage(p.appId) / 1024).toFixed(1) + ' KB';
+                const uptime = Math.floor((Date.now() - p.startTime) / 1000);
+                ctx.print(`${pidStr}${storage.padEnd(12)}${(uptime + 's').padEnd(10)}${window.I18n.t('taskmanager.running').padEnd(12)}${p.name || p.appId}`);
+            });
+        } catch (e) { ctx.print(`ps: ${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
+    },
+    async _cmd_system(ctx, args) {
+        const totalUsage = ctx.api.system.storage.getTotalUsage();
+        const percent = ((totalUsage / 10485760) * 100).toFixed(1);
+        ctx.print(`OS(KO) Kernel v${ctx.api.system.VERSION}`, 'echo');
+        ctx.print(`${window.I18n.t('about.uptime')}: ${ctx.api.system.getUptime()}`);
+        ctx.print(`${window.I18n.t('terminal.vfs_usage')}: ${(totalUsage / 1024 / 1024).toFixed(2)} MB / 10.00 MB (${percent}%)`);
+        ctx.print(`${window.I18n.t('terminal.resolution')}: ${window.innerWidth}x${window.innerHeight}`);
+        ctx.print(`${window.I18n.t('terminal.language')}: ${window.I18n.current.toUpperCase()}`);
+    },
+    async _cmd_play(ctx, args) { if (!args[0]) ctx.print(window.I18n.t('terminal.sounds')); else ctx.api.audio.play(args[0]); },
+    async _cmd_edit(ctx, args) {
+        if (!args[0]) { ctx.print(window.I18n.t('terminal.usage_edit')); return; }
+        try {
+            const path = args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0]);
+            let content = '';
+            if (await ctx.api.fs.exists(path)) content = await ctx.api.fs.read(path);
+            ctx.api.ui.prompt(`${window.I18n.t('menu.edit')}: ${args[0]}`, content, async (newContent) => {
+                if (newContent !== null) { await ctx.api.fs.write(path, newContent); ctx.print(`${window.I18n.t('dialog.ok')} ${args[0]}`); }
+            });
+        } catch (e) { ctx.print(`edit: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
+    },
+    async _cmd_theme(ctx, args) {
+        if (!args[0]) { ctx.print(window.I18n.t('terminal.theme_usage')); return; }
+        const tc = ctx.container.querySelector('.terminal-container');
+        tc.classList.remove('theme-matrix', 'theme-cyberpunk', 'theme-classic');
+        if (args[0] !== 'default') tc.classList.add(`theme-${args[0]}`);
+        ctx.print(`Theme changed to: ${args[0]}`);
+    },
+    async _cmd_cp(ctx, args) {
+        if (args.length < 2) { ctx.print('Usage: cp <source> <dest>'); return; }
+        try {
+            const src = args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0]);
+            const dst = args[1].startsWith('/') ? ctx.api.fs.join(args[1]) : ctx.api.fs.join(ctx.cwd, args[1]);
+            const content = await ctx.api.fs.read(src);
+            if (content === null) { ctx.print(`cp: ${args[0]}: not found`, 'error'); return; }
+            await ctx.api.fs.write(dst, content);
+        } catch (e) { ctx.print(`cp: ${e.message}`, 'error'); }
+    },
+    async _cmd_mv(ctx, args) {
+        if (args.length < 2) { ctx.print('Usage: mv <source> <dest>'); return; }
+        try {
+            const src = args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0]);
+            const dst = args[1].startsWith('/') ? ctx.api.fs.join(args[1]) : ctx.api.fs.join(ctx.cwd, args[1]);
+            const content = await ctx.api.fs.read(src);
+            if (content === null) { ctx.print(`mv: ${args[0]}: not found`, 'error'); return; }
+            await ctx.api.fs.write(dst, content); await ctx.api.fs.remove(src);
+        } catch (e) { ctx.print(`mv: ${e.message}`, 'error'); }
+    },
+    async _cmd_touch(ctx, args) {
+        if (!args[0]) { ctx.print('Usage: touch <file>'); return; }
+        try { const path = args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0]); if (!(await ctx.api.fs.exists(path))) await ctx.api.fs.write(path, ''); }
+        catch (e) { ctx.print(`touch: ${e.message}`, 'error'); }
+    },
+    async _cmd_head(ctx, args) {
+        if (!args[0]) { ctx.print('Usage: head [-n N] <file>'); return; }
+        try {
+            let n = 10, file = args[0];
+            if (args[0] === '-n') { n = parseInt(args[1]); file = args[2]; }
+            const path = file.startsWith('/') ? ctx.api.fs.join(file) : ctx.api.fs.join(ctx.cwd, file);
+            const content = await ctx.api.fs.read(path);
+            if (content === null) { ctx.print(`head: ${file}: not found`, 'error'); return; }
+            ctx.print(content.split('\n').slice(0, n).join('\n'));
+        } catch (e) { ctx.print(`head: ${e.message}`, 'error'); }
+    },
+    async _cmd_tail(ctx, args) {
+        if (!args[0]) { ctx.print('Usage: tail [-n N] <file>'); return; }
+        try {
+            let n = 10, file = args[0];
+            if (args[0] === '-n') { n = parseInt(args[1]); file = args[2]; }
+            const path = file.startsWith('/') ? ctx.api.fs.join(file) : ctx.api.fs.join(ctx.cwd, file);
+            const content = await ctx.api.fs.read(path);
+            if (content === null) { ctx.print(`tail: ${file}: not found`, 'error'); return; }
+            ctx.print(content.split('\n').slice(-n).join('\n'));
+        } catch (e) { ctx.print(`tail: ${e.message}`, 'error'); }
+    },
+    async _cmd_find(ctx, args) {
+        if (!args[0]) { ctx.print('Usage: find <path> [name]'); return; }
+        try {
+            const searchPath = args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0]);
+            const results = await ctx._findFiles(searchPath, args[1] || '');
+            if (results.length) ctx.print(results.join('\n')); else ctx.print('No files found');
+        } catch (e) { ctx.print(`find: ${e.message}`, 'error'); }
+    },
+    async _cmd_tree(ctx, args) {
+        try {
+            const treePath = args[0] ? (args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0])) : ctx.cwd;
+            const tree = await ctx._buildTree(treePath, '');
+            ctx.print(treePath.split('/').pop() || '/');
+            ctx.print(tree);
+        } catch (e) { ctx.print(`tree: ${e.message}`, 'error'); }
+    },
+    async _cmd_alias(ctx, args) {
+        const KEY = 'OSKO:terminal:aliases';
+        if (!args[0]) { try { const a = JSON.parse(localStorage.getItem(KEY) || '{}'); Object.entries(a).forEach(([k,v]) => ctx.print(`${k}='${v}'`)); } catch(e){} return; }
+        if (args[0] === 'rm' && args[1]) { try { const a = JSON.parse(localStorage.getItem(KEY) || '{}'); delete a[args[1]]; localStorage.setItem(KEY, JSON.stringify(a)); ctx.print(`Alias '${args[1]}' removed`); } catch(e){ ctx.print(`alias rm: ${e.message}`, 'error'); } return; }
+        if (args[0].includes('=')) { const [name, ...rest] = args.join(' ').split('='); const a = JSON.parse(localStorage.getItem(KEY) || '{}'); a[name.trim()] = rest.join('=').trim(); localStorage.setItem(KEY, JSON.stringify(a)); ctx.print(`Alias '${name.trim()}' set`); }
+        else { try { const a = JSON.parse(localStorage.getItem(KEY) || '{}'); const v = a[args[0]]; ctx.print(v ? `${args[0]}='${v}'` : `alias: ${args[0]}: not found`); } catch(e){} }
+    },
+    async _cmd_grep(ctx, args) {
+        if (args.length < 2) { ctx.print('Usage: grep <pattern> <file>'); return; }
+        try {
+            const file = args[1].startsWith('/') ? ctx.api.fs.join(args[1]) : ctx.api.fs.join(ctx.cwd, args[1]);
+            const content = await ctx.api.fs.read(file);
+            if (content === null) { ctx.print(`grep: ${args[1]}: not found`, 'error'); return; }
+            const lines = content.split('\n').filter(l => l.toLowerCase().includes(args[0].toLowerCase()));
+            if (lines.length) ctx.print(lines.join('\n')); else ctx.print('No matches found');
+        } catch (e) { ctx.print(`grep: ${e.message}`, 'error'); }
+    },
+    async _cmd_history(ctx, args) { ctx.history.slice().reverse().forEach((cmd, i) => ctx.print(`${i + 1}: ${cmd}`)); },
+    async _cmd_top(ctx, args) { ctx.executeTop(); },
+    _cmds: {
+        help: '_cmd_help', echo: '_cmd_echo', date: '_cmd_date', pwd: '_cmd_pwd',
+        ls: '_cmd_ls', cd: '_cmd_cd', cat: '_cmd_cat', mkdir: '_cmd_mkdir',
+        rm: '_cmd_rm', clear: '_cmd_clear', version: '_cmd_version', uptime: '_cmd_uptime',
+        ps: '_cmd_ps', system: '_cmd_system', play: '_cmd_play', edit: '_cmd_edit',
+        theme: '_cmd_theme', cp: '_cmd_cp', mv: '_cmd_mv', touch: '_cmd_touch',
+        head: '_cmd_head', tail: '_cmd_tail', find: '_cmd_find', tree: '_cmd_tree',
+        alias: '_cmd_alias', grep: '_cmd_grep', history: '_cmd_history', top: '_cmd_top'
     },
     async handleTab() {
         const val = this.input.value;
