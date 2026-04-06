@@ -104,7 +104,7 @@ WebOS.registerApp({
                 const isEnabled = btn.dataset.sound === 'on';
                 await api.fs.write('/home/user/settings/audio.json', JSON.stringify({ enabled: isEnabled }));
                 api.system.publish('settings:audio_changed', { enabled: isEnabled });
-                if (isEnabled) { try { AudioEngine.play('click'); } catch(e){} }
+                if (isEnabled) { AudioEngine.play('click').catch(() => {}); }
             };
         });
         const resetBtn = container.querySelector('.reset-btn');
