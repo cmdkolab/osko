@@ -1,10 +1,10 @@
 WebOS.registerApp({
     id: "terminal",
-    get name() { return window.I18n.t('terminal.title'); },
+    get name() { return globalThis.I18n.t('terminal.title'); },
     icon: "🐚",
     version: "4.8.0",
     manifest: {
-        get name() { return window.I18n.t('terminal.title'); },
+        get name() { return globalThis.I18n.t('terminal.title'); },
         icon: "🐚",
         permissions: ["fs.read", "fs.write", "system.manage"]
     },
@@ -33,8 +33,8 @@ WebOS.registerApp({
         this.input = container.querySelector('.terminal-input');
         this.prompt = container.querySelector('.terminal-prompt');
         this.updatePrompt();
-        this.print(window.I18n.t('terminal.version_prefix', window.I18n.t('terminal.title'), this.api.system.VERSION));
-        this.print(window.I18n.t('terminal.welcome'));
+        this.print(globalThis.I18n.t('terminal.version_prefix', globalThis.I18n.t('terminal.title'), this.api.system.VERSION));
+        this.print(globalThis.I18n.t('terminal.welcome'));
         this.input.onkeydown = (e) => {
             if (e.key === 'Enter') {
                 const cmd = this.input.value.trim();
@@ -72,8 +72,8 @@ WebOS.registerApp({
         container.onclick = () => this.input.focus();
     },
     updatePrompt() {
-        const user = window.I18n.t('terminal.prompt_user');
-        const host = window.I18n.t('terminal.prompt_host');
+        const user = globalThis.I18n.t('terminal.prompt_user');
+        const host = globalThis.I18n.t('terminal.prompt_host');
         this.prompt.innerText = `${user}@${host}:${this.cwd}$ `;
     },
     print(text, type = 'info') {
@@ -90,11 +90,11 @@ WebOS.registerApp({
         const args = parts.slice(1);
         const m = this._cmds[cmd];
         if (m) await this[m](this, args);
-        else this.print(`${window.I18n.t('terminal.not_found')}: ${cmd}`, 'error');
+        else this.print(`${globalThis.I18n.t('terminal.not_found')}: ${cmd}`, 'error');
     },
     async _cmd_help(ctx, args) {
-        ctx.print(window.I18n.t('terminal.help'));
-        ctx.print(window.I18n.t('terminal.help_system'));
+        ctx.print(globalThis.I18n.t('terminal.help'));
+        ctx.print(globalThis.I18n.t('terminal.help_system'));
     },
     async _cmd_echo(ctx, args) { ctx.print(args.join(' ')); },
     async _cmd_date(ctx, args) { ctx.print(new Date().toString()); },
@@ -102,78 +102,78 @@ WebOS.registerApp({
     async _cmd_ls(ctx, args) {
         try {
             const entries = await ctx.api.fs.list(ctx.cwd);
-            if (entries === null) { ctx.print(`ls: ${ctx.cwd}: ${window.I18n.t('terminal.not_found')}`, 'error'); return; }
+            if (entries === null) { ctx.print(`ls: ${ctx.cwd}: ${globalThis.I18n.t('terminal.not_found')}`, 'error'); return; }
             const sorted = (entries || []).sort((a, b) => {
                 if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
                 return a.name.localeCompare(b.name, undefined, { numeric: true });
             });
             ctx.printHTML(sorted.map(e => `<span class="${e.type === 'dir' ? 'terminal-dir' : ''}">${e.type === 'dir' ? e.name + '/' : e.name}</span>`).join('  '));
-        } catch (e) { ctx.print(`${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
+        } catch (e) { ctx.print(`${globalThis.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
     },
     async _cmd_cd(ctx, args) {
         const target = args[0] || '/home/user';
         const newPath = target.startsWith('/') ? ctx.api.fs.join(target) : ctx.api.fs.join(ctx.cwd, target);
         if (await ctx.api.fs.exists(newPath)) { ctx.cwd = newPath; ctx.updatePrompt(); }
-        else ctx.print(`cd: ${target}: ${window.I18n.t('terminal.not_found')}`, 'error');
+        else ctx.print(`cd: ${target}: ${globalThis.I18n.t('terminal.not_found')}`, 'error');
     },
     async _cmd_cat(ctx, args) {
-        if (!args[0]) { ctx.print(window.I18n.t('terminal.usage_cat')); return; }
+        if (!args[0]) { ctx.print(globalThis.I18n.t('terminal.usage_cat')); return; }
         try {
             const path = args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0]);
-            if (await ctx.api.fs.list(path) !== null) { ctx.print(`cat: ${args[0]}: ${window.I18n.t('terminal.is_dir')}`, 'error'); return; }
+            if (await ctx.api.fs.list(path) !== null) { ctx.print(`cat: ${args[0]}: ${globalThis.I18n.t('terminal.is_dir')}`, 'error'); return; }
             const content = await ctx.api.fs.read(path);
-            if (content === null) ctx.print(`cat: ${args[0]}: ${window.I18n.t('terminal.not_found')}`, 'error');
+            if (content === null) ctx.print(`cat: ${args[0]}: ${globalThis.I18n.t('terminal.not_found')}`, 'error');
             else ctx.print(content);
-        } catch (e) { ctx.print(`cat: ${args[0]}: ${window.I18n.t('terminal.read_error')}`, 'error'); }
+        } catch (e) { ctx.print(`cat: ${args[0]}: ${globalThis.I18n.t('terminal.read_error')}`, 'error'); }
     },
     async _cmd_mkdir(ctx, args) {
-        if (!args[0]) { ctx.print(window.I18n.t('terminal.usage_mkdir')); return; }
+        if (!args[0]) { ctx.print(globalThis.I18n.t('terminal.usage_mkdir')); return; }
         try { const path = args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0]); await ctx.api.fs.mkdir(path); }
-        catch (e) { ctx.print(`mkdir: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
+        catch (e) { ctx.print(`mkdir: ${args[0]}: ${globalThis.I18n.t('terminal.error')}`, 'error'); }
     },
     async _cmd_rm(ctx, args) {
-        if (!args[0]) { ctx.print(window.I18n.t('terminal.usage_rm')); return; }
+        if (!args[0]) { ctx.print(globalThis.I18n.t('terminal.usage_rm')); return; }
         try { const path = args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0]); await ctx.api.fs.remove(path); }
-        catch (e) { ctx.print(`rm: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
+        catch (e) { ctx.print(`rm: ${args[0]}: ${globalThis.I18n.t('terminal.error')}`, 'error'); }
     },
     async _cmd_clear(ctx, args) { ctx.output.innerHTML = ''; },
     async _cmd_version(ctx, args) { ctx.print(`OS(KO) Kernel v${ctx.api.system.VERSION}`); },
-    async _cmd_uptime(ctx, args) { ctx.print(`${window.I18n.t('about.uptime')}: ${ctx.api.system.getUptime()}`); },
+    async _cmd_uptime(ctx, args) { ctx.print(`${globalThis.I18n.t('about.uptime')}: ${ctx.api.system.getUptime()}`); },
     async _cmd_ps(ctx, args) {
         try {
             const procs = await ctx.api.system.getProcesses();
-            ctx.print(`${window.I18n.t('taskmanager.pid').padEnd(6)}${window.I18n.t('taskmanager.storage').padEnd(12)}${window.I18n.t('taskmanager.uptime').padEnd(10)}${window.I18n.t('taskmanager.status').padEnd(12)}${window.I18n.t('taskmanager.app')}`, 'echo');
+            ctx.print(`${globalThis.I18n.t('taskmanager.pid').padEnd(6)}${globalThis.I18n.t('taskmanager.storage').padEnd(12)}${globalThis.I18n.t('taskmanager.uptime').padEnd(10)}${globalThis.I18n.t('taskmanager.status').padEnd(12)}${globalThis.I18n.t('taskmanager.app')}`, 'echo');
             procs.forEach(p => {
                 const pidStr = String(p.pid).padEnd(6);
                 const storage = (ctx.api.system.storage.calculateUsage(p.appId) / 1024).toFixed(1) + ' KB';
                 const uptime = Math.floor((Date.now() - p.startTime) / 1000);
-                ctx.print(`${pidStr}${storage.padEnd(12)}${(uptime + 's').padEnd(10)}${window.I18n.t('taskmanager.running').padEnd(12)}${p.name || p.appId}`);
+                ctx.print(`${pidStr}${storage.padEnd(12)}${(uptime + 's').padEnd(10)}${globalThis.I18n.t('taskmanager.running').padEnd(12)}${p.name || p.appId}`);
             });
-        } catch (e) { ctx.print(`ps: ${window.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
+        } catch (e) { ctx.print(`ps: ${globalThis.I18n.t('terminal.error')}: ${e.message}`, 'error'); }
     },
     async _cmd_system(ctx, args) {
         const totalUsage = ctx.api.system.storage.getTotalUsage();
         const percent = ((totalUsage / 10485760) * 100).toFixed(1);
         ctx.print(`OS(KO) Kernel v${ctx.api.system.VERSION}`, 'echo');
-        ctx.print(`${window.I18n.t('about.uptime')}: ${ctx.api.system.getUptime()}`);
-        ctx.print(`${window.I18n.t('terminal.vfs_usage')}: ${(totalUsage / 1024 / 1024).toFixed(2)} MB / 10.00 MB (${percent}%)`);
-        ctx.print(`${window.I18n.t('terminal.resolution')}: ${window.innerWidth}x${window.innerHeight}`);
-        ctx.print(`${window.I18n.t('terminal.language')}: ${window.I18n.current.toUpperCase()}`);
+        ctx.print(`${globalThis.I18n.t('about.uptime')}: ${ctx.api.system.getUptime()}`);
+        ctx.print(`${globalThis.I18n.t('terminal.vfs_usage')}: ${(totalUsage / 1024 / 1024).toFixed(2)} MB / 10.00 MB (${percent}%)`);
+        ctx.print(`${globalThis.I18n.t('terminal.resolution')}: ${globalThis.innerWidth}x${globalThis.innerHeight}`);
+        ctx.print(`${globalThis.I18n.t('terminal.language')}: ${globalThis.I18n.current.toUpperCase()}`);
     },
-    async _cmd_play(ctx, args) { if (!args[0]) ctx.print(window.I18n.t('terminal.sounds')); else ctx.api.audio.play(args[0]); },
+    async _cmd_play(ctx, args) { if (!args[0]) ctx.print(globalThis.I18n.t('terminal.sounds')); else ctx.api.audio.play(args[0]); },
     async _cmd_edit(ctx, args) {
-        if (!args[0]) { ctx.print(window.I18n.t('terminal.usage_edit')); return; }
+        if (!args[0]) { ctx.print(globalThis.I18n.t('terminal.usage_edit')); return; }
         try {
             const path = args[0].startsWith('/') ? ctx.api.fs.join(args[0]) : ctx.api.fs.join(ctx.cwd, args[0]);
             let content = '';
             if (await ctx.api.fs.exists(path)) content = await ctx.api.fs.read(path);
-            ctx.api.ui.prompt(`${window.I18n.t('menu.edit')}: ${args[0]}`, content, async (newContent) => {
-                if (newContent !== null) { await ctx.api.fs.write(path, newContent); ctx.print(`${window.I18n.t('dialog.ok')} ${args[0]}`); }
+            ctx.api.ui.prompt(`${globalThis.I18n.t('menu.edit')}: ${args[0]}`, content, async (newContent) => {
+                if (newContent !== null) { await ctx.api.fs.write(path, newContent); ctx.print(`${globalThis.I18n.t('dialog.ok')} ${args[0]}`); }
             });
-        } catch (e) { ctx.print(`edit: ${args[0]}: ${window.I18n.t('terminal.error')}`, 'error'); }
+        } catch (e) { ctx.print(`edit: ${args[0]}: ${globalThis.I18n.t('terminal.error')}`, 'error'); }
     },
     async _cmd_theme(ctx, args) {
-        if (!args[0]) { ctx.print(window.I18n.t('terminal.theme_usage')); return; }
+        if (!args[0]) { ctx.print(globalThis.I18n.t('terminal.theme_usage')); return; }
         const tc = ctx.container.querySelector('.terminal-container');
         tc.classList.remove('theme-matrix', 'theme-cyberpunk', 'theme-classic');
         if (args[0] !== 'default') tc.classList.add(`theme-${args[0]}`);

@@ -1,9 +1,9 @@
-    window.AudioEngine = {
+    globalThis.AudioEngine = {
         ctx: null,
         enabled: true,
         async init() {
             try {
-                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.ctx = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
             } catch (e) {
                 SysLog.log('ERR', 'Web Audio API not supported', 'AudioEngine');
             }

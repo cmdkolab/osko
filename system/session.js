@@ -1,4 +1,4 @@
-    window.SessionManager = {
+    globalThis.SessionManager = {
         async init() {
             const locked = await PersistenceManager.get('SYS:LOCKED');
             if (locked) this.lock();

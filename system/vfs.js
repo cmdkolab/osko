@@ -1,4 +1,4 @@
-    window.VFS = {
+    globalThis.VFS = {
         QUOTA_PER_APP: 10 * 1024 * 1024,
         persistenceKey: 'VFS:ROOT',
         root: {
@@ -173,7 +173,7 @@
         _resolve(path, noClone = false) {
             const node = this._resolveInternal(path);
             if (node === null || noClone) return node;
-            return window.deepClone(node);
+            return globalThis.deepClone(node);
         },
         checkAccess(path, appId, mode, manifest) {
             path = this.join(path);
@@ -231,7 +231,7 @@
                 if (owner !== 'system') {
                     const currentUsage = this._usage[owner] || 0;
                     if (currentUsage + usageDelta > this.QUOTA_PER_APP) {
-                        Notifications.show({ title: window.I18n.t('system.notification_title'), message: window.I18n.t('dialog.quota_exceeded', owner) });
+                        Notifications.show({ title: globalThis.I18n.t('system.notification_title'), message: globalThis.I18n.t('dialog.quota_exceeded', owner) });
                         return false;
                     }
                 }
@@ -375,7 +375,7 @@
                             return;
                         }
                     }
-                    if (window.requestIdleCallback) window.requestIdleCallback(step);
+                    if (globalThis.requestIdleCallback) globalThis.requestIdleCallback(step);
                     else setTimeout(step, 1);
                 };
                 step();

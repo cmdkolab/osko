@@ -23,9 +23,9 @@
         AudioEngine.play('startup');
         if (DBWrapper._isFallback) {
             WebOS.ui.showDialog({
-                message: window.I18n.t('dialog.db_fallback'),
+                message: globalThis.I18n.t('dialog.db_fallback'),
                 type: 'alert',
-                acceptText: window.I18n.t('dialog.ok')
+                acceptText: globalThis.I18n.t('dialog.ok')
             });
         }
         setProgress(80, 'Updating System Stats...');
@@ -79,21 +79,21 @@
             if (clockEl) clockEl.setAttribute('aria-label', I18n.t('system.clock_aria'));
         };
         localizeStatic();
-        window.addEventListener('i18n:changed', localizeStatic);
+        globalThis.addEventListener('i18n:changed', localizeStatic);
         SysLog.log('INFO', 'Initializing WebOS Core...', 'Kernel');
-        window.onerror = (msg, url, line, col, error) => {
+        globalThis.onerror = (msg, url, line, col, error) => {
             SysLog.log('ERR', { message: msg, line, column: col, url, error: error?.toString() }, 'GlobalHandler');
             if (msg !== _lastErr) {
-                Notifications.show({ title: window.I18n.t('system.error_title'), message: window.I18n.t('dialog.error', String(msg).slice(0, 50)), type: 'error' });
+                Notifications.show({ title: globalThis.I18n.t('system.error_title'), message: globalThis.I18n.t('dialog.error', String(msg).slice(0, 50)), type: 'error' });
                 _lastErr = msg;
                 setTimeout(() => { if (_lastErr === msg) _lastErr = null; }, 5000);
             }
         };
-        window.onunhandledrejection = (event) => {
+        globalThis.onunhandledrejection = (event) => {
             const reason = event.reason?.toString() || 'Unknown Reason';
             SysLog.log('ERR', `Unhandled Rejection: ${reason}`, 'GlobalHandler');
             if (reason !== _lastErr) {
-                Notifications.show({ title: window.I18n.t('system.critical_error'), message: `Unhandled Promise: ${String(reason).slice(0, 50)}...`, type: 'error' });
+                Notifications.show({ title: globalThis.I18n.t('system.critical_error'), message: `Unhandled Promise: ${String(reason).slice(0, 50)}...`, type: 'error' });
                 _lastErr = reason;
                 setTimeout(() => { if (_lastErr === reason) _lastErr = null; }, 5000);
             }
@@ -124,26 +124,26 @@
         const updateTooltips = () => {
             binds.forEach(b => {
                 const el = document.getElementById(b.id);
-                if (el && b.tooltip) { el.title = window.I18n.t(b.tooltip); el.setAttribute('aria-label', window.I18n.t(b.tooltip)); }
+                if (el && b.tooltip) { el.title = globalThis.I18n.t(b.tooltip); el.setAttribute('aria-label', globalThis.I18n.t(b.tooltip)); }
             });
             const hddUsage = document.getElementById('hdd-usage');
-            if (hddUsage) { hddUsage.title = window.I18n.t('system.hdd_usage'); hddUsage.setAttribute('aria-label', window.I18n.t('system.hdd_usage')); }
+            if (hddUsage) { hddUsage.title = globalThis.I18n.t('system.hdd_usage'); hddUsage.setAttribute('aria-label', globalThis.I18n.t('system.hdd_usage')); }
             const clockEl = document.getElementById('clock');
-            if (clockEl) clockEl.setAttribute('aria-label', window.I18n.t('system.clock_aria'));
+            if (clockEl) clockEl.setAttribute('aria-label', globalThis.I18n.t('system.clock_aria'));
         };
         updateTooltips();
-        window.addEventListener('i18n:changed', () => {
+        globalThis.addEventListener('i18n:changed', () => {
             updateTooltips();
             WebOS.refreshUI();
         });
         const hddUsage = document.getElementById('hdd-usage');
-        if (hddUsage) hddUsage.title = window.I18n.t('system.hdd_usage');
+        if (hddUsage) hddUsage.title = globalThis.I18n.t('system.hdd_usage');
         setInterval(() => {
             const now = new Date();
             const clockEl = document.getElementById('clock');
             if (clockEl) {
                 clockEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                clockEl.title = now.toLocaleDateString(window.I18n.current === 'pl' ? 'pl-PL' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                clockEl.title = now.toLocaleDateString(globalThis.I18n.current === 'pl' ? 'pl-PL' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             }
         }, 1000);
     }
@@ -154,12 +154,12 @@
                 e.preventDefault();
                 if (e.target.closest('#window-layer') || (e.target.id !== 'desktop' && !e.target.closest('#desktop-icons'))) return;
                 ContextMenu.show(e, [
-                    { label: window.I18n.t('menu.refresh'), icon: '🔄', action: () => window.location.reload() },
-                    { label: window.I18n.t('menu.lock_system'), icon: '🔒', action: () => SessionManager.lock() },
-                    { label: window.I18n.t('menu.settings'), icon: '⚙️', action: () => WebOS.launchApp('settings') },
-                    { label: window.I18n.t('menu.new_note'), icon: '📝', action: () => WebOS.launchApp('notes') },
-                    { label: window.I18n.t('menu.close_all'), icon: '🧹', action: () => WebOS.killAll() },
-                    { label: window.I18n.t('menu.shutdown'), icon: '🔴', action: () => WebOS.shutdown() }
+                    { label: globalThis.I18n.t('menu.refresh'), icon: '🔄', action: () => globalThis.location.reload() },
+                    { label: globalThis.I18n.t('menu.lock_system'), icon: '🔒', action: () => SessionManager.lock() },
+                    { label: globalThis.I18n.t('menu.settings'), icon: '⚙️', action: () => WebOS.launchApp('settings') },
+                    { label: globalThis.I18n.t('menu.new_note'), icon: '📝', action: () => WebOS.launchApp('notes') },
+                    { label: globalThis.I18n.t('menu.close_all'), icon: '🧹', action: () => WebOS.killAll() },
+                    { label: globalThis.I18n.t('menu.shutdown'), icon: '🔴', action: () => WebOS.shutdown() }
                 ]);
             };
             desktopEl.addEventListener('mousedown', (e) => {
@@ -174,9 +174,9 @@
                 if (e.target.closest('.taskbar-item')) return;
                 e.preventDefault(); e.stopPropagation();
                 ContextMenu.show(e, [{
-                    label: window.I18n.t('menu.close_all'),
+                    label: globalThis.I18n.t('menu.close_all'),
                     icon: '🧹',
-                    action: () => WebOS.ui.confirm(window.I18n.t('dialog.close_all_confirm'), (conf) => conf && WebOS.killAll())
+                    action: () => WebOS.ui.confirm(globalThis.I18n.t('dialog.close_all_confirm'), (conf) => conf && WebOS.killAll())
                 }]);
             };
         }
@@ -196,16 +196,16 @@
             const proc = state.processes.find(p => p.windowId === winId);
             if (proc && !proc._terminated) WebOS.killApp(proc.appId);
         });
-        window.addEventListener('resize', () => {
-            state.viewport.w = window.innerWidth;
-            state.viewport.h = window.innerHeight;
+        globalThis.addEventListener('resize', () => {
+            state.viewport.w = globalThis.innerWidth;
+            state.viewport.h = globalThis.innerHeight;
         });
         const saveOnExit = () => VFS._saveTimer && VFS.saveImmediate();
-        window.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && saveOnExit());
-        window.addEventListener('beforeunload', saveOnExit);
+        globalThis.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && saveOnExit());
+        globalThis.addEventListener('beforeunload', saveOnExit);
     }
     function _setupKeyboardShortcuts() {
-        window.addEventListener('keydown', (e) => {
+        globalThis.addEventListener('keydown', (e) => {
             if (e.altKey && e.key === 'Tab') {
                 e.preventDefault();
                 const stack = state.windowStack || [];
@@ -269,7 +269,7 @@
         }
         const updateLockTime = () => {
             const now = new Date();
-            const loc = window.I18n.current === 'pl' ? 'pl-PL' : 'en-US';
+            const loc = globalThis.I18n.current === 'pl' ? 'pl-PL' : 'en-US';
             lockTime.innerText = now.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false });
             lockDate.innerText = now.toLocaleDateString(loc, { weekday: 'long', month: 'long', day: 'numeric' });
         };
@@ -277,8 +277,8 @@
         updateLockTime();
         document.addEventListener('mousemove', (e) => {
             if (lockScreen.classList.contains('hidden')) return;
-            const x = (e.clientX / window.innerWidth - 0.5) * 40;
-            const y = (e.clientY / window.innerHeight - 0.5) * 40;
+            const x = (e.clientX / globalThis.innerWidth - 0.5) * 40;
+            const y = (e.clientY / globalThis.innerHeight - 0.5) * 40;
             if (lockWallpaper) lockWallpaper.style.transform = `translate(${x}px, ${y}px) scale(1.1)`;
         });
         unlockBtn.onclick = () => SessionManager.unlock();

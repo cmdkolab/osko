@@ -1,5 +1,5 @@
-window.SESSION_ID = window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36).toUpperCase().padStart(4, '0').substring(0, 4);
-window.SysLog = {
+globalThis.SESSION_ID = globalThis.crypto.getRandomValues(new Uint32Array(1))[0].toString(36).toUpperCase().padStart(4, '0').substring(0, 4);
+globalThis.SysLog = {
     _buffer: null,
     _writeTimer: null,
     _isWriting: false,

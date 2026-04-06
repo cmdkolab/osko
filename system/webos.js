@@ -1,4 +1,4 @@
-window.WebOS = {
+globalThis.WebOS = {
     state,
     CONST: {
         DESKTOP_GRID: {
@@ -23,7 +23,7 @@ window.WebOS = {
             script.onload = () => resolve();
             script.onerror = () => {
                 const errMsg = `Failed to load app from ${folderPath}`;
-                Notifications.show({ title: window.I18n.t('system.notification_title'), message: errMsg, type: 'error' });
+                Notifications.show({ title: globalThis.I18n.t('system.notification_title'), message: errMsg, type: 'error' });
                 reject(new Error(errMsg));
             };
             document.body.appendChild(script);
@@ -42,7 +42,7 @@ window.WebOS = {
     },
     async launchApp(appId, params = {}, internal = false) {
         if (state.isLocked && !internal) {
-            Notifications.show({ title: window.I18n.t('system.notification_title'), message: window.I18n.t('system.locked_msg'), type: 'warning' });
+            Notifications.show({ title: globalThis.I18n.t('system.notification_title'), message: globalThis.I18n.t('system.locked_msg'), type: 'warning' });
             return;
         }
         const app = state.apps[appId];
@@ -87,7 +87,7 @@ window.WebOS = {
         const mountingTimeout = setTimeout(() => {
             if (state.processes.includes(process) && !process.mounted) {
                 SysLog.log('ERR', `Mounting timeout for ${app.name}`, 'WebOS');
-                Notifications.show({ title: window.I18n.t('system.notification_title'), message: window.I18n.t('system.app_load_timeout', app.name), type: 'error' });
+                Notifications.show({ title: globalThis.I18n.t('system.notification_title'), message: globalThis.I18n.t('system.app_load_timeout', app.name), type: 'error' });
                 this.killApp(appId, pid);
             }
         }, 10000);
@@ -101,8 +101,8 @@ window.WebOS = {
             console.error(`[Kernel] Failed to mount app "${app.name}":`, e);
             SysLog.log('ERR', `Mount error in ${app.name}`, 'WebOS', { appId, pid, error: e.message });
             Notifications.show({
-                title: window.I18n.t('system.notification_title'),
-                message: window.I18n.t('system.launch_error', app.name),
+                title: globalThis.I18n.t('system.notification_title'),
+                message: globalThis.I18n.t('system.launch_error', app.name),
                 type: 'error'
             });
             await this.killApp(appId, pid);
@@ -150,7 +150,7 @@ window.WebOS = {
             if (proc.windowId) WindowManager.destroy(proc.windowId);
             state.processes.splice(index, 1);
             this._killLock.delete(key);
-            if (window.events) window.events.emit('process:terminated', appId);
+            if (globalThis.events) globalThis.events.emit('process:terminated', appId);
             this.updateTaskbar();
             this.saveState();
         }
@@ -162,8 +162,8 @@ window.WebOS = {
         overlay.innerHTML = `
                 <div class="shutdown-content">
                     <div class="shutdown-icon">⏻</div>
-                    <h1>${window.I18n.t('system.shutdown_title')}</h1>
-                    <p>${window.I18n.t('system.shutdown_msg')}</p>
+                    <h1>${globalThis.I18n.t('system.shutdown_title')}</h1>
+                    <p>${globalThis.I18n.t('system.shutdown_msg')}</p>
                 </div>
             `;
         document.body.appendChild(overlay);
@@ -172,9 +172,9 @@ window.WebOS = {
         overlay.innerHTML = `
                 <div class="shutdown-content">
                     <div class="shutdown-icon">⏻</div>
-                    <h1>${window.I18n.t('system.shutdown_done_title')}</h1>
-                    <p>${window.I18n.t('system.shutdown_done_msg')}</p>
-                    <button onclick="window.location.reload()" class="restart-btn">${window.I18n.t('system.restart')}</button>
+                    <h1>${globalThis.I18n.t('system.shutdown_done_title')}</h1>
+                    <p>${globalThis.I18n.t('system.shutdown_done_msg')}</p>
+                    <button onclick="globalThis.location.reload()" class="restart-btn">${globalThis.I18n.t('system.restart')}</button>
                 </div>
             `;
     },
@@ -220,7 +220,7 @@ window.WebOS = {
         const container = document.getElementById('desktop-icons');
         if (!container) return;
         if (container.querySelector(`.desktop-icon[data-id="${app.id}"]`)) return;
-        const name = app.name || (app.manifest && app.manifest.name) || window.I18n.t('system.default_app_name');
+        const name = app.name || (app.manifest && app.manifest.name) || globalThis.I18n.t('system.default_app_name');
         const iconImg = app.icon || (app.manifest && app.manifest.icon) || '❓';
         const icon = document.createElement('div');
         icon.className = 'desktop-icon reveal';
@@ -275,8 +275,8 @@ window.WebOS = {
                 if (dragging) {
                     dragging = false;
                     icon.classList.remove('dragging');
-                    let sX = Math.max(grid.OFFSET, Math.min(Math.round((icon.offsetLeft - grid.OFFSET) / grid.CELL_W) * grid.CELL_W + grid.OFFSET, window.innerWidth - 80));
-                    let sY = Math.max(grid.OFFSET, Math.min(Math.round((icon.offsetTop - grid.OFFSET) / grid.CELL_H) * grid.CELL_H + grid.OFFSET, window.innerHeight - 100));
+                    let sX = Math.max(grid.OFFSET, Math.min(Math.round((icon.offsetLeft - grid.OFFSET) / grid.CELL_W) * grid.CELL_W + grid.OFFSET, globalThis.innerWidth - 80));
+                    let sY = Math.max(grid.OFFSET, Math.min(Math.round((icon.offsetTop - grid.OFFSET) / grid.CELL_H) * grid.CELL_H + grid.OFFSET, globalThis.innerHeight - 100));
                     icon.style.left = sX + 'px';
                     icon.style.top = sY + 'px';
                     this._desktopPositions[appId] = { x: sX, y: sY };
@@ -298,9 +298,9 @@ window.WebOS = {
                     if (!clearBtn) {
                         const header = document.createElement('div');
                         header.className = 'notification-header';
-                        header.innerHTML = `<button class="notification-clear-btn">${window.I18n.t('notifications.clear_all')}</button>`;
+                        header.innerHTML = `<button class="notification-clear-btn">${globalThis.I18n.t('notifications.clear_all')}</button>`;
                         container.parentElement.insertBefore(header, container);
-                        header.querySelector('.notification-clear-btn').onclick = () => window.Notifications.clearAll();
+                        header.querySelector('.notification-clear-btn').onclick = () => globalThis.Notifications.clearAll();
                     }
                 } else {
                     if (clearBtn) clearBtn.parentElement.remove();
@@ -323,7 +323,7 @@ window.WebOS = {
         state.processes.forEach(proc => {
             let item = this._taskbarCache[proc.pid];
             const isActive = state.focusedWindow === proc.windowId;
-            const name = proc.appDef.name || (proc.appDef.manifest && proc.appDef.manifest.name) || window.I18n.t('system.default_app_name');
+            const name = proc.appDef.name || (proc.appDef.manifest && proc.appDef.manifest.name) || globalThis.I18n.t('system.default_app_name');
             const icon = proc.appDef.icon || (proc.appDef.manifest && proc.appDef.manifest.icon) || '❓';
             if (!item) {
                 item = document.createElement('div');
@@ -353,7 +353,7 @@ window.WebOS = {
                     e.preventDefault();
                     e.stopPropagation();
                     ContextMenu.show(e, [{
-                        label: window.I18n.t('menu.terminate'),
+                        label: globalThis.I18n.t('menu.terminate'),
                         action: () => WebOS.killApp(proc.appId, proc.pid)
                     }]);
                 };
@@ -425,7 +425,7 @@ window.WebOS = {
                 const win = state.windows.find(w => w.appId === appData.appId);
                 if (win && appData.window) {
                     Object.assign(win.element.style, appData.window);
-                    if (appData.window.state === 'maximized') WindowManager.toggleMaximize(win.id);
+                    if (appData.globalThis.state === 'maximized') WindowManager.toggleMaximize(win.id);
                     win.element.style.transition = 'none';
                     setTimeout(() => win.element.style.transition = '', 100);
                 }
@@ -461,12 +461,12 @@ window.WebOS = {
         prompt(msg, defaultValue, cb) { this.showDialog({ type: 'prompt', message: msg, defaultValue, onAccept: cb, onCancel: () => cb(null) }); },
         fileConflict(filename, cb) {
             this.showDialog({
-                message: window.I18n.t('dialog.file_exists', filename),
+                message: globalThis.I18n.t('dialog.file_exists', filename),
                 type: 'choice',
                 choices: [
-                    { label: window.I18n.t('dialog.replace'), value: 'replace', class: 'danger' },
-                    { label: window.I18n.t('dialog.copy'), value: 'copy' },
-                    { label: window.I18n.t('dialog.cancel'), value: 'cancel' }
+                    { label: globalThis.I18n.t('dialog.replace'), value: 'replace', class: 'danger' },
+                    { label: globalThis.I18n.t('dialog.copy'), value: 'copy' },
+                    { label: globalThis.I18n.t('dialog.cancel'), value: 'cancel' }
                 ],
                 onChoice: cb
             });
@@ -519,7 +519,7 @@ window.WebOS = {
                         <div class="search-container glass-panel">
                             <div class="search-input-wrapper">
                                 <span class="search-icon">🔍</span>
-                                <input type="text" class="search-input" placeholder="${window.I18n.t('system.search_placeholder')}">
+                                <input type="text" class="search-input" placeholder="${globalThis.I18n.t('system.search_placeholder')}">
                             </div>
                             <div class="search-results"></div>
                         </div>
@@ -537,12 +537,9 @@ window.WebOS = {
                     let allResults = [];
                     if (/^[0-9+\-*/().\s]+$/.test(query) && /[0-9]/.test(query)) {
                         try {
-                            const unsafeEval = (str) => {
-                                return (new Function(`"use strict"; return (${str})`))();
-                            };
-                            const res = unsafeEval(query);
-                            if (typeof res === 'number') {
-                                allResults.push({ type: 'math', name: `= ${res}`, id: res, icon: '🧮', path: window.I18n.t('system.search_result_math') });
+                            const res = WebOS._safeMath(query);
+                            if (typeof res === 'number' && isFinite(res)) {
+                                allResults.push({ type: 'math', name: `= ${res}`, id: res, icon: '🧮', path: globalThis.I18n.t('system.search_result_math') });
                             }
                         } catch (e) { }
                     }
@@ -552,9 +549,9 @@ window.WebOS = {
                             <span class="res-icon">${res.icon || (res.type === 'dir' ? '📁' : '📄')}</span>
                             <div class="res-info">
                                 <span class="res-name">${res.name}</span>
-                                <span class="res-path">${res.path || window.I18n.t('taskmanager.app')}</span>
+                                <span class="res-path">${res.path || globalThis.I18n.t('taskmanager.app')}</span>
                             </div>
-                            <span class="res-type-badge">${window.I18n.t('system.type_' + res.type)}</span>
+                            <span class="res-type-badge">${globalThis.I18n.t('system.type_' + res.type)}</span>
                         </div>
                     `).join('');
                     results.querySelectorAll('.search-item').forEach(item => {
@@ -612,7 +609,7 @@ window.WebOS = {
             const isActive = force !== undefined ? force : !overlay.classList.contains('active');
             if (isActive) {
                 const now = new Date();
-                const loc = window.I18n.current === 'pl' ? 'pl-PL' : 'en-US';
+                const loc = globalThis.I18n.current === 'pl' ? 'pl-PL' : 'en-US';
                 const month = now.toLocaleString(loc, { month: 'long' });
                 const year = now.getFullYear();
                 const daysInMonth = new Date(year, now.getMonth() + 1, 0).getDate();
@@ -621,13 +618,13 @@ window.WebOS = {
                 for (let i = 0; i < firstDay; i++) daysHtml += '<div class="cal-day empty"></div>';
                 for (let i = 1; i <= daysInMonth; i++) daysHtml += `<div class="cal-day ${i === now.getDate() ? 'today' : ''}">${i}</div>`;
                 const weekdays = [
-                    window.I18n.t('system.calendar_weekday_mo'),
-                    window.I18n.t('system.calendar_weekday_tu'),
-                    window.I18n.t('system.calendar_weekday_we'),
-                    window.I18n.t('system.calendar_weekday_th'),
-                    window.I18n.t('system.calendar_weekday_fr'),
-                    window.I18n.t('system.calendar_weekday_sa'),
-                    window.I18n.t('system.calendar_weekday_su')
+                    globalThis.I18n.t('system.calendar_weekday_mo'),
+                    globalThis.I18n.t('system.calendar_weekday_tu'),
+                    globalThis.I18n.t('system.calendar_weekday_we'),
+                    globalThis.I18n.t('system.calendar_weekday_th'),
+                    globalThis.I18n.t('system.calendar_weekday_fr'),
+                    globalThis.I18n.t('system.calendar_weekday_sa'),
+                    globalThis.I18n.t('system.calendar_weekday_su')
                 ];
                 overlay.innerHTML = `<div class="cal-header reveal">${month} ${year}</div><div class="cal-grid reveal">${weekdays.map(w => `<div class="cal-weekday">${w}</div>`).join('')}${daysHtml}</div>`;
                 overlay.style.display = 'block';
@@ -643,8 +640,8 @@ window.WebOS = {
             overlay.className = 'system-dialog-overlay';
             overlay.style.zIndex = 21000 + this._dialogStack.length;
             let actionsHtml = options.type === 'choice' ? options.choices.map(c => `<button class="dialog-btn ${c.class || ''}" data-value="${c.value}">${c.label}</button>`).join('') :
-                (options.type === 'alert' ? `<button class="dialog-btn accept primary">${options.acceptText || window.I18n.t('dialog.ok')}</button>` :
-                `<button class="dialog-btn cancel">${options.cancelText || window.I18n.t('dialog.cancel')}</button><button class="dialog-btn accept primary">${options.acceptText || window.I18n.t('dialog.ok')}</button>`);
+                (options.type === 'alert' ? `<button class="dialog-btn accept primary">${options.acceptText || globalThis.I18n.t('dialog.ok')}</button>` :
+                `<button class="dialog-btn cancel">${options.cancelText || globalThis.I18n.t('dialog.cancel')}</button><button class="dialog-btn accept primary">${options.acceptText || globalThis.I18n.t('dialog.ok')}</button>`);
             overlay.innerHTML = `<div class="system-dialog glass-panel"><div class="dialog-content"><p class="dialog-message">${options.message}</p></div><div class="dialog-actions">${actionsHtml}</div></div>`;
             if (options.type === 'prompt') {
                 const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'dialog-input'; inp.value = options.defaultValue || '';
@@ -680,7 +677,7 @@ window.WebOS = {
             const icon = document.querySelector(`.desktop-icon[data-id="${id}"]`);
             if (icon) {
                 const label = icon.querySelector('.label');
-                if (label) label.innerText = app.name || (app.manifest && app.manifest.name) || window.I18n.t('system.default_app_name');
+                if (label) label.innerText = app.name || (app.manifest && app.manifest.name) || globalThis.I18n.t('system.default_app_name');
             }
         });
     },
@@ -692,7 +689,7 @@ window.WebOS = {
             const winEl = document.getElementById(proc.windowId);
             if (winEl) {
                 const titleEl = winEl.querySelector('.window-title');
-                if (titleEl) titleEl.innerText = proc.appDef.name || (proc.appDef.manifest && proc.appDef.manifest.name) || window.I18n.t('system.default_app_name');
+                if (titleEl) titleEl.innerText = proc.appDef.name || (proc.appDef.manifest && proc.appDef.manifest.name) || globalThis.I18n.t('system.default_app_name');
             }
         });
     },
@@ -717,6 +714,14 @@ window.WebOS = {
         }, 200);
     }
 };
-window.addEventListener('resize', () => {
+globalThis.addEventListener('resize', () => {
     WebOS.repositionDesktopIcons();
 });
+WebOS._safeMath = (expr) => {
+    const tokens = expr.match(/[\d.]+|[\+\-*\/%()]/g) || [];
+    const output = [], ops = [], prec = { '+':1,'-':1,'*':2,'/':2,'%':2 };
+    for (const t of tokens) { if (!isNaN(t)) output.push(parseFloat(t)); else if (t === '(') ops.push(t); else if (t === ')') { while (ops.length && ops[ops.length-1] !== '(') output.push(ops.pop()); ops.pop(); } else { while (ops.length && prec[ops[ops.length-1]] >= prec[t]) output.push(ops.pop()); ops.push(t); } }
+    while (ops.length) output.push(ops.pop());
+    const stack = []; for (const t of output) { if (!isNaN(t)) stack.push(t); else { const b = stack.pop(), a = stack.pop(); if (a === undefined || b === undefined) throw new Error('Stack Error'); stack.push(t === '+' ? a+b : t === '-' ? a-b : t === '*' ? a*b : t === '%' ? a%b : a/b); } }
+    return stack[0];
+};

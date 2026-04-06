@@ -1,4 +1,4 @@
-window.WindowManager = {
+globalThis.WindowManager = {
         CONST: {
             CASCADE_STEP: 22,
             SNAP_EDGE: 30,
@@ -8,7 +8,7 @@ window.WindowManager = {
             TASKBAR_HEIGHT: 40
         },
         create(options, appId) {
-            const secureId = window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
+            const secureId = globalThis.crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
             const id = `win_${secureId}`;
             const winEl = document.createElement('div');
             winEl.className = 'window reveal';
@@ -16,11 +16,11 @@ window.WindowManager = {
             winEl.style.width = options.width || '400px';
             winEl.style.height = options.height || '300px';
             winEl.style.transition = 'none';
-            const cascadeOffset = (state.windows.length * this.CONST.CASCADE_STEP) % (window.innerHeight / 3);
+            const cascadeOffset = (state.windows.length * this.CONST.CASCADE_STEP) % (globalThis.innerHeight / 3);
             let baseX = parseInt(options.x !== undefined ? options.x : (100 + cascadeOffset));
             let baseY = parseInt(options.y !== undefined ? options.y : (80 + cascadeOffset));
-            const maxW = window.innerWidth - 60;
-            const maxH = window.innerHeight - this.CONST.TASKBAR_HEIGHT - 60;
+            const maxW = globalThis.innerWidth - 60;
+            const maxH = globalThis.innerHeight - this.CONST.TASKBAR_HEIGHT - 60;
             if (baseX > maxW || baseX < 0) baseX = 20;
             if (baseY > maxH || baseY < 0) baseY = 20;
             winEl.style.left = baseX + 'px';
@@ -29,16 +29,16 @@ window.WindowManager = {
                 <div class="window-header">
                     <div class="window-title"></div>
                     <div class="window-controls">
-                        <button class="control-btn minimize" aria-label="${window.I18n.t('system.minimize')}">−</button>
-                        <button class="control-btn maximize" aria-label="${window.I18n.t('system.maximize')}">□</button>
-                        <button class="control-btn close" aria-label="${window.I18n.t('system.close')}">×</button>
+                        <button class="control-btn minimize" aria-label="${globalThis.I18n.t('system.minimize')}">−</button>
+                        <button class="control-btn maximize" aria-label="${globalThis.I18n.t('system.maximize')}">□</button>
+                        <button class="control-btn close" aria-label="${globalThis.I18n.t('system.close')}">×</button>
                     </div>
                 </div>
                 <div class="window-content"></div>
                 <div class="window-resizer"></div>
             `;
             setTimeout(() => winEl.style.transition = '', 50);
-            winEl.querySelector('.window-title').textContent = `${options.icon || ''} ${options.title || window.I18n.t('system.default_app_name')}`;
+            winEl.querySelector('.window-title').textContent = `${options.icon || ''} ${options.title || globalThis.I18n.t('system.default_app_name')}`;
             document.getElementById('window-layer').appendChild(winEl);
             const win = { id, element: winEl, appId, state: 'normal' };
             state.windows.push(win);
@@ -368,8 +368,8 @@ window.WindowManager = {
             });
         },
         updateDynamicShadow(el) {
-            const vw = window.innerWidth;
-            const vh = window.innerHeight;
+            const vw = globalThis.innerWidth;
+            const vh = globalThis.innerHeight;
             const rect = el.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;

@@ -1,4 +1,4 @@
-    window.ThemeEngine = {
+    globalThis.ThemeEngine = {
         async setTheme(name) {
             document.documentElement.setAttribute('data-theme', name);
             await VFS.write('/home/user/settings/theme.txt', name, 'system');
@@ -24,8 +24,8 @@
                 };
                 img.onerror = () => {
                     Notifications.show({
-                        title: window.I18n.t('settings.title'),
-                        message: window.I18n.t('explorer.wallpaper_invalid'),
+                        title: globalThis.I18n.t('settings.title'),
+                        message: globalThis.I18n.t('explorer.wallpaper_invalid'),
                         type: 'error'
                     });
                 };
@@ -53,7 +53,7 @@
             if (savedWall) {
                 this.setWallpaper(savedWall);
             }
-            this._prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+            this._prefersDark = globalThis.matchMedia('(prefers-color-scheme: dark)');
             this._prefersDark.addEventListener('change', this._themeChangeListener);
         },
         _themeChangeListener() {
@@ -63,7 +63,7 @@
             if (this._prefersDark) this._prefersDark.removeEventListener('change', this._themeChangeListener);
         },
         applyAutoTheme() {
-            const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDark = globalThis.matchMedia('(prefers-color-scheme: dark)').matches;
             document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
         }
     };

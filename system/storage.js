@@ -1,10 +1,10 @@
-window.PersistenceManager = {
+globalThis.PersistenceManager = {
     PREFIX: 'OSKO:',
     storeName: 'vfs_nodes',
     SYSTEM_DIR: '/sys',
     TEMP_DIR: '/tmp',
     START_TIME: Date.now(),
-    VERSION: '5.3.0',
+    VERSION: '5.4.0',
     async get(key) {
         try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
     },

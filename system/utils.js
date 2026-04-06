@@ -1,4 +1,4 @@
-window.deepMerge = (target, source) => {
+globalThis.deepMerge = (target, source) => {
     for (const key in source) {
         if (key === '__proto__' || key === 'constructor') continue;
         const val = source[key];
@@ -16,7 +16,7 @@ window.deepMerge = (target, source) => {
         }
     }
 };
-window.deepMergeSync = (target, source) => {
+globalThis.deepMergeSync = (target, source) => {
     for (const key in target) {
         if (!(key in source) && key !== '__proto__' && key !== 'constructor') {
             delete target[key];
@@ -39,7 +39,7 @@ window.deepMergeSync = (target, source) => {
         }
     }
 };
-window.deepClone = (obj) => {
+globalThis.deepClone = (obj) => {
     if (!obj || typeof obj !== 'object') return obj;
     try {
         if (typeof structuredClone === 'function') return structuredClone(obj);

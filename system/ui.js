@@ -1,4 +1,4 @@
-    window.ContextMenu = {
+    globalThis.ContextMenu = {
         _activeListener: null,
         _keyListener: null,
         _timeout: null,
@@ -38,8 +38,8 @@
             const rect = menu.getBoundingClientRect();
             let x = e ? e.clientX : 0;
             let y = e ? e.clientY : 0;
-            if (x + rect.width > window.innerWidth) x = Math.max(0, window.innerWidth - rect.width - 10);
-            if (y + rect.height > window.innerHeight) y = Math.max(0, window.innerHeight - rect.height - 10);
+            if (x + rect.width > globalThis.innerWidth) x = Math.max(0, globalThis.innerWidth - rect.width - 10);
+            if (y + rect.height > globalThis.innerHeight) y = Math.max(0, globalThis.innerHeight - rect.height - 10);
             menu.style.left = x + 'px';
             menu.style.top = y + 'px';
             this._activeListener = (evt) => {

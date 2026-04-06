@@ -1,4 +1,4 @@
-window.I18n = {
+globalThis.I18n = {
     current: localStorage.getItem('OSKO:LANG') || 'en',
     dicts: {
         en: {
@@ -472,13 +472,13 @@ window.I18n = {
     register(lang, keys) {
         if (!this.dicts[lang]) this.dicts[lang] = {};
         Object.assign(this.dicts[lang], keys);
-        window.dispatchEvent(new CustomEvent('i18n:registered', { detail: { lang, keys } }));
+        globalThis.dispatchEvent(new CustomEvent('i18n:registered', { detail: { lang, keys } }));
     },
     setLanguage(lang) {
         if (this.dicts[lang]) {
             this.current = lang;
             localStorage.setItem('OSKO:LANG', lang);
-            window.dispatchEvent(new CustomEvent('i18n:changed', { detail: lang }));
+            globalThis.dispatchEvent(new CustomEvent('i18n:changed', { detail: lang }));
         }
     }
 };

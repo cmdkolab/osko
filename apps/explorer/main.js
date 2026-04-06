@@ -1,10 +1,10 @@
 WebOS.registerApp({
     id: "explorer",
-    get name() { return window.I18n.t('explorer.title'); },
+    get name() { return globalThis.I18n.t('explorer.title'); },
     icon: "📂",
     version: "4.9.0",
     manifest: {
-        get name() { return window.I18n.t('explorer.title'); },
+        get name() { return globalThis.I18n.t('explorer.title'); },
         icon: "📂",
         permissions: ["fs.read", "fs.write", "notifications"]
     },
@@ -25,12 +25,12 @@ WebOS.registerApp({
                 container.innerHTML = `
                     <div class="explorer-app">
                         <div class="explorer-toolbar">
-                            <button class="sys-btn home-btn" title="${window.I18n.t('explorer.home') || '🏠'}">🏠</button>
-                            <button class="sys-btn back-btn" title="${window.I18n.t('explorer.back')}">⬅</button>
+                            <button class="sys-btn home-btn" title="${globalThis.I18n.t('explorer.home') || '🏠'}">🏠</button>
+                            <button class="sys-btn back-btn" title="${globalThis.I18n.t('explorer.back')}">⬅</button>
                             <div class="explorer-breadcrumbs"></div>
-                            <button class="sys-btn sort-btn" title="${window.I18n.t('explorer.sort')}">↕️</button>
-                            <button class="sys-btn view-btn" title="${window.I18n.t('explorer.view')}">${this.viewMode === 'grid' ? '☰' : '▦'}</button>
-                            <input type="text" class="explorer-search" placeholder="${window.I18n.t('system.search_placeholder')}">
+                            <button class="sys-btn sort-btn" title="${globalThis.I18n.t('explorer.sort')}">↕️</button>
+                            <button class="sys-btn view-btn" title="${globalThis.I18n.t('explorer.view')}">${this.viewMode === 'grid' ? '☰' : '▦'}</button>
+                            <input type="text" class="explorer-search" placeholder="${globalThis.I18n.t('system.search_placeholder')}">
                         </div>
                         <div class="explorer-main">
                             <div class="explorer-grid" tabindex="0"></div>
@@ -47,7 +47,7 @@ WebOS.registerApp({
         this.render = render;
         await render();
         this._i18nListener = () => render();
-        window.addEventListener('i18n:changed', this._i18nListener);
+        globalThis.addEventListener('i18n:changed', this._i18nListener);
     },
     setupToolbar(container) {
         container.querySelector('.home-btn').onclick = () => {
@@ -61,9 +61,9 @@ WebOS.registerApp({
         };
         container.querySelector('.sort-btn').onclick = (e) => {
             this.api.system.showContextMenu(e, [
-                { label: `${window.I18n.t('explorer.sort_name')} ${this.sortBy === 'name' ? '✓' : ''}`, action: async () => { this.sortBy = 'name'; await this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } },
-                { label: `${window.I18n.t('explorer.sort_size')} ${this.sortBy === 'size' ? '✓' : ''}`, action: async () => { this.sortBy = 'size'; await this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } },
-                { label: `${window.I18n.t('explorer.sort_date')} ${this.sortBy === 'date' ? '✓' : ''}`, action: async () => { this.sortBy = 'date'; await this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } }
+                { label: `${globalThis.I18n.t('explorer.sort_name')} ${this.sortBy === 'name' ? '✓' : ''}`, action: async () => { this.sortBy = 'name'; await this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } },
+                { label: `${globalThis.I18n.t('explorer.sort_size')} ${this.sortBy === 'size' ? '✓' : ''}`, action: async () => { this.sortBy = 'size'; await this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } },
+                { label: `${globalThis.I18n.t('explorer.sort_date')} ${this.sortBy === 'date' ? '✓' : ''}`, action: async () => { this.sortBy = 'date'; await this.api.system.storage.set('explorer:sort', this.sortBy); this.render(container); } }
             ]);
         };
         container.querySelector('.view-btn').onclick = async () => {
@@ -104,14 +104,14 @@ WebOS.registerApp({
             return a.name.localeCompare(b.name, undefined, { numeric: true });
         });
         grid.classList.toggle('view-list', this.viewMode === 'list');
-        grid.innerHTML = items.length ? '' : `<div class="explorer-empty">${window.I18n.t('explorer.empty')}</div>`;
+        grid.innerHTML = items.length ? '' : `<div class="explorer-empty">${globalThis.I18n.t('explorer.empty')}</div>`;
         if (this.viewMode === 'list' && items.length) {
             const header = document.createElement('div');
             header.className = 'explorer-list-header';
             header.innerHTML = `
-                <div class="header-name">${window.I18n.t('explorer.prop_name')}</div>
-                <div class="header-type">${window.I18n.t('explorer.prop_type')}</div>
-                <div class="header-size">${window.I18n.t('explorer.prop_size')}</div>
+                <div class="header-name">${globalThis.I18n.t('explorer.prop_name')}</div>
+                <div class="header-type">${globalThis.I18n.t('explorer.prop_type')}</div>
+                <div class="header-size">${globalThis.I18n.t('explorer.prop_size')}</div>
             `;
             grid.appendChild(header);
         }
@@ -120,15 +120,15 @@ WebOS.registerApp({
             e.preventDefault();
             const clip = this.api.system.getClipboard();
             const menuItems = [
-                { label: window.I18n.t('explorer.new_folder'), action: () => this.createFolder(container) },
-                { label: window.I18n.t('explorer.new_file'), action: () => this.createFile(container) },
+                { label: globalThis.I18n.t('explorer.new_folder'), action: () => this.createFolder(container) },
+                { label: globalThis.I18n.t('explorer.new_file'), action: () => this.createFile(container) },
                 { type: 'separator' }
             ];
             if (clip && clip.type === 'file') {
-                menuItems.push({ label: window.I18n.t('explorer.paste'), action: () => this.pasteFile() });
+                menuItems.push({ label: globalThis.I18n.t('explorer.paste'), action: () => this.pasteFile() });
                 menuItems.push({ type: 'separator' });
             }
-            menuItems.push({ label: window.I18n.t('menu.refresh'), action: () => this.refresh(container) });
+            menuItems.push({ label: globalThis.I18n.t('menu.refresh'), action: () => this.refresh(container) });
             this.api.system.showContextMenu(e, menuItems);
         };
         const frag = document.createDocumentFragment();
@@ -139,7 +139,7 @@ WebOS.registerApp({
             const icon = item.type === 'dir' ? '📁' : this.getIcon(item.name);
             if (this.viewMode === 'list') {
                 const size = item.type === 'dir' ? '---' : this.formatSize(item.size);
-                const type = item.type === 'dir' ? (window.I18n.t('system.type_dir') || 'Folder') : (window.I18n.t('system.type_file') || 'File');
+                const type = item.type === 'dir' ? (globalThis.I18n.t('system.type_dir') || 'Folder') : (globalThis.I18n.t('system.type_file') || 'File');
                 el.innerHTML = `
                     <div class="item-icon">${icon}</div>
                     <div class="item-name">${item.name}</div>
@@ -170,19 +170,19 @@ WebOS.registerApp({
                 e.preventDefault();
                 e.stopPropagation();
                 const menuItems = [
-                    { label: window.I18n.t('explorer.open'), action: () => el.onclick() },
-                    { label: window.I18n.t('explorer.copy'), action: () => this.copyFile(item) },
-                    { label: window.I18n.t('explorer.rename'), action: () => this.renameFile(item, container) },
-                    { label: window.I18n.t('explorer.delete'), action: () => this.deleteFile(item, container) },
+                    { label: globalThis.I18n.t('explorer.open'), action: () => el.onclick() },
+                    { label: globalThis.I18n.t('explorer.copy'), action: () => this.copyFile(item) },
+                    { label: globalThis.I18n.t('explorer.rename'), action: () => this.renameFile(item, container) },
+                    { label: globalThis.I18n.t('explorer.delete'), action: () => this.deleteFile(item, container) },
                     { type: 'separator' },
-                    { label: window.I18n.t('explorer.properties') || 'Properties', action: () => this.showProperties(item) }
+                    { label: globalThis.I18n.t('explorer.properties') || 'Properties', action: () => this.showProperties(item) }
                 ];
                 this.api.system.showContextMenu(e, menuItems);
             };
             frag.appendChild(el);
         });
         grid.appendChild(frag);
-        status.innerText = `${items.length} ${window.I18n.t('explorer.items')}`;
+        status.innerText = `${items.length} ${globalThis.I18n.t('explorer.items')}`;
     },
     formatSize(bytes) {
         if (!bytes) return '0 B';
@@ -201,12 +201,12 @@ WebOS.registerApp({
             if (!active) span.onclick = () => { this.currentPath = path; this.render(this.container); };
             el.appendChild(span);
         };
-        createCrumb(window.I18n.t('about.title'), '/', this.currentPath === '/');
+        createCrumb(globalThis.I18n.t('about.title'), '/', this.currentPath === '/');
         parts.forEach((p, i) => {
             if (!p) return;
             const sep = document.createElement('span');
             sep.className = 'breadcrumb-sep';
-            sep.innerText = window.I18n.t('explorer.breadcrumb_sep');
+            sep.innerText = globalThis.I18n.t('explorer.breadcrumb_sep');
             el.appendChild(sep);
             acc = this.api.fs.join(acc, p);
             createCrumb(p, acc, i === parts.length - 1);
@@ -215,7 +215,7 @@ WebOS.registerApp({
     copyFile(item) {
         const fullPath = this.api.fs.join(this.currentPath, item.name);
         this.api.system.setClipboard({ type: 'file', path: fullPath, name: item.name });
-        this.api.notifications.show({ title: window.I18n.t('explorer.title'), message: window.I18n.t('explorer.copied', item.name) });
+        this.api.notifications.show({ title: globalThis.I18n.t('explorer.title'), message: globalThis.I18n.t('explorer.copied', item.name) });
     },
     async pasteFile() {
         const clip = this.api.system.getClipboard();
@@ -225,13 +225,13 @@ WebOS.registerApp({
         if (await this.api.fs.exists(destPath)) {
             const conflictChoice = await new Promise(resolve => {
                 this.api.ui.showDialog({
-                    title: window.I18n.t('explorer.title'),
-                    message: window.I18n.t('explorer.conflict_msg', destName),
+                    title: globalThis.I18n.t('explorer.title'),
+                    message: globalThis.I18n.t('explorer.conflict_msg', destName),
                     type: 'choice',
                     choices: [
-                        { label: window.I18n.t('explorer.conflict_overwrite'), value: 'overwrite', class: 'danger' },
-                        { label: window.I18n.t('explorer.conflict_keep_both'), value: 'keep' },
-                        { label: window.I18n.t('dialog.cancel'), value: 'cancel' }
+                        { label: globalThis.I18n.t('explorer.conflict_overwrite'), value: 'overwrite', class: 'danger' },
+                        { label: globalThis.I18n.t('explorer.conflict_keep_both'), value: 'keep' },
+                        { label: globalThis.I18n.t('dialog.cancel'), value: 'cancel' }
                     ],
                     onChoice: resolve
                 });
@@ -250,7 +250,7 @@ WebOS.registerApp({
         this.refresh(this.container);
     },
     async createFolder(container) {
-        this.api.ui.prompt(window.I18n.t('explorer.prompt_folder_name'), window.I18n.t('explorer.new_folder'), async (name) => {
+        this.api.ui.prompt(globalThis.I18n.t('explorer.prompt_folder_name'), globalThis.I18n.t('explorer.new_folder'), async (name) => {
             if (name) {
                 let path = this.api.fs.join(this.currentPath, name);
                 if (await this.api.fs.exists(path)) {
@@ -262,10 +262,10 @@ WebOS.registerApp({
         });
     },
     async createFile(container) {
-        const defaultName = window.I18n.t('explorer.new_file') + '.txt';
+        const defaultName = globalThis.I18n.t('explorer.new_file') + '.txt';
         let path = this.api.fs.join(this.currentPath, defaultName);
         if (await this.api.fs.exists(path)) {
-            path = this.api.fs.join(this.currentPath, window.I18n.t('explorer.new_file') + ' (2).txt');
+            path = this.api.fs.join(this.currentPath, globalThis.I18n.t('explorer.new_file') + ' (2).txt');
         }
         await this.api.fs.write(path, '');
         this.refresh(container);
@@ -282,7 +282,7 @@ WebOS.registerApp({
         if (app) WebOS.launchApp(app, { filePath: fullPath });
     },
     async deleteFile(item, container) {
-        this.api.ui.confirm(window.I18n.t('explorer.confirm_delete', item.name), async (ok) => {
+        this.api.ui.confirm(globalThis.I18n.t('explorer.confirm_delete', item.name), async (ok) => {
             if (ok) {
                 await this.api.fs.remove(this.api.fs.join(this.currentPath, item.name));
                 this.refresh(container);
@@ -294,20 +294,20 @@ WebOS.registerApp({
         const path = this.api.fs.join(this.currentPath, item.name);
         const stat = await this.api.fs.stat(path);
         if (!stat) {
-            this.api.notifications.show({ title: window.I18n.t('explorer.title'), message: window.I18n.t('explorer.error_read_properties'), type: 'error' });
+            this.api.notifications.show({ title: globalThis.I18n.t('explorer.title'), message: globalThis.I18n.t('explorer.error_read_properties'), type: 'error' });
             return;
         }
         const size = (item.type === 'dir' || stat.type === 'dir') ? '---' : (stat.size > 1024 * 1024 ? (stat.size / (1024 * 1024)).toFixed(2) + ' MB' : (stat.size / 1024).toFixed(1) + ' KB');
         const date = stat.mtime ? new Date(stat.mtime).toLocaleString() : '---';
-        const typeLabel = stat.type === 'dir' ? window.I18n.t('system.type_dir') : window.I18n.t('system.type_file');
+        const typeLabel = stat.type === 'dir' ? globalThis.I18n.t('system.type_dir') : globalThis.I18n.t('system.type_file');
         const div = document.createElement('div');
         div.className = 'properties-dialog';
-        const rows = [[window.I18n.t('explorer.prop_name'), item.name || '---'], [window.I18n.t('explorer.prop_path'), path], [window.I18n.t('explorer.prop_type'), typeLabel], [window.I18n.t('explorer.prop_size'), size], [window.I18n.t('explorer.prop_mtime'), date]];
+        const rows = [[globalThis.I18n.t('explorer.prop_name'), item.name || '---'], [globalThis.I18n.t('explorer.prop_path'), path], [globalThis.I18n.t('explorer.prop_type'), typeLabel], [globalThis.I18n.t('explorer.prop_size'), size], [globalThis.I18n.t('explorer.prop_mtime'), date]];
         rows.forEach(([label, val]) => { const r = document.createElement('div'); r.className = 'prop-row'; const b = document.createElement('b'); b.textContent = label + ': '; const s = document.createElement('span'); s.textContent = val; r.appendChild(b); r.appendChild(s); div.appendChild(r); });
-        this.api.ui.showDialog({ title: item.name || window.I18n.t('explorer.properties'), message: div.outerHTML });
+        this.api.ui.showDialog({ title: item.name || globalThis.I18n.t('explorer.properties'), message: div.outerHTML });
     },
     renameFile(item, container) {
-        this.api.ui.prompt(window.I18n.t('explorer.prompt_rename', item.name), item.name, async (name) => {
+        this.api.ui.prompt(globalThis.I18n.t('explorer.prompt_rename', item.name), item.name, async (name) => {
             if (name && name !== item.name) {
                 await this.api.fs.rename(this.api.fs.join(this.currentPath, item.name), this.api.fs.join(this.currentPath, name));
                 this.refresh(container);
@@ -316,6 +316,6 @@ WebOS.registerApp({
     },
     unmount() {
         if (this._vfsWatcher) this.api.system.unsubscribe('vfs:changed', this._vfsWatcher);
-        window.removeEventListener('i18n:changed', this._i18nListener);
+        globalThis.removeEventListener('i18n:changed', this._i18nListener);
     }
 });

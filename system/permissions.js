@@ -1,4 +1,4 @@
-    window.Permissions = {
+    globalThis.Permissions = {
         check(manifest, permission) {
             if (!manifest.permissions) return false;
             return manifest.permissions.includes(permission);
@@ -16,8 +16,8 @@
                 const granted = this.check(manifest, perm);
                 if (!granted) {
                     Notifications.show({
-                        title: window.I18n.t('system.error_title'),
-                        message: window.I18n.t('permissions.denied_msg', appDef.name, perm),
+                        title: globalThis.I18n.t('system.error_title'),
+                        message: globalThis.I18n.t('permissions.denied_msg', appDef.name, perm),
                         type: 'warning'
                     });
                 }
@@ -50,9 +50,9 @@
                     },
                     getUptime: () => {
                         const seconds = Math.floor((Date.now() - PersistenceManager.START_TIME) / 1000);
-                        const s = window.I18n.t('taskmanager.unit_s');
-                        const m = window.I18n.t('taskmanager.unit_m');
-                        const h = window.I18n.t('taskmanager.unit_h');
+                        const s = globalThis.I18n.t('taskmanager.unit_s');
+                        const m = globalThis.I18n.t('taskmanager.unit_m');
+                        const h = globalThis.I18n.t('taskmanager.unit_h');
                         if (seconds < 60) return `${seconds}${s}`;
                         if (seconds < 3600) return `${Math.floor(seconds / 60)}${m} ${seconds % 60}${s}`;
                         return `${Math.floor(seconds / 3600)}${h} ${Math.floor((seconds % 3600) / 60)}${m}`;
@@ -158,7 +158,7 @@
                                 icon: p.appDef.icon,
                                 appId: p.appId,
                                 startTime: p.startTime,
-                                uptime: `${uptime}${window.I18n.t('taskmanager.unit_s')}`,
+                                uptime: `${uptime}${globalThis.I18n.t('taskmanager.unit_s')}`,
                                 storage: `${storageStr} / ${limitStr}`,
                                 nodes: nodeCount
                             };

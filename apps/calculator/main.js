@@ -1,9 +1,9 @@
 WebOS.registerApp({
     id: "calculator",
-    get name() { return window.I18n.t('calculator.title'); },
+    get name() { return globalThis.I18n.t('calculator.title'); },
     icon: "🧮",
     manifest: {
-        get name() { return window.I18n.t('calculator.title'); },
+        get name() { return globalThis.I18n.t('calculator.title'); },
         icon: "🧮",
         permissions: []
     },
@@ -20,7 +20,7 @@ WebOS.registerApp({
         this._renderCalc(container);
         this._setupCalcEvents(container);
         this._i18nListener = () => this._renderCalc(container);
-        window.addEventListener('i18n:changed', this._i18nListener);
+        globalThis.addEventListener('i18n:changed', this._i18nListener);
         setTimeout(() => container.querySelector('.calc-app')?.focus(), 100);
     },
     _renderCalc(container) {
@@ -56,7 +56,7 @@ WebOS.registerApp({
         this._setupCalcEvents(container);
     },
     _calcEval(expr) {
-        const tokens = expr.match(/(?:\d+\.\d+|\d+|\+|\-|\*|\/|%|\(|\))/g) || [];
+        const tokens = expr.match(/[\d.]+|[\+\-*\/%()]/g) || [];
         const output = [], ops = [];
         const prec = { '+': 1, '-': 1, '*': 2, '/': 2, '%': 2 };
         for (const t of tokens) {
@@ -80,14 +80,14 @@ WebOS.registerApp({
             expr = expr.replace(/(^|\()\-(\d+\.\d+|\d+)/g, '$1(0-$2)');
             const result = this._calcEval(expr);
             if (!isFinite(result) || isNaN(result)) throw new Error('Math Error');
-            this.history = this.current + window.I18n.t('calculator.result_eq');
+            this.history = this.current + globalThis.I18n.t('calculator.result_eq');
             this.current = String(Number(result.toFixed(8)));
             this.shouldReset = true;
             this.openParens = 0;
-        } catch (e) { this.current = window.I18n.t('calculator.error'); this.history = ''; this.shouldReset = true; }
+        } catch (e) { this.current = globalThis.I18n.t('calculator.error'); this.history = ''; this.shouldReset = true; }
     },
     _handleBtn(val, container) {
-        if (this.current === window.I18n.t('calculator.error')) { this.current = '0'; this.shouldReset = false; }
+        if (this.current === globalThis.I18n.t('calculator.error')) { this.current = '0'; this.shouldReset = false; }
         if (val === 'C') { this.current = '0'; this.history = ''; this.openParens = 0; }
         else if (val === '=') this._calcCompute();
         else if (val === '(') {
@@ -127,6 +127,6 @@ WebOS.registerApp({
         }
     },
     unmount() {
-        window.removeEventListener('i18n:changed', this._i18nListener);
+        globalThis.removeEventListener('i18n:changed', this._i18nListener);
     }
 });

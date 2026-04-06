@@ -1,4 +1,4 @@
-    window.state = {
+    globalThis.state = {
         apps: {},
         processes: [],
         windows: [],
@@ -8,7 +8,7 @@
         persistenceKey: 'SYSTEM_STATE',
         deferredRestoration: null,
         windowStack: [],
-        viewport: { w: window.innerWidth, h: window.innerHeight },
+        viewport: { w: globalThis.innerWidth, h: globalThis.innerHeight },
         positionsLoaded: false,
         addProcess(proc) {
             this.processes.push(proc);

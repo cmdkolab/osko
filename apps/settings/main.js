@@ -1,10 +1,10 @@
 WebOS.registerApp({
     id: "settings",
-    get name() { return window.I18n.t('settings.title'); },
+    get name() { return globalThis.I18n.t('settings.title'); },
     icon: "⚙️",
     version: "4.9.0",
     manifest: {
-        get name() { return window.I18n.t('settings.title'); },
+        get name() { return globalThis.I18n.t('settings.title'); },
         icon: "⚙️",
         permissions: ["notifications", "fs.read", "fs.write", "system.manage", "system.ui"]
     },
@@ -35,40 +35,40 @@ WebOS.registerApp({
             container.innerHTML = `
                 <div class="settings-app">
                     <div class="settings-section">
-                        <h3>${window.I18n.t('settings.language')}</h3>
+                        <h3>${globalThis.I18n.t('settings.language')}</h3>
                         <div class="toggle-group">
-                            <button class="lang-btn ${window.I18n.current === 'en' ? 'active' : ''}" data-lang="en">${window.I18n.t('settings.lang_en')}</button>
-                            <button class="lang-btn ${window.I18n.current === 'pl' ? 'active' : ''}" data-lang="pl">${window.I18n.t('settings.lang_pl')}</button>
+                            <button class="lang-btn ${globalThis.I18n.current === 'en' ? 'active' : ''}" data-lang="en">${globalThis.I18n.t('settings.lang_en')}</button>
+                            <button class="lang-btn ${globalThis.I18n.current === 'pl' ? 'active' : ''}" data-lang="pl">${globalThis.I18n.t('settings.lang_pl')}</button>
                         </div>
                     </div>
                     <div class="settings-section">
-                        <h3>${window.I18n.t('settings.tab_personalization')}</h3>
+                        <h3>${globalThis.I18n.t('settings.tab_personalization')}</h3>
                         <div class="color-presets">
-                            ${presets.map(p => `<div class="preset-btn ${currentWallpaper === p.val ? 'active' : ''}" data-val="${p.val}" title="${window.I18n.t(p.name)}" style="background: ${p.val};"></div>`).join('')}
+                            ${presets.map(p => `<div class="preset-btn ${currentWallpaper === p.val ? 'active' : ''}" data-val="${p.val}" title="${globalThis.I18n.t(p.name)}" style="background: ${p.val};"></div>`).join('')}
                         </div>
                     </div>
                     <div class="settings-section">
-                        <h3>${window.I18n.t('settings.tab_system')}</h3>
+                        <h3>${globalThis.I18n.t('settings.tab_system')}</h3>
                         <div class="toggle-group">
-                            <button class="theme-btn ${currentTheme === 'default' ? 'active' : ''}" data-theme="default">${window.I18n.t('settings.theme_light')} / Auto</button>
-                            <button class="theme-btn ${currentTheme === 'dark' ? 'active' : ''}" data-theme="dark">${window.I18n.t('settings.theme_dark')}</button>
+                            <button class="theme-btn ${currentTheme === 'default' ? 'active' : ''}" data-theme="default">${globalThis.I18n.t('settings.theme_light')} / Auto</button>
+                            <button class="theme-btn ${currentTheme === 'dark' ? 'active' : ''}" data-theme="dark">${globalThis.I18n.t('settings.theme_dark')}</button>
                         </div>
                     </div>
                     <div class="settings-section">
-                        <h3>${window.I18n.t('settings.sound')}</h3>
+                        <h3>${globalThis.I18n.t('settings.sound')}</h3>
                         <div class="toggle-group">
-                            <button class="sound-btn ${currentSound === 'on' ? 'active' : ''}" data-sound="on">${window.I18n.t('settings.sound_on')}</button>
-                            <button class="sound-btn ${currentSound === 'off' ? 'active' : ''}" data-sound="off">${window.I18n.t('settings.sound_off')}</button>
+                            <button class="sound-btn ${currentSound === 'on' ? 'active' : ''}" data-sound="on">${globalThis.I18n.t('settings.sound_on')}</button>
+                            <button class="sound-btn ${currentSound === 'off' ? 'active' : ''}" data-sound="off">${globalThis.I18n.t('settings.sound_off')}</button>
                         </div>
                     </div>
                     <div class="settings-section">
-                        <h3>${window.I18n.t('settings.autostart')}</h3>
-                        <p class="section-desc">${window.I18n.t('settings.autostart_desc')}</p>
+                        <h3>${globalThis.I18n.t('settings.autostart')}</h3>
+                        <p class="section-desc">${globalThis.I18n.t('settings.autostart_desc')}</p>
                         <div class="autostart-list"></div>
                     </div>
                     <div class="settings-section danger-zone">
-                        <h3>${window.I18n.t('settings.clear_data')}</h3>
-                        <button class="reset-btn danger">${window.I18n.t('settings.clear_data')}</button>
+                        <h3>${globalThis.I18n.t('settings.clear_data')}</h3>
+                        <button class="reset-btn danger">${globalThis.I18n.t('settings.clear_data')}</button>
                     </div>
                 </div>
             `;
@@ -79,24 +79,24 @@ WebOS.registerApp({
         this._render = render;
         await render();
         this._i18nListener = () => render();
-        window.addEventListener('i18n:changed', this._i18nListener);
+        globalThis.addEventListener('i18n:changed', this._i18nListener);
     },
     _setupEvents(container, api) {
         container.querySelectorAll('.lang-btn').forEach(btn => {
-            btn.onclick = () => window.I18n.setLanguage(btn.dataset.lang);
+            btn.onclick = () => globalThis.I18n.setLanguage(btn.dataset.lang);
         });
         container.querySelectorAll('.preset-btn').forEach(btn => {
             btn.onclick = () => {
                 const val = btn.dataset.val;
                 api.system.setWallpaper(val);
-                api.notifications.show({ title: window.I18n.t('settings.tab_personalization'), message: window.I18n.t('settings.wallpaper_changed') });
+                api.notifications.show({ title: globalThis.I18n.t('settings.tab_personalization'), message: globalThis.I18n.t('settings.wallpaper_changed') });
             };
         });
         container.querySelectorAll('.theme-btn').forEach(btn => {
             btn.onclick = () => {
                 const theme = btn.dataset.theme;
                 api.system.setTheme(theme);
-                api.notifications.show({ title: window.I18n.t('settings.tab_system'), message: window.I18n.t('settings.theme_changed') + " " + (theme === 'dark' ? window.I18n.t('settings.theme_dark') : window.I18n.t('settings.theme_light')) });
+                api.notifications.show({ title: globalThis.I18n.t('settings.tab_system'), message: globalThis.I18n.t('settings.theme_changed') + " " + (theme === 'dark' ? globalThis.I18n.t('settings.theme_dark') : globalThis.I18n.t('settings.theme_light')) });
             };
         });
         container.querySelectorAll('.sound-btn').forEach(btn => {
@@ -110,13 +110,13 @@ WebOS.registerApp({
         const resetBtn = container.querySelector('.reset-btn');
         if (resetBtn) {
             resetBtn.onclick = () => {
-                WebOS.ui.confirm(window.I18n.t('settings.clear_data_confirm'), async (ok) => {
+                WebOS.ui.confirm(globalThis.I18n.t('settings.clear_data_confirm'), async (ok) => {
                     if (ok) {
                         try {
                             await api.system.storage.clearAll();
                             VFS.reset();
                             await VFS.saveImmediate();
-                            window.location.reload();
+                            globalThis.location.reload();
                         } catch (e) {
                             SysLog.log('ERR', `Reset failed: ${e.message}`, 'Settings');
                         }
@@ -171,7 +171,7 @@ WebOS.registerApp({
         });
     },
     unmount() {
-        window.removeEventListener('i18n:changed', this._i18nListener);
+        globalThis.removeEventListener('i18n:changed', this._i18nListener);
         if (this._vfsWatcher) {
             this.api.system.unsubscribe('vfs:changed', this._vfsWatcher);
         }

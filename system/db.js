@@ -1,4 +1,4 @@
-    window.DBWrapper = {
+    globalThis.DBWrapper = {
         dbName: 'OSKO_DB',
         storeName: 'vfs_nodes',
         version: 1,
@@ -10,7 +10,7 @@
         init() {
             if (this._readyPromise) return this._readyPromise;
             this._readyPromise = new Promise((resolve) => {
-                if (!window.indexedDB) {
+                if (!globalThis.indexedDB) {
                     this._isFallback = true;
                     this._isReady = true;
                     console.warn('[DBWrapper] IndexedDB not supported. Switching to in-memory storage.');
@@ -36,10 +36,10 @@
                         this._db = null;
                         this._isReady = false;
                         WebOS.ui.showDialog({
-                            message: window.I18n.t('dialog.db_upgrade'),
+                            message: globalThis.I18n.t('dialog.db_upgrade'),
                             type: 'alert',
-                            acceptText: window.I18n.t('dialog.db_upgrade_btn'),
-                            onAccept: () => window.location.reload()
+                            acceptText: globalThis.I18n.t('dialog.db_upgrade_btn'),
+                            onAccept: () => globalThis.location.reload()
                         });
                     };
                     resolve();

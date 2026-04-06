@@ -1,10 +1,10 @@
 WebOS.registerApp({
     id: "taskmanager",
-    get name() { return window.I18n.t('taskmanager.title'); },
+    get name() { return globalThis.I18n.t('taskmanager.title'); },
     icon: "📊",
     version: "4.9.0",
     manifest: {
-        get name() { return window.I18n.t('taskmanager.title'); },
+        get name() { return globalThis.I18n.t('taskmanager.title'); },
         icon: "📊",
         permissions: ["notifications", "system.manage"]
     },
@@ -23,7 +23,7 @@ WebOS.registerApp({
                     <div class="tm-metrics">
                         <div class="tm-storage-info">
                             <div class="tm-storage-label">
-                                <span>${window.I18n.t('taskmanager.total_storage')}</span>
+                                <span>${globalThis.I18n.t('taskmanager.total_storage')}</span>
                                 <span class="tm-storage-value">0 / 10 MB</span>
                             </div>
                             <div class="tm-storage-bar"><div class="tm-storage-fill"></div></div>
@@ -33,17 +33,17 @@ WebOS.registerApp({
                         </div>
                     </div>
                     <div class="tm-controls">
-                        <input type="text" class="tm-search" placeholder="${window.I18n.t('system.search_placeholder')}">
-                        <button class="tm-kill-all-btn">${window.I18n.t('menu.close_all')}</button>
+                        <input type="text" class="tm-search" placeholder="${globalThis.I18n.t('system.search_placeholder')}">
+                        <button class="tm-kill-all-btn">${globalThis.I18n.t('menu.close_all')}</button>
                     </div>
                 </div>
                 <div class="tm-table">
                     <div class="tm-header">
-                        <span>${window.I18n.t('taskmanager.app')}</span>
-                        <span class="text-center">${window.I18n.t('taskmanager.pid')}</span>
-                        <span class="text-right">${window.I18n.t('taskmanager.uptime')}</span>
-                        <span class="text-right">${window.I18n.t('taskmanager.storage')}</span>
-                        <span class="text-center">${window.I18n.t('taskmanager.action')}</span>
+                        <span>${globalThis.I18n.t('taskmanager.app')}</span>
+                        <span class="text-center">${globalThis.I18n.t('taskmanager.pid')}</span>
+                        <span class="text-right">${globalThis.I18n.t('taskmanager.uptime')}</span>
+                        <span class="text-right">${globalThis.I18n.t('taskmanager.storage')}</span>
+                        <span class="text-center">${globalThis.I18n.t('taskmanager.action')}</span>
                     </div>
                     <div class="tm-list"></div>
                 </div>
@@ -62,9 +62,9 @@ WebOS.registerApp({
         const drawSparkline = (usage) => {
             this.history.push(usage);
             if (this.history.length > 50) this.history.shift();
-            const w = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-            const h = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            const w = canvas.width = canvas.offsetWidth * globalThis.devicePixelRatio;
+            const h = canvas.height = canvas.offsetHeight * globalThis.devicePixelRatio;
+            ctx.scale(globalThis.devicePixelRatio, globalThis.devicePixelRatio);
             ctx.clearRect(0, 0, w, h);
             if (this.history.length < 2) return;
             const max = 10 * 1024 * 1024;
@@ -112,7 +112,7 @@ WebOS.registerApp({
                         <div class="tm-uptime text-right"></div>
                         <div class="tm-mem text-right"></div>
                         <div class="tm-actions text-center">
-                            <button class="tm-kill-btn" ${p.appId === 'taskmanager' ? 'disabled' : ''}>${window.I18n.t('taskmanager.kill')}</button>
+                            <button class="tm-kill-btn" ${p.appId === 'taskmanager' ? 'disabled' : ''}>${globalThis.I18n.t('taskmanager.kill')}</button>
                         </div>
                     `;
                     const killBtn = row.querySelector('.tm-kill-btn');
@@ -124,8 +124,8 @@ WebOS.registerApp({
                 const uptimeEl = row.querySelector('.tm-uptime');
                 const memEl = row.querySelector('.tm-mem');
                 const uptimeVal = Math.floor((Date.now() - p.startTime) / 1000);
-                const s = window.I18n.t('taskmanager.unit_s');
-                const m = window.I18n.t('taskmanager.unit_m');
+                const s = globalThis.I18n.t('taskmanager.unit_s');
+                const m = globalThis.I18n.t('taskmanager.unit_m');
                 const newUptime = uptimeVal < 60 ? `${uptimeVal}${s}` : `${Math.floor(uptimeVal/60)}${m} ${uptimeVal%60}${s}`;
                 if (uptimeEl.innerText !== newUptime) uptimeEl.innerText = newUptime;
                 const appUsage = api.system.storage.calculateUsage ? api.system.storage.calculateUsage(p.appId) : 0;
@@ -142,7 +142,7 @@ WebOS.registerApp({
         };
         const killAllBtn = container.querySelector('.tm-kill-all-btn');
         killAllBtn.onclick = () => {
-            api.ui.confirm(window.I18n.t('dialog.close_all_confirm'), async (ok) => {
+            api.ui.confirm(globalThis.I18n.t('dialog.close_all_confirm'), async (ok) => {
                 if (ok) {
                     const procs = await api.system.getProcesses();
                     for(const p of procs) {
@@ -164,7 +164,7 @@ WebOS.registerApp({
                 if (tml) tml.querySelectorAll('.tm-row').forEach(r => { r.innerHTML = ''; });
                 container.querySelectorAll('.tm-header span').forEach(s => {
                     const key = s.dataset.i18n;
-                    if (key) s.innerText = window.I18n.t(key);
+                    if (key) s.innerText = globalThis.I18n.t(key);
                 });
             }, 0);
         };
@@ -174,10 +174,10 @@ WebOS.registerApp({
         headers[2].dataset.i18n = 'taskmanager.uptime';
         headers[3].dataset.i18n = 'taskmanager.storage';
         headers[4].dataset.i18n = 'taskmanager.action';
-        window.addEventListener('i18n:changed', this._i18nListener);
+        globalThis.addEventListener('i18n:changed', this._i18nListener);
     },
     unmount() {
         if (this._interval) this.api.system.clearInterval(this._interval);
-        window.removeEventListener('i18n:changed', this._i18nListener);
+        globalThis.removeEventListener('i18n:changed', this._i18nListener);
     }
 });

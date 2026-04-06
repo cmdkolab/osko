@@ -1,9 +1,9 @@
 WebOS.registerApp({
     id: "notes",
-    get name() { return window.I18n.t('notes.title'); },
+    get name() { return globalThis.I18n.t('notes.title'); },
     icon: "📝",
     version: "4.9.0",
-    manifest: { get name() { return window.I18n.t('notes.title'); }, icon: "📝", permissions: ["fs.read", "fs.write", "notifications"] },
+    manifest: { get name() { return globalThis.I18n.t('notes.title'); }, icon: "📝", permissions: ["fs.read", "fs.write", "notifications"] },
     width: "600px",
     height: "450px",
     mount(container, api, params) {
@@ -20,7 +20,7 @@ WebOS.registerApp({
             const text = textarea.value.trim();
             const words = text ? text.split(/\s+/).length : 0;
             const chars = text.length;
-            stats.innerText = `${words} ${window.I18n.t('notes.words')} | ${chars} ${window.I18n.t('notes.chars')}`;
+            stats.innerText = `${words} ${globalThis.I18n.t('notes.words')} | ${chars} ${globalThis.I18n.t('notes.chars')}`;
         };
         this.updateStats = updateStats;
         const findNext = (query) => {
@@ -42,27 +42,27 @@ WebOS.registerApp({
                 <div class="notes-app">
                     <div class="notes-toolbar">
                         <div class="btn-group">
-                            <button class="sys-btn new-btn" title="${window.I18n.t('notes.new')}">📄</button>
-                            <button class="sys-btn save-btn" title="${window.I18n.t('notes.save')}">💾</button>
-                            <button class="sys-btn wrap-btn" title="${window.I18n.t('notes.wrap')}">↩️</button>
+                            <button class="sys-btn new-btn" title="${globalThis.I18n.t('notes.new')}">📄</button>
+                            <button class="sys-btn save-btn" title="${globalThis.I18n.t('notes.save')}">💾</button>
+                            <button class="sys-btn wrap-btn" title="${globalThis.I18n.t('notes.wrap')}">↩️</button>
                         </div>
                         <div class="btn-group">
-                            <button class="sys-btn bold-btn" title="${window.I18n.t('notes.bold') || 'Bold'}">𝐁</button>
-                            <button class="sys-btn italic-btn" title="${window.I18n.t('notes.italic') || 'Italic'}">𝐼</button>
+                            <button class="sys-btn bold-btn" title="${globalThis.I18n.t('notes.bold') || 'Bold'}">𝐁</button>
+                            <button class="sys-btn italic-btn" title="${globalThis.I18n.t('notes.italic') || 'Italic'}">𝐼</button>
                         </div>
                         <div class="btn-group">
-                            <button class="sys-btn search-toggle-btn" title="${window.I18n.t('notes.search') || 'Search'}">🔍</button>
+                            <button class="sys-btn search-toggle-btn" title="${globalThis.I18n.t('notes.search') || 'Search'}">🔍</button>
                         </div>
                         <div class="btn-group">
-                            <button class="sys-btn export-btn" title="${window.I18n.t('notes.export')}">📤</button>
+                            <button class="sys-btn export-btn" title="${globalThis.I18n.t('notes.export')}">📤</button>
                         </div>
                         <div class="notes-status"><span class="status-text"></span><span class="stats-text"></span></div>
                     </div>
-                    <textarea class="notes-editor" placeholder="${window.I18n.t('notes.placeholder')}" spellcheck="false"></textarea>
+                    <textarea class="notes-editor" placeholder="${globalThis.I18n.t('notes.placeholder')}" spellcheck="false"></textarea>
                     <div class="notes-search-bar" style="display:none;">
-                        <input type="text" class="notes-search-input" placeholder="${window.I18n.t('notes.search') || 'Search...'}">
+                        <input type="text" class="notes-search-input" placeholder="${globalThis.I18n.t('notes.search') || 'Search...'}">
                         <button class="notes-search-btn">⬇</button>
-                        <input type="text" class="notes-replace-input" placeholder="${window.I18n.t('notes.replace') || 'Replace...'}">
+                        <input type="text" class="notes-replace-input" placeholder="${globalThis.I18n.t('notes.replace') || 'Replace...'}">
                         <button class="notes-replace-btn">↩</button>
                     </div>
                 </div>`;
@@ -73,7 +73,7 @@ WebOS.registerApp({
         render();
         if (params?.filePath) this.openFile(params.filePath);
         this._i18nListener = () => render();
-        window.addEventListener('i18n:changed', this._i18nListener);
+        globalThis.addEventListener('i18n:changed', this._i18nListener);
     },
     setupEvents(container) {
         const textarea = container.querySelector('.notes-editor');
@@ -81,7 +81,7 @@ WebOS.registerApp({
         if (this._oninputHandler) textarea.removeEventListener('input', this._oninputHandler);
         this._oninputHandler = () => {
             this.updateStats();
-            status.innerText = `* ${window.I18n.t('notes.unsaved_changes')}`;
+            status.innerText = `* ${globalThis.I18n.t('notes.unsaved_changes')}`;
             if (this._autoSaveTimer) clearTimeout(this._autoSaveTimer);
             this._autoSaveTimer = setTimeout(async () => {
                 if (this.currentPath) { await this.api.fs.write(this.currentPath, textarea.value); status.innerText = this.api.fs.basename(this.currentPath); }
@@ -99,7 +99,7 @@ WebOS.registerApp({
             textarea.style.whiteSpace = wrapped ? 'pre-wrap' : 'pre';
             textarea.style.overflowX = wrapped ? 'hidden' : 'auto';
             e.target.classList.toggle('active', !wrapped);
-            this.api.notifications.show({ title: window.I18n.t('notes.title'), message: `${window.I18n.t('notes.wrap')}: ${wrapped ? window.I18n.t('notes.wrap_on') : window.I18n.t('notes.wrap_off')}` });
+            this.api.notifications.show({ title: globalThis.I18n.t('notes.title'), message: `${globalThis.I18n.t('notes.wrap')}: ${wrapped ? globalThis.I18n.t('notes.wrap_on') : globalThis.I18n.t('notes.wrap_off')}` });
         };
         const searchBar = container.querySelector('.notes-search-bar');
         container.querySelector('.search-toggle-btn').onclick = () => { searchBar.style.display = searchBar.style.display === 'none' ? 'flex' : 'none'; };
@@ -128,16 +128,16 @@ WebOS.registerApp({
             textarea.value = content;
             this.currentPath = path;
             status.innerText = this.api.fs.basename(path);
-            this.api.window.setTitle(`${window.I18n.t('notes.title')} - ${status.innerText}`);
+            this.api.window.setTitle(`${globalThis.I18n.t('notes.title')} - ${status.innerText}`);
             this.updateStats();
             textarea.focus();
         } else {
-            this.api.notifications.show({ title: window.I18n.t('notes.title'), message: window.I18n.t('notes.open_error'), type: 'error' });
+            this.api.notifications.show({ title: globalThis.I18n.t('notes.title'), message: globalThis.I18n.t('notes.open_error'), type: 'error' });
         }
     },
     async saveFile() {
         if (!this.currentPath) {
-            this.api.ui.prompt(window.I18n.t('explorer.prompt_file_name'), 'note.txt', async (name) => {
+            this.api.ui.prompt(globalThis.I18n.t('explorer.prompt_file_name'), 'note.txt', async (name) => {
                 if (name) { this.currentPath = `/home/user/Documents/${name.endsWith('.txt') ? name : name + '.txt'}`; await this.saveFile(); }
             });
             return;
@@ -145,13 +145,13 @@ WebOS.registerApp({
         const textarea = this.container.querySelector('.notes-editor');
         await this.api.fs.write(this.currentPath, textarea.value);
         this.container.querySelector('.status-text').innerText = this.api.fs.basename(this.currentPath);
-        this.api.window.setTitle(`${window.I18n.t('notes.title')} - ${this.api.fs.basename(this.currentPath)}`);
+        this.api.window.setTitle(`${globalThis.I18n.t('notes.title')} - ${this.api.fs.basename(this.currentPath)}`);
     },
     newFile() {
         this.currentPath = null;
         this.container.querySelector('.notes-editor').value = '';
-        this.container.querySelector('.status-text').innerText = window.I18n.t('notes.new_file');
-        this.api.window.setTitle(`${window.I18n.t('notes.title')} - ${window.I18n.t('notes.new_file')}`);
+        this.container.querySelector('.status-text').innerText = globalThis.I18n.t('notes.new_file');
+        this.api.window.setTitle(`${globalThis.I18n.t('notes.title')} - ${globalThis.I18n.t('notes.new_file')}`);
     },
     exportFile() {
         const text = this.container.querySelector('.notes-editor').value;
@@ -167,6 +167,6 @@ WebOS.registerApp({
         if (this._autoSaveTimer) clearTimeout(this._autoSaveTimer);
         const ta = this.container.querySelector('.notes-editor');
         if (ta && this._oninputHandler) ta.removeEventListener('input', this._oninputHandler);
-        window.removeEventListener('i18n:changed', this._i18nListener);
+        globalThis.removeEventListener('i18n:changed', this._i18nListener);
     }
 });
