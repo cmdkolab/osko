@@ -73,7 +73,7 @@
         async set(key, val) {
             if (this._isFallback) {
                 this._memory.set(key, val);
-                return Promise.resolve();
+                return;
             }
             if (!this._db) throw new Error('DBWrapper: database not initialized');
             return new Promise((resolve, reject) => {
@@ -89,7 +89,7 @@
         async remove(key) {
             if (this._isFallback) {
                 this._memory.delete(key);
-                return Promise.resolve();
+                return;
             }
             if (!this._db) throw new Error('DBWrapper: database not initialized');
             return new Promise((resolve, reject) => {
@@ -105,7 +105,7 @@
         async clear() {
             if (this._isFallback) {
                 this._memory.clear();
-                return Promise.resolve();
+                return;
             }
             if (!this._db) throw new Error('DBWrapper: database not initialized');
             return new Promise((resolve, reject) => {

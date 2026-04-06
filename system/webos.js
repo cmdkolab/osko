@@ -373,7 +373,7 @@ globalThis.WebOS = {
     },
     saveState() {
         if (this._saveStateTimer) clearTimeout(this._saveStateTimer);
-        this._saveStateTimer = setTimeout(async () => {
+        this._saveStateTimer = setTimeout(async () => { try {
             const openApps = state.processes.reduce((acc, p) => {
                 const win = state.windows.find(w => w.id === p.windowId);
                 if (win && win.element) {
@@ -391,6 +391,7 @@ globalThis.WebOS = {
             SysLog.log('DEBUG', `Saving session: ${openApps.length} apps`, 'WebOS');
             await VFS.write('/sys/session.json', sessionData, 'system');
             await VFS.saveImmediate();
+        } catch(e) { SysLog.log('ERR', `saveState failed: ${e.message}`, 'WebOS'); }
         }, this.CONST.UI.SAVE_DELAY);
     },
     async restoreState(deferredData) {
@@ -425,7 +426,7 @@ globalThis.WebOS = {
                 const win = state.windows.find(w => w.appId === appData.appId);
                 if (win && appData.window) {
                     Object.assign(win.element.style, appData.window);
-                    if (appData.globalThis.state === 'maximized') WindowManager.toggleMaximize(win.id);
+                    if (appData.window.state === 'maximized') WindowManager.toggleMaximize(win.id);
                     win.element.style.transition = 'none';
                     setTimeout(() => win.element.style.transition = '', 100);
                 }

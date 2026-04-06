@@ -2,7 +2,7 @@ globalThis.deepMerge = (target, source) => {
     for (const key in source) {
         if (key === '__proto__' || key === 'constructor') continue;
         const val = source[key];
-        if (val && typeof val === 'object' && val.content === undefined) {
+        if (val !== null && typeof val === 'object' && val.content === undefined) {
             if (Array.isArray(val)) {
                 target[key] = [...val];
             } else {
@@ -25,7 +25,7 @@ globalThis.deepMergeSync = (target, source) => {
     for (const key in source) {
         if (key === '__proto__' || key === 'constructor') continue;
         const val = source[key];
-        if (val && typeof val === 'object' && val.content === undefined) {
+        if (val !== null && typeof val === 'object' && val.content === undefined) {
             if (Array.isArray(val)) {
                 target[key] = [...val];
             } else {

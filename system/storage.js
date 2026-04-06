@@ -4,7 +4,7 @@ globalThis.PersistenceManager = {
     SYSTEM_DIR: '/sys',
     TEMP_DIR: '/tmp',
     START_TIME: Date.now(),
-    VERSION: '5.4.1',
+    VERSION: '5.4.2',
     async get(key) {
         try { return await DBWrapper.get(this.PREFIX + key); } catch (e) { return null; }
     },
